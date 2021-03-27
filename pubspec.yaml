@@ -32,6 +32,8 @@ dependencies:
   path_provider: ^2.0.1
   mqtt_client: ^8.2.0
   cron: ^0.3.0
+  flutter_launcher_icons: "^0.8.0"
+  flutter_secure_storage: ^4.1.0
 
   flutter:
     sdk: flutter

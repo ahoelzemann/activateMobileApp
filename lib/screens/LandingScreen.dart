@@ -1,7 +1,7 @@
-import 'package:trac2move/screens/ConnectBLE.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
+import 'dart:typed_data';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
 import 'dart:io';
@@ -10,8 +10,11 @@ import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-//ToDo: Bei Start der App Uhrzeit abgleichen und Daten spät (?) am Abend hochladen.
+import 'package:ssh/ssh.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:flutter/services.dart' show ByteData, rootBundle;
+import 'package:convert/convert.dart';
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -19,6 +22,13 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
+  @override
+  void initState() {
+    // startTimeTriggeredUpload();
+    super.initState();
+  }
+
+  var taps = 0;
   TextEditingController _textFieldController = TextEditingController();
 
   Future<List> getStepsAndActiveMinutes() async {
@@ -28,6 +38,55 @@ class _LandingScreenState extends State<LandingScreen> {
       result.add(value.getInt('active_minutes'));
       return result;
     });
+  }
+  Future<void> writeToFile(ByteData data, String path) {
+    final buffer = data.buffer;
+    return new File(path).writeAsBytes(
+        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+  }
+  Future<void> startTimeTriggeredUpload() async {
+    var client = new SSHClient(
+      host: "131.173.80.175",
+      port: 22,
+      username: "activate",
+      passwordOrKey: "vateAct#21",
+    );
+
+    try {
+      String result = await client.connect();
+      if (result == "session_connected") {
+        result = await client.connectSFTP();
+        if (result == "sftp_connected") {
+          // var array = await client.sftpLs();
+          try {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            String studienID = prefs.getStringList('participant')[1];
+            String serverFilePath = "activity_data/" + studienID;
+            String localFilePath = "assets/activity_data/d202012231825.bin";
+            Directory tempDir = await getTemporaryDirectory();
+            rootBundle.load(localFilePath).then((value) {
+              // Uint8List bytes = value.buffer.asUint8List();
+              writeToFile(value, path);
+            });
+            print(await client.sftpMkdir(serverFilePath));
+            print(await client.sftpUpload(
+              path: localFilePath,
+              toPath: serverFilePath,
+              callback: (progress) {
+                print(progress); // read upload progress
+              },
+            ));
+          } catch (e) {
+            print(e.toString());
+          }
+
+          print(await client.disconnectSFTP());
+          client.disconnect();
+        }
+      }
+    } on PlatformException catch (e) {
+      print('Error: ${e.code}\nError Message: ${e.message}');
+    }
   }
 
   _displayDialog(BuildContext context) async {
@@ -72,8 +131,6 @@ class _LandingScreenState extends State<LandingScreen> {
           );
         });
   }
-
-  var taps = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -267,21 +324,16 @@ class _LandingScreenState extends State<LandingScreen> {
                 client.mqtt_send_testfiles();
               },
             ),
-            // ListTile(
-            //   title: Text('BLE-Testing',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () {
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //           builder: (context) =>
-            //               ConnectBLE(storage: BangleStorage())),
-            //     );
-            //   },
-            // ),
+            ListTile(
+              title: Text('SSH/SFTP Test',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () {
+                startTimeTriggeredUpload();
+              },
+            ),
             // ListTile(
             //   title: Text('Connect to BangleJS',
             //       style: TextStyle(

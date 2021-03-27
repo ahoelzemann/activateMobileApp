@@ -12,8 +12,6 @@ String convertDate(DateTime date) {
   return formattedStr;
 }
 
-
-
 int calculateAge(DateTime birthDate) {
   DateTime currentDate = DateTime.now();
   int age = currentDate.year - birthDate.year;

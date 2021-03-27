@@ -12,12 +12,12 @@ void main() async{
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  print('CronPrint - ' + DateTime.now().toString() + ': Connecting to Activate-Server via SSH');
   // final cron = Cron();
   // cron.schedule(Schedule.parse('*/2 20 * * *'), () async {
   //   print("cronjob");
   // });
   runApp(Trac2Move());
+
 }
 
 Future<bool> _readActiveParticipantSP() async {
