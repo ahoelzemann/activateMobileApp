@@ -171,3 +171,23 @@ Future<String> load_testfiles() async {
     return value;
   });
 }
+
+List<String> getTestFilesPaths() {
+  String root = "assets/activity_data/";
+  List<String> files = [
+    root + 'd202012231825.bin',
+    root + 'd202012231931.bin',
+    root + 'd202012232028.bin',
+    root + 'd202012232130.bin',
+    root + 'd202012232244.bin',
+    root + 'd202012240005.bin',
+    root + 'd202012240126.bin',
+    root + 'd202012240245.bin',
+    root + 'd202012240402.bin',
+    root + 'd202012240527.bin',
+    root + 'd202012240652.bin',
+    root + 'd202012240807.bin'
+  ];
+
+  return files;
+}

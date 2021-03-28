@@ -15,6 +15,8 @@ import 'package:flutter/services.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData, rootBundle;
 import 'package:convert/convert.dart';
+import 'package:trac2move/util/DataLoader.dart';
+import 'package:system_shortcuts/system_shortcuts.dart';
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -39,19 +41,35 @@ class _LandingScreenState extends State<LandingScreen> {
       return result;
     });
   }
+
   Future<void> writeToFile(ByteData data, String path) {
     final buffer = data.buffer;
     return new File(path).writeAsBytes(
         buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
+
   Future<void> startTimeTriggeredUpload() async {
+    /* ToDO:
+    1.) Trigger this method as cronjob
+    2.) Save login credential encrypted in a safe storage
+    3.) Save if a daily cronjob as already been scheduled
+    4.) Implement iOS version with an UploadButton
+    5.) Save files from Bangle to temporary folder on device needs to be a method
+    */
+
+    bool ble_status = await SystemShortcuts.checkBluetooth;
+
+    if (!ble_status) {
+      await SystemShortcuts.bluetooth();
+      ble_status = await SystemShortcuts.checkBluetooth;
+      print(ble_status.toString());
+    }
     var client = new SSHClient(
       host: "131.173.80.175",
       port: 22,
-      username: "activate",
-      passwordOrKey: "vateAct#21",
+      username: "trac2move_upload",
+      passwordOrKey: "5aU=txXKoU!",
     );
-
     try {
       String result = await client.connect();
       if (result == "session_connected") {
@@ -62,20 +80,40 @@ class _LandingScreenState extends State<LandingScreen> {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             String studienID = prefs.getStringList('participant')[1];
             String serverFilePath = "activity_data/" + studienID;
-            String localFilePath = "assets/activity_data/d202012231825.bin";
+            List<String> testfiles = getTestFilesPaths();
+            String localFilePath;
+            String serverFileName;
             Directory tempDir = await getTemporaryDirectory();
-            rootBundle.load(localFilePath).then((value) {
-              // Uint8List bytes = value.buffer.asUint8List();
-              writeToFile(value, path);
-            });
-            print(await client.sftpMkdir(serverFilePath));
-            print(await client.sftpUpload(
-              path: localFilePath,
-              toPath: serverFilePath,
-              callback: (progress) {
-                print(progress); // read upload progress
-              },
-            ));
+            String serverPath;
+            try {
+              print(await client.sftpMkdir(serverFilePath));
+            } catch (e) {
+              print('Folder already exists');
+            }
+            // ToDO: Download Files from Bangle here, save in a local temp folder and delete them after upload
+            for (int i = 0; i < testfiles.length; i++) {
+              localFilePath = testfiles[i];
+              serverFileName = localFilePath.split("/").last;
+              serverPath = serverFilePath;
+              String tempPath = tempDir.path;
+              tempPath = tempPath + "/" + serverFileName;
+              await rootBundle.load(localFilePath).then((value) {
+                // Uint8List bytes = value.buffer.asUint8List();
+                writeToFile(value, tempPath);
+              });
+              try {
+                print("Upload file: " + serverPath);
+                print(await client.sftpUpload(
+                  path: tempPath,
+                  toPath: serverPath,
+                  callback: (progress) {
+                    print(progress); // read upload progress
+                  },
+                ));
+              } catch (e) {
+                print(e);
+              }
+            }
           } catch (e) {
             print(e.toString());
           }
