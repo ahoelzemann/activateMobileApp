@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'dart:ui';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:auto_size_text/auto_size_text.dart';
 
 int steps;
 int active_minutes;
@@ -142,6 +143,14 @@ class _ConfigurationState extends State<Configuration> {
 
   Widget Configuration(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final icon_width = size.width * 0.2;
+    final container_width = size.width - (icon_width * 0.3) * 2;
+    final icon_height = MediaQuery.of(context).size.height * 0.10;
+    final text_width = container_width - icon_width * 2 - icon_width * 0.3;
+    final icon_margins = EdgeInsets.only(
+        left: icon_width * 0.3, top: 0.0, bottom: 0.0, right: icon_width * 0.3);
+    final text_margins = EdgeInsets.only(
+        left: text_width * 0.1, top: 0.0, bottom: 0.0, right: 0.0);
     return new WillPopScope(
         onWillPop: () async => false,
         child: new Scaffold(
@@ -161,6 +170,7 @@ class _ConfigurationState extends State<Configuration> {
                 icon: new Icon(Icons.arrow_back),
                 onPressed: () {
                   Navigator.pop(context);
+                  Navigator.pop(context);
                   Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => LandingScreen()),
@@ -173,124 +183,269 @@ class _ConfigurationState extends State<Configuration> {
               color: Color.fromRGBO(167, 196, 199, 1.0),
               child: Column(
                 children: [
+                  Container(width: size.width, height: size.height * 0.05),
                   Container(
                       width: size.width,
-                      height: size.height * 0.33,
-                      margin: const EdgeInsets.symmetric(
-                        vertical: 55.0,
-                        horizontal: 90.0,
-                      ),
-                      child: Icon(
-                        CupertinoIcons.flag_circle,
-                        color: Colors.white,
-                        size: 200.0,
-                      )),
-                  Row(
-                    children: [
-                      Column(children: [
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              left: 0.0, top: 0.0, bottom: 25.0, right: 0.0),
-                          child: Row(children: [
-                            Container(
-                                width: size.width * 0.33,
-                                // height: size.height * 0.33,
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 2.0,
-                                  horizontal: 2.0,
+                      height: size.height * 0.25,
+                      child: Center(child:
+                          new LayoutBuilder(builder: (context, constraint) {
+                        return new Icon(CupertinoIcons.flag_circle,
+                            color: Colors.white,
+                            size: constraint.biggest.height);
+                      }))),
+                  Container(width: size.width, height: size.height * 0.05),
+                  Container(
+                      width: size.width,
+                      height: size.height * 0.1,
+                      child: Row(children: [
+                        Container(
+                            height: icon_height,
+                            width: container_width,
+                            margin: icon_margins,
+                            child: Row(children: [
+                              Container(
+                                child: Flexible(
+                                  child: new LayoutBuilder(
+                                      builder: (context, constraint) {
+                                    return new Icon(
+                                        Icons.directions_walk_rounded,
+                                        color: Colors.white,
+                                        // color: Color.fromRGBO(195, 130, 89, 1),
+                                        size: constraint.biggest.height);
+                                  }),
                                 ),
-                                child: Column(children: [
-                                  Icon(Icons.directions_walk_rounded,
-                                      color: Color.fromRGBO(195, 130, 89, 1),
-                                      size: 75)
-                                ])),
-                            Container(
-                                width: size.width * 0.33,
-                                // height: size.height * 0.33,
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 2.0,
-                                  horizontal: 2.0,
+                              ),
+                              Container(
+                                height: icon_height,
+                                width: text_width + icon_width,
+                                margin: text_margins,
+                                child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: AutoSizeText.rich(
+                                        TextSpan(
+                                          text: "Wie viele",
+                                          style: TextStyle(
+                                              fontSize: 20,
+                                              fontFamily: "PlayfairDisplay",
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                                text: ' Schritte ',
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black)),
+                                            TextSpan(
+                                              text: 'möchten Sie am Tag gehen?',
+                                              style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontFamily: "PlayfairDisplay",
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.left)),
+                              ),
+                            ])),
+                      ])),
+
+                  Container(
+                      width: size.width,
+                      height: size.height * 0.1,
+                      child: Row(children: [
+                        Container(
+                            height: icon_height,
+                            width: container_width,
+                            margin: icon_margins,
+                            child: Row(
+                              children: [
+                                Flexible(child: new LayoutBuilder(
+                                    builder: (context, constraint) {
+                                  return new FlatButton(
+                                      onPressed: () => setState(() {
+                                            this.decrease_steps(500);
+                                          }),
+                                      padding: EdgeInsets.all(0.0),
+                                      child: Icon(CupertinoIcons.minus_circled,
+                                          color: Colors.black87,
+                                          size:
+                                              constraint.biggest.height * 0.8));
+                                })),
+                                Container(
+                                  height: icon_height,
+                                  width: text_width,
+                                  child: Align(
+                                      alignment: Alignment.center,
+                                      child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: steps.toString(),
+                                            style: TextStyle(
+                                                fontSize: 20,
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black),
+                                            children: <TextSpan>[
+                                              TextSpan(
+                                                  text: ' Schritte ',
+                                                  style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontFamily:
+                                                      "PlayfairDisplay",
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.black)),
+                                            ],
+                                          ),
+                                          textAlign: TextAlign.left)
+                                  ),
                                 ),
-                                child: Column(children: [
-                                  Text(
-                                      "Wie viele Schritte schaffen Sie pro Tag",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black))
-                                ])),
-                            Column(children: [
-                              FlatButton(
-                                  onPressed: () => setState(() {
-                                        this.increase_steps(500);
-                                      }),
-                                  padding: EdgeInsets.all(0.0),
-                                  child: Image.asset('assets/images/plus.png',
-                                      fit: BoxFit.fill, scale: 3)),
-                              Text(steps.toString()),
-                              FlatButton(
-                                  onPressed: () => setState(() {
-                                        this.decrease_steps(500);
-                                      }),
-                                  padding: EdgeInsets.all(0.0),
-                                  child: Image.asset('assets/images/minus.png',
-                                      fit: BoxFit.fill, scale: 23))
-                            ])
-                          ]),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(
-                              left: 0.0, top: 0.0, bottom: 0.0, right: 0.0),
-                          child: Row(children: [
-                            Container(
-                                width: size.width * 0.33,
-                                // height: size.height * 0.33,
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 2.0,
-                                  horizontal: 2.0,
+                                Flexible(child: new LayoutBuilder(
+                                    builder: (context, constraint) {
+                                  return new FlatButton(
+                                      onPressed: () => setState(() {
+                                            this.increase_steps(500);
+                                          }),
+                                      padding: EdgeInsets.all(0.0),
+                                      child: Icon(CupertinoIcons.plus_circled,
+                                          color: Colors.black87,
+                                          size:
+                                              constraint.biggest.height * 0.8));
+                                }))
+                              ],
+                            )
+                            // color: Colors.white,
+                            // size: constraint.biggest.height)
+                            )
+                      ])),
+                  Container(width: size.width, height: size.height * 0.05),
+                  Container(
+                      width: size.width,
+                      height: size.height * 0.1,
+                      child: Row(children: [
+                        Container(
+                            height: icon_height,
+                            width: container_width,
+                            margin: icon_margins,
+                            child: Row(children: [
+                              Flexible(
+                                child: new LayoutBuilder(
+                                    builder: (context, constraint) {
+                                  return new Icon(Ionicons.fitness_outline,
+                                      color: Colors.white,
+                                      // color: Color.fromRGBO(195, 130, 89, 1),
+                                      size: constraint.biggest.height);
+                                }),
+                              ),
+                              Container(
+                                height: icon_height,
+                                width: text_width + icon_width,
+                                margin: text_margins,
+                                child: Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: AutoSizeText.rich(
+                                        TextSpan(
+                                          text: "Wie viele",
+                                          style: TextStyle(
+                                              fontSize: 20,
+                                              fontFamily: "PlayfairDisplay",
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.black),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                                text: ' Minuten ',
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontFamily:
+                                                    "PlayfairDisplay",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.black)),
+                                            TextSpan(
+                                              text: 'möchten Sie am Tag aktiv sein?',
+                                              style: TextStyle(
+                                                  fontSize: 20,
+                                                  fontFamily: "PlayfairDisplay",
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black),
+                                            ),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.left)),
+                              ),
+                            ]))
+                      ])),
+
+                  Container(
+                      width: size.width,
+                      height: size.height * 0.1,
+                      child: Row(children: [
+                        Container(
+                            height: icon_height,
+                            width: container_width,
+                            margin: icon_margins,
+                            child: Row(
+                              children: [
+                                Flexible(child: new LayoutBuilder(
+                                    builder: (context, constraint) {
+                                  return new FlatButton(
+                                      onPressed: () => setState(() {
+                                            this.decrease_minutes(5);
+                                          }),
+                                      padding: EdgeInsets.all(0.0),
+                                      child: Icon(CupertinoIcons.minus_circled,
+                                          color: Colors.black87,
+                                          size:
+                                              constraint.biggest.height * 0.8));
+                                })),
+                                Container(
+                                  height: icon_height,
+                                  width: text_width,
+                                  child: Align(
+                                      alignment: Alignment.center,
+                                      child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: active_minutes.toString(),
+                                            style: TextStyle(
+                                                fontSize: 20,
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.black),
+                                            children: <TextSpan>[
+                                              TextSpan(
+                                                  text: ' Minuten ',
+                                                  style: TextStyle(
+                                                      fontSize: 20,
+                                                      fontFamily:
+                                                      "PlayfairDisplay",
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.black)),
+                                            ],
+                                          ),
+                                          textAlign: TextAlign.left
+                                      ),)
                                 ),
-                                child: Column(children: [
-                                  Icon(
-                                    Ionicons.fitness_outline,
-                                    color: Color.fromRGBO(195, 130, 89, 1),
-                                    size: 75.0,
-                                  )
-                                ])),
-                            Container(
-                                width: size.width * 0.33,
-                                // height: size.height * 0.33,
-                                margin: const EdgeInsets.symmetric(
-                                  vertical: 2.0,
-                                  horizontal: 2.0,
-                                ),
-                                child: Column(children: [
-                                  Text(
-                                      "Wie viele Minuten möchten Sie am Tag aktiv sein?",
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold,
-                                          color: Colors.black))
-                                ])),
-                            Column(children: [
-                              FlatButton(
-                                  onPressed: () => setState(() {
-                                        this.increase_minutes(5);
-                                      }),
-                                  padding: EdgeInsets.all(0.0),
-                                  child: Image.asset('assets/images/plus.png',
-                                      fit: BoxFit.fill, scale: 3)),
-                              Text(active_minutes.toString()),
-                              FlatButton(
-                                  onPressed: () => setState(() {
-                                        this.decrease_minutes(5);
-                                      }),
-                                  padding: EdgeInsets.all(0.0),
-                                  child: Image.asset('assets/images/minus.png',
-                                      fit: BoxFit.fill, scale: 23))
-                            ])
-                          ]),
-                        )
-                      ])
-                    ],
-                  )
+                                Flexible(child: new LayoutBuilder(
+                                    builder: (context, constraint) {
+                                  return new FlatButton(
+                                      onPressed: () => setState(() {
+                                            this.increase_minutes(5);
+                                          }),
+                                      padding: EdgeInsets.all(0.0),
+                                      child: Icon(CupertinoIcons.plus_circled,
+                                          color: Colors.black87,
+                                          size:
+                                              constraint.biggest.height * 0.8));
+                                }))
+                              ],
+                            )
+                            // color: Colors.white,
+                            // size: constraint.biggest.height)
+                            )
+                      ])),
+
+                  //
                 ],
               )),
         ));

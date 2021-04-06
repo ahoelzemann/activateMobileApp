@@ -30,8 +30,8 @@ int calculateAge(DateTime birthDate) {
 }
 
 class ProfilePage extends StatefulWidget {
-
   final bool createUser;
+
   ProfilePage({Key key, this.createUser}) : super(key: key);
 
   @override
@@ -43,19 +43,22 @@ class MapScreenState extends State<ProfilePage>
   final bool createUser;
 
   bool _status = true;
-  TextEditingController studienIDController = new TextEditingController(text: "P-");
+  TextEditingController studienIDController =
+      new TextEditingController(text: "P-");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave;
+
   // Map initialValues = new Map();
   final FocusNode myFocusNode = FocusNode();
+
   String radioButtonItem = "Links";
+
   MapScreenState({Key key, this.createUser});
-
-
 
   // Group Value for Radio Button.
   int id = 1;
   int counter = 0;
+
   Future<Null> _selectDate(BuildContext context) async {
     final DateTime picked = await showDatePicker(
         context: context,
@@ -69,7 +72,38 @@ class MapScreenState extends State<ProfilePage>
       });
   }
 
-  Future<int> initValues(createUser) async{
+  Widget _getAppBar() {
+    if (createUser) {
+      return new AppBar(
+          automaticallyImplyLeading: createUser ? false : true,
+          title: FittedBox(
+              fit: BoxFit.fitWidth,
+              child: Text(
+                'Informationen des Studienteilnehmers',
+                style: TextStyle(color: Colors.black),
+              )),
+          backgroundColor: Colors.white,
+          centerTitle: true);
+    } else {
+      return new AppBar(
+        automaticallyImplyLeading: createUser ? false : true,
+        title: FittedBox(
+            fit: BoxFit.fitWidth,
+            child: Text(
+              'Informationen des Studienteilnehmers',
+              style: TextStyle(color: Colors.black),
+            )),
+        backgroundColor: Colors.white,
+        centerTitle: true,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: Colors.black),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+      );
+    }
+  }
+
+  Future<int> initValues(createUser) async {
     // if (createUser && counter == 0) {
     //   // initialValues['studienIDController'] = new TextEditingController(text: "A-b");
     //   // initialValues['selectedDate'] = DateTime(2000, 1);
@@ -89,13 +123,22 @@ class MapScreenState extends State<ProfilePage>
         int year = int.parse(datestring[2]);
         selectedDate = DateTime(year, month, day);
         // initValues['ageToSave'] = 0;
-        radioButtonItem = participant[5];
+        setState(() {
+          radioButtonItem = participant[5];
+          if (radioButtonItem == "Links") {
+            id = 1;
+          } else {
+            id = 2;
+          }
+        });
+
         ageToSave = int.parse(participant[2]);
         counter++;
       });
       // super.initState();
       return 2;
-    } else return 0;
+    } else
+      return 0;
   }
 
   @override
@@ -106,11 +149,9 @@ class MapScreenState extends State<ProfilePage>
       // studienIDController = initialValues['studienIDController'];
       // selectedDate = initialValues['selectedDate'];
       // radioButtonItem = initialValues['radioButtonItem'];
-
     });
     ageToSave = calculateAge(selectedDate);
     super.initState();
-
   }
 
   @override
@@ -118,220 +159,204 @@ class MapScreenState extends State<ProfilePage>
     // Default Radio Button Selected Item When App Starts.
 
     return new Scaffold(
+        appBar: _getAppBar(),
         body: new Container(
-      color: Colors.white,
-      child: new ListView(
-        children: <Widget>[
-          Column(
+          color: Colors.white,
+          child: new ListView(
             children: <Widget>[
-              new Container(
-                color: Color(0xffFFFFFF),
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 25.0),
-                  child: new Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: <Widget>[
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 25.0),
-                          child: new Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  new Text(
-                                    'Informationen des Studienteilnehmers',
-                                    style: TextStyle(
-                                        fontSize: 17.5,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 25.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  new Text(
-                                    'Studien-ID',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 2.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Flexible(
-                                child: new TextFormField(
-                                    enabled: true,
-                                    autofocus: false,
-                                    controller: studienIDController),
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 25.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: <Widget>[
-                                  new Text(
-                                    'Trageposition',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 2.0),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.min,
-                            children: <Widget>[
-                              Radio(
-                                value: 1,
-                                activeColor: Colors.green,
-                                groupValue: id,
-                                onChanged: (val) {
-                                  setState(() {
-                                    radioButtonItem = 'Links';
-                                    id = 1;
-                                  });
-                                },
-                              ),
-                              Text(
-                                'Links',
-                                style: new TextStyle(fontSize: 17.0),
-                              ),
-                              Radio(
-                                value: 2,
-                                groupValue: id,
-                                activeColor: Colors.green,
-                                onChanged: (val) {
-                                  setState(() {
-                                    radioButtonItem = 'Rechts';
-                                    id = 2;
-                                  });
-                                },
-                              ),
-                              Text(
-                                'Rechts',
-                                style: new TextStyle(
-                                  fontSize: 17.0,
+              Column(
+                children: <Widget>[
+                  new Container(
+                    color: Color(0xffFFFFFF),
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: 25.0),
+                      child: new Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        children: <Widget>[
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'Studien-ID',
+                                      style: TextStyle(
+                                          fontSize: 16.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
                                 ),
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 25.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Column(
+                              ],
+                            ),
+                          ),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 2.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  new Flexible(
+                                    child: new TextFormField(
+                                        enabled: true,
+                                        autofocus: false,
+                                        controller: studienIDController),
+                                  ),
+                                ],
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 25.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      new Text(
+                                        'Trageposition',
+                                        style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 2.0),
+                              child: Row(
                                 mainAxisAlignment: MainAxisAlignment.start,
                                 mainAxisSize: MainAxisSize.min,
                                 children: <Widget>[
-                                  new Text(
-                                    'Alter',
-                                    style: TextStyle(
-                                        fontSize: 16.0,
-                                        fontWeight: FontWeight.bold),
+                                  Radio(
+                                    value: 1,
+                                    activeColor: Colors.green,
+                                    groupValue: id,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        radioButtonItem = 'Links';
+                                        id = 1;
+                                      });
+                                    },
+                                  ),
+                                  Text(
+                                    'Links',
+                                    style: new TextStyle(fontSize: 17.0),
+                                  ),
+                                  Radio(
+                                    value: 2,
+                                    groupValue: id,
+                                    activeColor: Colors.green,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        radioButtonItem = 'Rechts';
+                                        id = 2;
+                                      });
+                                    },
+                                  ),
+                                  Text(
+                                    'Rechts',
+                                    style: new TextStyle(
+                                      fontSize: 17.0,
+                                    ),
                                   ),
                                 ],
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 2.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Flexible(
-                                child:
-                                    new Text('${calculateAge(selectedDate)}'),
-                              ),
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 25.0),
-                          child: new Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              new Column(
-                                mainAxisAlignment: MainAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 25.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
                                 children: <Widget>[
-                                  new Text(
-                                    'Geburtsdatum',
-                                    style: TextStyle(
-                                        fontSize: 18.0,
-                                        fontWeight: FontWeight.bold),
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      new Text(
+                                        'Alter',
+                                        style: TextStyle(
+                                            fontSize: 16.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
                                   ),
                                 ],
-                              ),
-                              new Column(
-                                mainAxisAlignment: MainAxisAlignment.end,
-                                mainAxisSize: MainAxisSize.min,
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 2.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
                                 children: <Widget>[
-                                  _status ? _getEditIcon() : new Container(),
+                                  new Flexible(
+                                    child: new Text(
+                                        '${calculateAge(selectedDate)}'),
+                                  ),
                                 ],
-                              )
-                            ],
-                          )),
-                      Padding(
-                          padding: EdgeInsets.only(
-                              left: 25.0, right: 25.0, top: 2.0),
-                          child: new Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: <Widget>[
-                              RawMaterialButton(
-                                onPressed: () => _selectDate(context),
-                                child: Text(
-                                  "${convertDate(selectedDate)}",
-                                ),
-                              ),
-                            ],
-                          )),
-                      _getActionButtons(),
-                    ],
-                  ),
-                ),
-              )
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 25.0),
+                              child: new Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      new Text(
+                                        'Geburtsdatum',
+                                        style: TextStyle(
+                                            fontSize: 18.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      _status
+                                          ? _getEditIcon()
+                                          : new Container(),
+                                    ],
+                                  )
+                                ],
+                              )),
+                          Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 2.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  RawMaterialButton(
+                                    onPressed: () => _selectDate(context),
+                                    child: Text(
+                                      "${convertDate(selectedDate)}",
+                                    ),
+                                  ),
+                                ],
+                              )),
+                          _getActionButtons(),
+                        ],
+                      ),
+                    ),
+                  )
+                ],
+              ),
             ],
           ),
-        ],
-      ),
-    ));
+        ));
   }
 
   @override
@@ -357,26 +382,49 @@ class MapScreenState extends State<ProfilePage>
                 textColor: Colors.white,
                 color: Colors.green,
                 onPressed: () async {
-                  Future<String> result = _saveUserOnServer(
-                      ageToSave,
-                      selectedDate,
-                      studienIDController.text,
-                      'bangle.js',
-                      radioButtonItem);
-                  result.then((value) {
-                    if (value == "Studienteilnehmer bereits vorhanden") {
-                      showAlertDialogAlreadyExists(context,
-                          value != null ? value : 'Verbinde zu Server');
-                    } else {
-                      _saveLocalUser(
-                          ageToSave,
-                          selectedDate,
-                          studienIDController.text,
-                          'bangle.js',
-                          radioButtonItem);
-                      showAlertDialogConfirmation(context);
-                    }
-                  });
+                  if (createUser) {
+                    Future<String> result = _saveUserOnServer(
+                        ageToSave,
+                        selectedDate,
+                        studienIDController.text,
+                        'bangle.js',
+                        radioButtonItem);
+                    result.then((value) {
+                      if (value == "Studienteilnehmer bereits vorhanden") {
+                        showAlertDialogAlreadyExists(context,
+                            value != null ? value : 'Verbinde zu Server');
+                      } else {
+                        _saveLocalUser(
+                            ageToSave,
+                            selectedDate,
+                            studienIDController.text,
+                            'bangle.js',
+                            radioButtonItem);
+                        showAlertDialogConfirmation(context);
+                      }
+                    });
+                  } else {
+                    Future<String> result = _patchUserOnServer(
+                        ageToSave,
+                        selectedDate,
+                        studienIDController.text,
+                        'bangle.js',
+                        radioButtonItem);
+                    result.then((value) {
+                      if (value == "Studienteilnehmer bereits vorhanden") {
+                        showAlertDialogAlreadyExists(context,
+                            value != null ? value : 'Verbinde zu Server');
+                      } else {
+                        _saveLocalUser(
+                            ageToSave,
+                            selectedDate,
+                            studienIDController.text,
+                            'bangle.js',
+                            radioButtonItem);
+                        showAlertDialogConfirmation(context);
+                      }
+                    });
+                  }
                 },
                 shape: new RoundedRectangleBorder(
                     borderRadius: new BorderRadius.circular(20.0)),
@@ -495,11 +543,6 @@ class MapScreenState extends State<ProfilePage>
                                 await getOneUserAndStoreLocal(
                                     studienIDController.text);
                                 showAlertDialogConfirmation(context);
-                                // Navigator.push(
-                                //   context,
-                                //   MaterialPageRoute(
-                                //       builder: (context) => LandingScreen()),
-                                // );
                               }),
                         ),
                       ),
@@ -533,6 +576,17 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
   });
 }
 
+Future<String> _patchUserOnServer(int ageToSave, DateTime birthday,
+    String studienID, String bangleID, String worn_at) {
+  String date = convertDate(birthday);
+
+  PostgresConnector postgresconnector = new PostgresConnector();
+  var result = postgresconnector.patchParticipant(
+      studienID, ageToSave, date, bangleID, worn_at);
+  return result;
+}
+
+
 Future<String> _saveUserOnServer(int ageToSave, DateTime birthday,
     String studienID, String bangleID, String worn_at) {
   String date = convertDate(birthday);
@@ -561,5 +615,3 @@ Future<String> _saveLocalUser(int ageToSave, DateTime birthday,
 
   return null;
 }
-
-//Update UserOnDB and Local and Back Button for Hidden Profile Page
