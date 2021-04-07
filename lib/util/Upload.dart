@@ -73,7 +73,6 @@ Future<void> uploadFiles() async {
             String tempPath = tempDir.path;
             tempPath = tempPath + "/" + serverFileName;
             await rootBundle.load(localFilePath).then((value) {
-              // Uint8List bytes = value.buffer.asUint8List();
               writeToFile(value, tempPath);
             });
             try {

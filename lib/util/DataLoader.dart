@@ -17,8 +17,13 @@ class mySharedPreferences {
   Future<bool> mySharedPreferencesFirstStart (Participant p) async {
     try {
       return await SharedPreferences.getInstance().then((value) {
-        steps = 7000;
-        active_minutes = 30;
+          steps = value.getInt("steps");
+          active_minutes = value.getInt("active_minutes");
+        if (steps == null) {
+          steps = 7000;
+          active_minutes = 30;
+        }
+
         List<String> temp = p.toList();
         value.setStringList("participant", temp);
         value.setInt('steps', steps);

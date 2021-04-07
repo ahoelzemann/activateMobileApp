@@ -10,8 +10,9 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:trac2move/util/ConnectBLE.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
+import 'package:system_shortcuts/system_shortcuts.dart';
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -24,11 +25,6 @@ class _LandingScreenState extends State<LandingScreen> {
     super.initState();
   }
 
-  // child: Image.asset('assets/images/lp_background.png',
-  //     fit: BoxFit.fill,
-  //     height: MediaQuery.of(context).size.height * 0.3,
-  //     width: size.width),
-  // flex: 2)
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -368,15 +364,48 @@ class _LandingScreenState extends State<LandingScreen> {
       ),
     );
   }
-  void _startRecording() async{
-    print('startRecording');
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString("recordStartedAt", DateTime.now().toString());
-    prefs.setBool("isRecording", true);
 
+  void _startRecording() async {
+    // print('startRecording');
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // bool ble_activated = await SystemShortcuts.checkBluetooth;
+    // if (!ble_activated) {
+    //   await SystemShortcuts.bluetooth();
+    // }
+    BLE_Client bleClient = new BLE_Client();
+    // await bleClient.checkBLEstate();
+    // await bleClient.start_ble_scan();
+    // await bleClient.ble_connect();
+    // await bleClient.bleStartRecord(12.5, 8, 25);
+    // prefs.setString("recordStartedAt", DateTime.now().toString());
+    // prefs.setBool("isRecording", true);
+
+    try {
+      // await bleClient.checkBLEstate().then((value) async {
+      await bleClient.initiateBLEClient().then((value) async {
+        await bleClient.start_ble_scan().then((value) async {
+          await bleClient.ble_connect().then((value) async {
+            await bleClient.bleStartRecord(100, 8, 25);
+            // prefs.setString("recordStartedAt", DateTime.now().toString());
+            // prefs.setBool("isRecording", true);
+            await bleClient.closeBLE();
+            Navigator.of(context).pop();
+            Navigator.of(context).pop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => LandingScreen()),
+            );
+          });
+        });
+      });
+
+      // print("success");
+    } catch (e) {
+      print("recording could not start");
+    }
   }
 
-  void _stopAndUpload() async{
+  void _stopAndUpload() async {
     print('stop recording');
     print('uploading data...');
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -402,10 +431,6 @@ class _LandingScreenState extends State<LandingScreen> {
           textColor: Colors.white,
           color: color,
           onPressed: () async {
-            Navigator.pop(context);
-            Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LandingScreen()));
             fun();
           },
         ));
@@ -437,9 +462,8 @@ Future<int> isRecording() async {
     isRecording = false;
   }
 
-  bool timeToUpload = now.isAfter(recordStartedAt.add(Duration(hours: 1)))
-      ? true
-      : false;
+  bool timeToUpload =
+      now.isAfter(recordStartedAt.add(Duration(hours: 1))) ? true : false;
 
   bool timeToRecord = now.isBefore(
           DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))

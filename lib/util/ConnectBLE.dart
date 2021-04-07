@@ -15,8 +15,8 @@ import 'dart:convert';
 //FlutterBlue flutterBlue;
 //BluetoothDevice bledevice;
 String appDocPath;
-var connector = Sqlite_connector();
-var connection = connector.initialize_connection();
+// var connector = Sqlite_connector();
+// var connection = connector.initialize_connection();
 
 class BangleStorage {
   Future<String> get _localPath async {
@@ -100,11 +100,7 @@ class BLE_Client {
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
   BLE_Client() {
-    _characSubscription?.cancel();
-    _characSubscription = null;
 
-    _activateBleManager = BleManager();
-    _activateBleManager.createClient();
     _devicesList = new List<ScanResult>();
     _myHexFiles = [];
 
@@ -140,7 +136,17 @@ class BLE_Client {
     _activateBleManager?.destroyClient();
     print("BLE Closed   //////////////");
   }
+  Future<dynamic> initiateBLEClient() async {
+    _characSubscription?.cancel();
+    _characSubscription = null;
+    // _activateBleManager?.destroyClient();
+    _activateBleManager = BleManager();
+    _activateBleManager.setLogLevel(LogLevel.verbose);
+    await _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
 
+
+    return true;
+  }
   Future<dynamic> checkBLEstate() async {
     Completer completer = new Completer();
 
@@ -168,20 +174,14 @@ class BLE_Client {
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        .startPeripheralScan(
-
-      // uuids: [//service
-      //   "6e400001-b5a3-f393-e0a9-e50e24dcca9eb",
-      // ],
-
-    )
+        .startPeripheralScan()
         .listen((ScanResult scanResult) {
       //Scan one peripheral and stop scanning
 
       if ((scanResult.advertisementData.localName != null)) {
         String devicename = scanResult.advertisementData.localName.toString();
 
-        if (devicename == 'Bangle.js e80c') {
+        if (devicename == 'Bangle.js ba11') {
           if (_currentDeviceConnected == false) {
             _mydevice = scanResult.peripheral;
             _activateBleManager.stopPeripheralScan();
@@ -234,30 +234,30 @@ class BLE_Client {
     return completer.future;
   }
 
-  void ble_parse_and_send() async {
-    print(" Parse Data /////////////////////////////////////");
-    //Start mqqt task
-    if (_result.isEmpty == false) {
-      for (int i = 0; i < (_idxFiles - 1); i++) {
-        print(i.toString() + " ////////////////////");
-        print(_noFiles[i].toString() + " ////////////////////");
-        print(_noFiles[i + 1].toString() + " ////////////////////");
-        _hexifiedData = hex
-            .encode(_result.sublist(_noFiles[i], _noFiles[i + 1]))
-            .toString();
-        _myHexFiles.add(_hexifiedData);
-      }
-
-      if (_myHexFiles.isEmpty == false) {
-        _mqtt_data =
-        await connector.CurrentParticipant(connection).then((value) async {
-          return DataLoader.loadFilesReturnAsJson(_myHexFiles, value.studienID);
-        });
-        client.mqtt_connect_and_send(_mqtt_data);
-      }
-    }
-    //End mqtt task
-  }
+  // void ble_parse_and_send() async {
+  //   print(" Parse Data /////////////////////////////////////");
+  //   //Start mqqt task
+  //   if (_result.isEmpty == false) {
+  //     for (int i = 0; i < (_idxFiles - 1); i++) {
+  //       print(i.toString() + " ////////////////////");
+  //       print(_noFiles[i].toString() + " ////////////////////");
+  //       print(_noFiles[i + 1].toString() + " ////////////////////");
+  //       _hexifiedData = hex
+  //           .encode(_result.sublist(_noFiles[i], _noFiles[i + 1]))
+  //           .toString();
+  //       _myHexFiles.add(_hexifiedData);
+  //     }
+  //
+  //     if (_myHexFiles.isEmpty == false) {
+  //       _mqtt_data =
+  //       await connector.CurrentParticipant(connection).then((value) async {
+  //         return DataLoader.loadFilesReturnAsJson(_myHexFiles, value.studienID);
+  //       });
+  //       client.mqtt_connect_and_send(_mqtt_data);
+  //     }
+  //   }
+  //   //End mqtt task
+  // }
 
   Future<dynamic> bleStopRecord() async {
     Completer completer = new Completer();
@@ -300,7 +300,8 @@ class BLE_Client {
             _resultLen = _result.length;
             print("Sending  start command...");
 
-            String s = "\u0010recStrt(" + Hz.toString() + "," + GS.toString() + "," + hour.toString() + "," + ");\n";
+            String s = "\u0010recStrt(" + Hz.toString() + "," + GS.toString() + "," + hour.toString() + ");\n";
+            // String s = "\u0010recStrt(100, 8, 25);\n";
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), false); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
@@ -535,71 +536,71 @@ class BLE_Client {
     return completer.future;
   }
 }
-
-class ConnectBLE extends StatefulWidget {
-  final BangleStorage storage;
-
-  ConnectBLE({Key key, @required this.storage}) : super(key: key);
-
-  //ConnectBLE({Key key,}) : super(key: key);
-
-  @override
-  _ConnectBLEState createState() => _ConnectBLEState();
-}
-
-class _ConnectBLEState extends State<ConnectBLE> {
-  String bleStatus;
-  BLE_Client bleClient = new BLE_Client();
-
-  @override
-  void initState() {
-    super.initState();
-    bleStatus = "Satus: Starting scan.";
-
-    bleCaller();
-  }
-
-  void bleCaller() async {
-    BLE_Client bleClient = new BLE_Client();
-
-    await bleClient.checkBLEstate();
-    await bleClient.start_ble_scan();
-    await bleClient.ble_connect();
-    //await bleClient.bleStartRecord(100,8,25);
-    await bleClient.bleStopRecord();
-    await bleClient.bleStartUpload();
-    bleClient.ble_parse_and_send();
-    bleClient.closeBLE();
-    print("Done ///////");
-  }
-
-  @override
-  void dispose() {
-    bleClient.closeBLE();
-    super.dispose();
-  }
-
-  void changedata(String newdata) {
-    setState(() {
-      bleStatus = newdata;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: Text('Scanner'),
-    ),
-    body: Container(
-        height: 60,
-        //width: 500,
-        padding: const EdgeInsets.symmetric(
-          vertical: 10.0,
-          horizontal: 0.0,
-        ),
-        child: Text("$bleStatus",
-            style:
-            TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-            textAlign: TextAlign.start)),
-  );
-}
+//
+// class ConnectBLE extends StatefulWidget {
+//   final BangleStorage storage;
+//
+//   ConnectBLE({Key key, @required this.storage}) : super(key: key);
+//
+//   //ConnectBLE({Key key,}) : super(key: key);
+//
+//   @override
+//   _ConnectBLEState createState() => _ConnectBLEState();
+// }
+//
+// class _ConnectBLEState extends State<ConnectBLE> {
+//   String bleStatus;
+//   BLE_Client bleClient = new BLE_Client();
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     bleStatus = "Satus: Starting scan.";
+//
+//     bleCaller();
+//   }
+//
+//   void bleCaller() async {
+//     BLE_Client bleClient = new BLE_Client();
+//
+//     await bleClient.checkBLEstate();
+//     await bleClient.start_ble_scan();
+//     await bleClient.ble_connect();
+//     //await bleClient.bleStartRecord(100,8,25);
+//     await bleClient.bleStopRecord();
+//     await bleClient.bleStartUpload();
+//     // bleClient.ble_parse_and_send();
+//     bleClient.closeBLE();
+//     print("Done ///////");
+//   }
+//
+//   @override
+//   void dispose() {
+//     bleClient.closeBLE();
+//     super.dispose();
+//   }
+//
+//   void changedata(String newdata) {
+//     setState(() {
+//       bleStatus = newdata;
+//     });
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) => Scaffold(
+//     appBar: AppBar(
+//       title: Text('Scanner'),
+//     ),
+//     body: Container(
+//         height: 60,
+//         //width: 500,
+//         padding: const EdgeInsets.symmetric(
+//           vertical: 10.0,
+//           horizontal: 0.0,
+//         ),
+//         child: Text("$bleStatus",
+//             style:
+//             TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
+//             textAlign: TextAlign.start)),
+//   );
+// }

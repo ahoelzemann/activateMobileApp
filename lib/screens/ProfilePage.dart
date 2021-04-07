@@ -104,14 +104,6 @@ class MapScreenState extends State<ProfilePage>
   }
 
   Future<int> initValues(createUser) async {
-    // if (createUser && counter == 0) {
-    //   // initialValues['studienIDController'] = new TextEditingController(text: "A-b");
-    //   // initialValues['selectedDate'] = DateTime(2000, 1);
-    //   // initValues['ageToSave'] = 0;
-    //   // initialValues['radioButtonItem'] = 'Links';
-    //   counter++;
-    //   return counter;
-    // }
     if (!createUser) {
       SharedPreferences msp = await SharedPreferences.getInstance();
       List participant = msp.getStringList('participant');
@@ -144,12 +136,7 @@ class MapScreenState extends State<ProfilePage>
   @override
   void initState() {
     // IF NOT CREATEUSER
-    initValues(createUser).then((value) {
-      print('test' + value.toString());
-      // studienIDController = initialValues['studienIDController'];
-      // selectedDate = initialValues['selectedDate'];
-      // radioButtonItem = initialValues['radioButtonItem'];
-    });
+    initValues(createUser);
     ageToSave = calculateAge(selectedDate);
     super.initState();
   }
@@ -461,6 +448,8 @@ class MapScreenState extends State<ProfilePage>
     Widget okButton = FlatButton(
       child: Text("Weiter"),
       onPressed: () {
+        Navigator.of(context).pop();
+        Navigator.of(context).pop();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => LandingScreen()),
