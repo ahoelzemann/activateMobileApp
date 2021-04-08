@@ -69,7 +69,7 @@ flutter:
   #   - images/a_dot_ham.jpeg
   assets:
     - assets/images/
-    - assets/activity_data/
+#    - assets/activity_data/
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/assets-and-images/#resolution-aware.
 

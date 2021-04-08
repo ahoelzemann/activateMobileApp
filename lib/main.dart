@@ -4,8 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cron/cron.dart';
-import 'package:ssh/ssh.dart';
+// import 'package:cron/cron.dart';
+// import 'package:ssh/ssh.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 
@@ -28,7 +28,10 @@ void main() async{
   // cron.schedule(Schedule.parse('*/2 20 * * *'), () async {
   //   print("cronjob");
   // });
-  runApp(Trac2Move());
+  runApp(RootRestorationScope( // Register a restoration scope for the entire app!
+      restorationId: 'root',
+      child: Trac2Move())
+  );
 
 }
 

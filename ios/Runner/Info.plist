@@ -2,12 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
-	</array>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -18,8 +12,6 @@
 	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
-	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>CFBundleName</key>
 	<string>Trac2Move</string>
 	<key>CFBundlePackageType</key>
@@ -37,11 +29,18 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+		<string>_trac2move._tcp</string>
+	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
-		<string>fetch</string>
-		<string>processing</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
@@ -50,8 +49,6 @@
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
-		<string>UIInterfaceOrientationLandscapeLeft</string>
-		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>

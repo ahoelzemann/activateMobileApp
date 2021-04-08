@@ -294,31 +294,31 @@ class _LandingScreenState extends State<LandingScreen> {
                 color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
             ),
-            ListTile(
-              title: Text(
-                  DateTime.now().isAfter(DateTime(DateTime.now().year,
-                              DateTime.now().month, DateTime.now().day)
-                          .add(Duration(hours: 20)))
-                      ? 'Messung hochladen'
-                      : 'Messung ist noch nicht beendet',
-                  style: TextStyle(
-                    fontFamily: "PlayfairDisplay",
-                    fontWeight: FontWeight.bold,
-                    color: DateTime.now().isAfter(DateTime(DateTime.now().year,
-                                DateTime.now().month, DateTime.now().day)
-                            .add(Duration(hours: 20)))
-                        ? Colors.black
-                        : Colors.blueGrey,
-                  )),
-              enabled: DateTime.now().isAfter(DateTime(DateTime.now().year,
-                          DateTime.now().month, DateTime.now().day)
-                      .add(Duration(hours: 20)))
-                  ? true
-                  : false,
-              onTap: () {
-                upload.uploadFiles();
-              },
-            ),
+            // ListTile(
+            //   title: Text(
+            //       DateTime.now().isAfter(DateTime(DateTime.now().year,
+            //                   DateTime.now().month, DateTime.now().day)
+            //               .add(Duration(hours: 20)))
+            //           ? 'Messung hochladen'
+            //           : 'Messung ist noch nicht beendet',
+            //       style: TextStyle(
+            //         fontFamily: "PlayfairDisplay",
+            //         fontWeight: FontWeight.bold,
+            //         color: DateTime.now().isAfter(DateTime(DateTime.now().year,
+            //                     DateTime.now().month, DateTime.now().day)
+            //                 .add(Duration(hours: 20)))
+            //             ? Colors.black
+            //             : Colors.blueGrey,
+            //       )),
+            //   enabled: DateTime.now().isAfter(DateTime(DateTime.now().year,
+            //               DateTime.now().month, DateTime.now().day)
+            //           .add(Duration(hours: 20)))
+            //       ? true
+            //       : false,
+            //   onTap: () {
+            //     upload.uploadFiles();
+            //   },
+            // ),
             ListTile(
               title: Text('Kontakt',
                   style: TextStyle(
@@ -367,11 +367,11 @@ class _LandingScreenState extends State<LandingScreen> {
 
   void _startRecording() async {
     // print('startRecording');
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool ble_activated = await SystemShortcuts.checkBluetooth;
-    // if (!ble_activated) {
-    //   await SystemShortcuts.bluetooth();
-    // }
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool ble_activated = await SystemShortcuts.checkBluetooth;
+    if (!ble_activated) {
+      await SystemShortcuts.bluetooth();
+    }
     BLE_Client bleClient = new BLE_Client();
     // await bleClient.checkBLEstate();
     // await bleClient.start_ble_scan();
@@ -385,11 +385,10 @@ class _LandingScreenState extends State<LandingScreen> {
       await bleClient.initiateBLEClient().then((value) async {
         await bleClient.start_ble_scan().then((value) async {
           await bleClient.ble_connect().then((value) async {
-            await bleClient.bleStartRecord(100, 8, 25);
-            // prefs.setString("recordStartedAt", DateTime.now().toString());
-            // prefs.setBool("isRecording", true);
+            await bleClient.bleStartRecord(25, 8, 25);
+            prefs.setString("recordStartedAt", DateTime.now().toString());
+            prefs.setBool("isRecording", true);
             await bleClient.closeBLE();
-            Navigator.of(context).pop();
             Navigator.of(context).pop();
             Navigator.push(
               context,
@@ -407,10 +406,26 @@ class _LandingScreenState extends State<LandingScreen> {
 
   void _stopAndUpload() async {
     print('stop recording');
-    print('uploading data...');
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString("recordStopedAt", DateTime.now().toString());
-    prefs.setBool("isRecording", false);
+    BLE_Client bleClient = new BLE_Client();
+    await bleClient.initiateBLEClient().then((value) async {
+      await bleClient.start_ble_scan().then((value) async {
+        await bleClient.ble_connect().then((value) async {
+          await bleClient.bleStopRecord();
+          prefs.setString("recordStopedAt", DateTime.now().toString());
+          prefs.setBool("isRecording", false);
+          print('uploading data...');
+          await bleClient.closeBLE();
+          Navigator.of(context).pop();
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => LandingScreen()),
+          );
+        });
+      });
+    });
+
+
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size) {
@@ -463,7 +478,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(hours: 1))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
 
   bool timeToRecord = now.isBefore(
           DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))

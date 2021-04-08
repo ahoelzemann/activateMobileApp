@@ -55,64 +55,71 @@ class BangleStorage {
 
 class BLE_Client {
   //BluetoothState state;
-  //BluetoothDeviceState deviceState;
-  int _scanning = 0;
-  String _checkdevice = "mydevice";
+  //BluetoothDeviceState deviceState:
+
+  BLE_Client._privateConstructor();
+
+  static final BLE_Client _instance = BLE_Client._privateConstructor();
   var _scanSubscription;
-  var _deviceConnection;
-  var _disdeviceStateSubscription;
   var _condeviceStateSubscription;
   var _characSubscription;
   var _bleonSubscription;
   var _responseSubscription;
-  bool _scanState = false;
   bool _currentDeviceConnected = false;
-  BleManager _activateBleManager;
   Peripheral _mydevice;
-  List<ScanResult> _devicesList;
-  List<String> _myHexFiles = [];
   List<int> _result = new List(5000000);
   List<int> _noFiles = new List(25);
-  List<int> _trueData = [];
-  String _Current_Filename = " ";
-  String _hexifiedData = " ";
-  String _data = " ";
-  String _mqtt_data = " ";
-  int _idx = 0;
+  int _idx;
   int _idxFiles = 0;
   int _saveData = 0;
   int _dataSize = 0;
   int _resultLen;
-  bool _emitBleState = true;
   int _numofFiles = 0;
   List<Service> services;
   List<Characteristic> decviceCharacteristics;
-  // MQTT_Client client = new MQTT_Client(0, 'BLE_Upload_Test_Client');
-
-  // device Proprietary characteristics of the ISSC service
+  BleManager _activateBleManager;
   static const ISSC_PROPRIETARY_SERVICE_UUID =
       "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-
-  //device char for ISSC characteristics
   static const UUIDSTR_ISSC_TRANS_TX =
       "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; //get data from bangle
   static const UUIDSTR_ISSC_TRANS_RX =
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
-  BLE_Client() {
-
-    _devicesList = new List<ScanResult>();
-    _myHexFiles = [];
-
-    //for fixedlength list
-    _idx = 0;
-    _result = new List(5000000);
-    _noFiles = new List(25);
-    _noFiles[0] = 0;
-    _idxFiles = 1;
-    _saveData = 0;
-    _currentDeviceConnected = false;
+  factory BLE_Client() {
+    return _instance;
   }
+
+  // int _scanning = 0;
+  // String _checkdevice = "mydevice";
+
+  // var _deviceConnection;
+  // var _disdeviceStateSubscription;
+
+  // bool _scanState = false;
+
+
+
+  // List<ScanResult> _devicesList;
+  // List<String> _myHexFiles = [];
+
+  // List<int> _trueData = [];
+  // String _Current_Filename = " ";
+  // String _hexifiedData = " ";
+  // String _data = " ";
+  // String _mqtt_data = " ";
+
+  // bool _emitBleState = true;
+
+
+  // device Proprietary characteristics of the ISSC service
+
+
+  //device char for ISSC characteristics
+
+
+  // BLE_Client() {
+
+  // }
 
   void closeBLE() {
     _characSubscription?.cancel();
@@ -136,34 +143,36 @@ class BLE_Client {
     _activateBleManager?.destroyClient();
     print("BLE Closed   //////////////");
   }
+
   Future<dynamic> initiateBLEClient() async {
     _characSubscription?.cancel();
     _characSubscription = null;
     // _activateBleManager?.destroyClient();
     _activateBleManager = BleManager();
     _activateBleManager.setLogLevel(LogLevel.verbose);
-    await _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
-
+    await _activateBleManager.createClient(
+        restoreStateIdentifier: "BLE Manager");
 
     return true;
   }
+
   Future<dynamic> checkBLEstate() async {
     Completer completer = new Completer();
 
     _bleonSubscription =
         _activateBleManager.observeBluetoothState().listen((btState) {
-          if (btState == BluetoothState.POWERED_ON) {
-            print("Satus:" + btState.toString());
-            //ble_start_record();
-            completer.complete(true);
-          } else if (btState == BluetoothState.POWERED_OFF) {
-            _activateBleManager?.stopPeripheralScan();
-            _currentDeviceConnected = false;
-            completer.complete(false);
-          } else {
-            completer.complete(false);
-          }
-        });
+      if (btState == BluetoothState.POWERED_ON) {
+        print("Satus:" + btState.toString());
+        //ble_start_record();
+        completer.complete(true);
+      } else if (btState == BluetoothState.POWERED_OFF) {
+        _activateBleManager?.stopPeripheralScan();
+        _currentDeviceConnected = false;
+        completer.complete(false);
+      } else {
+        completer.complete(false);
+      }
+    });
 
     return completer.future;
     //  if(scanState == true){return true;}
@@ -205,7 +214,7 @@ class BLE_Client {
       int dummyCheck = 1;
       _condeviceStateSubscription = _mydevice
           .observeConnectionState(
-          emitCurrentValue: true, completeOnDisconnect: true)
+              emitCurrentValue: true, completeOnDisconnect: true)
           .listen((connectionState) async {
         if (connectionState == PeripheralConnectionState.connected) {
           _currentDeviceConnected = true;
@@ -214,7 +223,7 @@ class BLE_Client {
             await _mydevice.discoverAllServicesAndCharacteristics();
             services = await _mydevice.services(); //getting all services
             decviceCharacteristics =
-            await _mydevice.characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
+                await _mydevice.characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
 
             print("Status: Connected to " + _mydevice.name.toString());
             completer.complete(true);
@@ -300,7 +309,13 @@ class BLE_Client {
             _resultLen = _result.length;
             print("Sending  start command...");
 
-            String s = "\u0010recStrt(" + Hz.toString() + "," + GS.toString() + "," + hour.toString() + ");\n";
+            String s = "\u0010recStrt(" +
+                Hz.toString() +
+                "," +
+                GS.toString() +
+                "," +
+                hour.toString() +
+                ");\n";
             // String s = "\u0010recStrt(100, 8, 25);\n";
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), false); //returns void
@@ -387,37 +402,37 @@ class BLE_Client {
 
             _responseSubscription =
                 characteristic.monitor().listen((event) async {
-                  print(String.fromCharCodes(event));
-                  if (event[0] == 61) {
-                    if (event.length == 5) {
-                      String d = event.toString();
-                      String dd =
+              print(String.fromCharCodes(event));
+              if (event[0] == 61) {
+                if (event.length == 5) {
+                  String d = event.toString();
+                  String dd =
                       String.fromCharCodes(event.sublist(1, event.length));
 
-                      print(d);
-                      print(dd.substring(0, 1));
-                      int num = int.parse(dd.substring(0, 1));
-                      _numofFiles = num;
-                      print(num);
+                  print(d);
+                  print(dd.substring(0, 1));
+                  int num = int.parse(dd.substring(0, 1));
+                  _numofFiles = num;
+                  print(num);
 
-                      print("Response done 1///////////////////");
-                      completer.complete(true);
-                    } else if (event.length == 6) {
-                      String d = event.toString();
-                      String dd =
+                  print("Response done 1///////////////////");
+                  completer.complete(true);
+                } else if (event.length == 6) {
+                  String d = event.toString();
+                  String dd =
                       String.fromCharCodes(event.sublist(1, event.length));
 
-                      print(d);
-                      print(dd.substring(0, 2));
-                      int num = int.parse(dd.substring(0, 2));
-                      _numofFiles = num;
-                      print(num);
-                      //print(String.fromCharCodes(event[1]));
-                      print("Response done 2///////////////////");
-                      completer.complete(true);
-                    }
-                  }
-                });
+                  print(d);
+                  print(dd.substring(0, 2));
+                  int num = int.parse(dd.substring(0, 2));
+                  _numofFiles = num;
+                  print(num);
+                  //print(String.fromCharCodes(event[1]));
+                  print("Response done 2///////////////////");
+                  completer.complete(true);
+                }
+              }
+            });
           }
         });
       }
@@ -445,88 +460,84 @@ class BLE_Client {
             _resultLen = _result.length;
             print("Waiting for Data ...");
 
-
             _characSubscription =
                 characteristic.monitor().listen((event) async {
-                  _dataSize = event.length;
+              _dataSize = event.length;
 
-
-                  if (_idx < _resultLen) {
-                    if (_dataSize == 17) {
-                      // 46 is .
-                      // 98 is b
-                      // 105 is i
-                      // 110 is n
-                      if (event[13] == 46 &&
-                          event[14] == 98 &&
-                          event[15] == 105 &&
-                          event[16] == 110) {
-                        //test fourth element for 115 ie s, currently not saving status message
-                        if (event[3] != 115) {
-                          _saveData = 1;
-                        } else {
-                          _saveData = 0;
-                        }
-                      }
-                    } else if ((_dataSize == 15)) {
-                      //check end of a file
-                      if (event[0] == 255 &&
-                          event[1] == 255 &&
-                          event[2] == 255 &&
-                          event[3] == 255 &&
-                          event[4] == 255 &&
-                          event[5] == 0 &&
-                          event[6] == 0 &&
-                          event[7] == 0 &&
-                          event[8] == 0 &&
-                          event[9] == 0 &&
-                          event[10] == 0 &&
-                          event[11] == 255 &&
-                          event[12] == 255 &&
-                          event[13] == fileCount) {
-                        if ((_saveData == 1)) {
-                          _noFiles[_idxFiles] = _idx;
-                          _idxFiles += 1;
-                        }
-
-                        _saveData = 0;
-                        print(fileCount.toString() +
-                            " Done uploading //////////////////");
-                        fileCount += 1;
-
-                        print(fileCount.toString() +
-                            " Start uploading ///////////////");
-                        if (fileCount < _numofFiles) {
-
-                          s = "\u0010sendNext(" + fileCount.toString() + ");\n";
-                          service.writeCharacteristic(
-                              UUIDSTR_ISSC_TRANS_RX,
-                              Uint8List.fromList(s.codeUnits),
-                              true); //returns Characteristic to chain operations more easily
-
-                        } else {
-                          await blestopUpload();
-                          completer.complete(true);
-                        }
-                      }
-                    } else if (((_dataSize == 20)|| (_dataSize == 12) ) &&
-                        (_saveData == 1)) {
-                      //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
-                      // print(event.toString());
-                      for (int i = 0; i < event.length; i++) {
-                        _result[_idx] = event[i];
-                        _idx += 1;
-                      }
+              if (_idx < _resultLen) {
+                if (_dataSize == 17) {
+                  // 46 is .
+                  // 98 is b
+                  // 105 is i
+                  // 110 is n
+                  if (event[13] == 46 &&
+                      event[14] == 98 &&
+                      event[15] == 105 &&
+                      event[16] == 110) {
+                    //test fourth element for 115 ie s, currently not saving status message
+                    if (event[3] != 115) {
+                      _saveData = 1;
+                    } else {
+                      _saveData = 0;
                     }
                   }
-                });
+                } else if ((_dataSize == 15)) {
+                  //check end of a file
+                  if (event[0] == 255 &&
+                      event[1] == 255 &&
+                      event[2] == 255 &&
+                      event[3] == 255 &&
+                      event[4] == 255 &&
+                      event[5] == 0 &&
+                      event[6] == 0 &&
+                      event[7] == 0 &&
+                      event[8] == 0 &&
+                      event[9] == 0 &&
+                      event[10] == 0 &&
+                      event[11] == 255 &&
+                      event[12] == 255 &&
+                      event[13] == fileCount) {
+                    if ((_saveData == 1)) {
+                      _noFiles[_idxFiles] = _idx;
+                      _idxFiles += 1;
+                    }
+
+                    _saveData = 0;
+                    print(fileCount.toString() +
+                        " Done uploading //////////////////");
+                    fileCount += 1;
+
+                    print(fileCount.toString() +
+                        " Start uploading ///////////////");
+                    if (fileCount < _numofFiles) {
+                      s = "\u0010sendNext(" + fileCount.toString() + ");\n";
+                      service.writeCharacteristic(
+                          UUIDSTR_ISSC_TRANS_RX,
+                          Uint8List.fromList(s.codeUnits),
+                          true); //returns Characteristic to chain operations more easily
+
+                    } else {
+                      await blestopUpload();
+                      completer.complete(true);
+                    }
+                  }
+                } else if (((_dataSize == 20) || (_dataSize == 12)) &&
+                    (_saveData == 1)) {
+                  //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
+                  // print(event.toString());
+                  for (int i = 0; i < event.length; i++) {
+                    _result[_idx] = event[i];
+                    _idx += 1;
+                  }
+                }
+              }
+            });
 
             s = "\u0010sendNext(" + fileCount.toString() + ");\n";
             service.writeCharacteristic(
                 UUIDSTR_ISSC_TRANS_RX,
                 Uint8List.fromList(s.codeUnits),
                 true); //returns Characteristic to chain operations more easily
-
 
           }
         });

@@ -38,8 +38,7 @@ class ProfilePage extends StatefulWidget {
   MapScreenState createState() => MapScreenState(createUser: this.createUser);
 }
 
-class MapScreenState extends State<ProfilePage>
-    with SingleTickerProviderStateMixin {
+class MapScreenState extends State<ProfilePage> {
   final bool createUser;
 
   bool _status = true;
@@ -144,7 +143,6 @@ class MapScreenState extends State<ProfilePage>
   @override
   Widget build(BuildContext context) {
     // Default Radio Button Selected Item When App Starts.
-
     return new Scaffold(
         appBar: _getAppBar(),
         body: new Container(
@@ -449,7 +447,7 @@ class MapScreenState extends State<ProfilePage>
       child: Text("Weiter"),
       onPressed: () {
         Navigator.of(context).pop();
-        Navigator.of(context).pop();
+        // Navigator.of(context).pop();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => LandingScreen()),
@@ -574,7 +572,6 @@ Future<String> _patchUserOnServer(int ageToSave, DateTime birthday,
       studienID, ageToSave, date, bangleID, worn_at);
   return result;
 }
-
 
 Future<String> _saveUserOnServer(int ageToSave, DateTime birthday,
     String studienID, String bangleID, String worn_at) {
