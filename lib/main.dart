@@ -18,10 +18,10 @@ void main() async{
   bool firstRun = prefs.getBool('firstRun');
   if (firstRun == null) {
     final storage = new FlutterSecureStorage();
-    await storage.write(key: 'serverAddress', value: base64.encode(utf8.encode("131.173.80.175")));
-    await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
-    await storage.write(key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
-    await storage.write(key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
+    // await storage.write(key: 'serverAddress', value: base64.encode(utf8.encode("131.173.80.175")));
+    // await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
+    // await storage.write(key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
+    // await storage.write(key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
     prefs.setBool('firstRun', true);
   }
   // final cron = Cron();

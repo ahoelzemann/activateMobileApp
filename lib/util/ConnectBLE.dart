@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:ffi';
 import 'dart:io';
 import 'dart:convert';
@@ -11,47 +10,48 @@ import 'dart:ui';
 import 'package:convert/convert.dart';
 import 'package:trac2move/util/DataLoader.dart' as DataLoader;
 import 'dart:convert';
-
-//FlutterBlue flutterBlue;
-//BluetoothDevice bledevice;
-String appDocPath;
-// var connector = Sqlite_connector();
-// var connection = connector.initialize_connection();
-
-class BangleStorage {
-  Future<String> get _localPath async {
-    final directory = await getApplicationDocumentsDirectory();
-    appDocPath = directory.path;
-
-    return directory.path;
-  }
-
-  Future<File> get _localFile async {
-    final path = await _localPath;
-    return File('$path/BangleData.txt');
-  }
-
-  Future<String> readBangle() async {
-    try {
-      final file = await _localFile;
-
-      // Read the file
-      String contents = await file.readAsString();
-
-      return contents;
-    } catch (e) {
-      // If encountering an error, return 0
-      return e.toString();
-    }
-  }
-
-  Future<File> writeBangle(String data) async {
-    final file = await _localFile;
-
-    // Write the file
-    return file.writeAsString('$data');
-  }
-}
+import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
+// //FlutterBlue flutterBlue;
+// //BluetoothDevice bledevice;
+// String appDocPath;
+// // var connector = Sqlite_connector();
+// // var connection = connector.initialize_connection();
+//
+// class BangleStorage {
+//   Future<String> get _localPath async {
+//     final directory = await getApplicationDocumentsDirectory();
+//     appDocPath = directory.path;
+//
+//     return directory.path;
+//   }
+//
+//   Future<File> get _localFile async {
+//     final path = await _localPath;
+//     return File('$path/BangleData.txt');
+//   }
+//
+//   Future<String> readBangle() async {
+//     try {
+//       final file = await _localFile;
+//
+//       // Read the file
+//       String contents = await file.readAsString();
+//
+//       return contents;
+//     } catch (e) {
+//       // If encountering an error, return 0
+//       return e.toString();
+//     }
+//   }
+//
+//   Future<File> writeBangle(String data) async {
+//     final file = await _localFile;
+//
+//     // Write the file
+//     return file.writeAsString('$data');
+//   }
+// }
 
 class BLE_Client {
   //BluetoothState state;
@@ -77,6 +77,8 @@ class BLE_Client {
   List<Service> services;
   List<Characteristic> decviceCharacteristics;
   BleManager _activateBleManager;
+  String _nearestDeviceName = "";
+  String _nearestDeviceMac  = "";
   static const ISSC_PROPRIETARY_SERVICE_UUID =
       "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
   static const UUIDSTR_ISSC_TRANS_TX =
@@ -146,15 +148,16 @@ class BLE_Client {
     _scanSubscription?.cancel();
     // _scanSubscription = null;
 
-    // if (_currentDeviceConnected == true) {
-    //   _mydevice?.disconnectOrCancelConnection();
-    //   _mydevice = null;
-    //   _currentDeviceConnected = false;
-    // }
+
     try {
-      bool connected = await _mydevice.isConnected();
-      if (connected) {
-        await _mydevice.disconnectOrCancelConnection();
+      // bool connected = await _mydevice.isConnected();
+      // if (connected) {
+      //   await _mydevice?.disconnectOrCancelConnection();
+      // }
+      if (_currentDeviceConnected == true) {
+        _mydevice.disconnectOrCancelConnection();
+        _mydevice = null;
+        _currentDeviceConnected = false;
       }
       await _activateBleManager.destroyClient();
     } catch (e) {
@@ -197,6 +200,49 @@ class BLE_Client {
 
   }
 
+  String getnearestDeviceMac() {
+    return _nearestDeviceMac;
+  }
+  String nearestDeviceName() {
+    return _nearestDeviceName;
+  }
+  Future<dynamic> find_nearest_device() async {
+    Completer completer = new Completer();
+
+    _scanSubscription = _activateBleManager
+        .startPeripheralScan(scanMode: ScanMode.balanced
+
+    )
+        .listen((ScanResult scanResult) async{
+      //Scan one peripheral and stop scanning
+
+
+      String devicename = scanResult.advertisementData.localName.toString();
+
+      String macNum = scanResult.peripheral.identifier.toString();
+      int RSSI = scanResult.rssi;
+
+      print(devicename + " " + macNum + " mac number//////////  " + RSSI.toString() );
+
+      if(devicename != null){
+        if(devicename.contains('Bangle.js') && (RSSI >=-60)){
+          _activateBleManager.stopPeripheralScan();
+          _scanSubscription?.cancel();
+          print("Our Device is found: " + devicename + " " + macNum + " " +RSSI.toString() );
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setString("macnum", macNum);
+          prefs.setString("Devicename", devicename);
+          // _nearestDeviceMac = macNum;
+          // _nearestDeviceName = devicename;
+          completer.complete(true);
+        }
+      }
+
+    });
+
+    return completer.future;
+
+  }
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
     Completer completer = new Completer();
@@ -216,19 +262,23 @@ class BLE_Client {
         print("DeviceState: " + connected.toString());
       }
 
-      if ((scanResult.advertisementData.localName != null)) {
         String devicename = scanResult.advertisementData.localName.toString();
 
-        if (devicename == 'Bangle.js ba11') {
-          if (_currentDeviceConnected == false) {
-            _mydevice = scanResult.peripheral;
+        String macNum = scanResult.peripheral.identifier.toString();
+        int RSSI = scanResult.rssi;
+
+        print("start_ble_scan " + devicename + " " + macNum + " mac number//////////  " + RSSI.toString() );
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String mac = prefs.getString("macnum");
+        String name = prefs.getString("Devicename");
+        if ((devicename == name) ||(macNum == mac) ) {
             _activateBleManager.stopPeripheralScan();
+            _mydevice = scanResult.peripheral;
             _scanSubscription?.cancel();
-            // _scanSubscription = null;
+            print("start_ble_scan Our Device is found " + macNum);
             completer.complete(true);
-          }
         }
-      }
+
     });
 
     return completer.future;
@@ -275,6 +325,8 @@ class BLE_Client {
           } else if (connectionState == PeripheralConnectionState.disconnected) {
             print("Bluetooth Disconnected, ///////////////////////////////////");
             _currentDeviceConnected = false;
+            _mydevice.disconnectOrCancelConnection();
+            _mydevice = null;
             closeBLE();
             if (dummyCheck == 1) {
               dummyCheck = 0;

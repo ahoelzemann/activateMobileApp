@@ -383,20 +383,22 @@ class _LandingScreenState extends State<LandingScreen> {
     try {
       // await bleClient.checkBLEstate().then((value) async {
       await bleClient.initiateBLEClient().then((value) async {
-        await bleClient.start_ble_scan().then((value) async {
-          await bleClient.ble_connect().then((value) async {
-            await bleClient.bleStartRecord(12.5, 8, 25);
-            prefs.setString("recordStartedAt", DateTime.now().toString());
-            prefs.setBool("isRecording", true);
-            // bleClient.closeBLE();
-            // bleClient = null;
-            Navigator.of(context).pop();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => LandingScreen()),
-            );
+
+          await bleClient.start_ble_scan().then((value) async {
+            await bleClient.ble_connect().then((value) async {
+              await bleClient.bleStartRecord(12.5, 8, 25);
+              prefs.setString("recordStartedAt", DateTime.now().toString());
+              prefs.setBool("isRecording", true);
+              // bleClient.closeBLE();
+              // bleClient = null;
+              Navigator.of(context).pop();
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LandingScreen()),
+              );
+            });
           });
-        });
+
       });
 
       // print("success");
@@ -410,24 +412,23 @@ class _LandingScreenState extends State<LandingScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     BLE_Client bleClient = new BLE_Client();
     await bleClient.initiateBLEClient().then((value) async {
-      await bleClient.start_ble_scan().then((value) async {
-        await bleClient.ble_connect().then((value) async {
-          await bleClient.bleStopRecord();
-          prefs.setString("recordStopedAt", DateTime.now().toString());
-          prefs.setBool("isRecording", false);
-          print('uploading data...');
-          bleClient.closeBLE();
-          // bleClient = null;
-          Navigator.of(context).pop();
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => LandingScreen()),
-          );
+
+        await bleClient.start_ble_scan().then((value) async {
+          await bleClient.ble_connect().then((value) async {
+            await bleClient.bleStopRecord();
+            prefs.setString("recordStopedAt", DateTime.now().toString());
+            prefs.setBool("isRecording", false);
+            print('uploading data...');
+            bleClient.closeBLE();
+            // bleClient = null;
+            Navigator.of(context).pop();
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => LandingScreen()),
+            );
+          });
         });
-      });
     });
-
-
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size) {
@@ -480,7 +481,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(seconds: 2))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(seconds: 5))) ? true : false;
 
   bool timeToRecord = now.isBefore(
           DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))

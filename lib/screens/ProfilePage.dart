@@ -6,7 +6,7 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:trac2move/util/ConnectBLE.dart';
 String convertDate(DateTime date) {
   final formattedStr = formatDate(date, [dd, '.', mm, '.', yyyy]);
   return formattedStr;
@@ -367,6 +367,10 @@ class MapScreenState extends State<ProfilePage> {
                 textColor: Colors.white,
                 color: Colors.green,
                 onPressed: () async {
+                  BLE_Client bleClient = new BLE_Client();
+                  await bleClient.initiateBLEClient();
+                  await bleClient.find_nearest_device();
+                  bleClient.closeBLE();
                   if (createUser) {
                     Future<String> result = _saveUserOnServer(
                         ageToSave,

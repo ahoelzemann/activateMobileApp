@@ -28,10 +28,10 @@ Future<void> uploadFiles() async {
     5.) Save files from Bangle to temporary folder on device needs to be a method --> fail safe with while loop
     */
   final storage = new FlutterSecureStorage();
-  String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
-  int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
-  String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-  String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+  // String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
+  // int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
+  // String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+  // String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
   bool ble_status = await SystemShortcuts.checkBluetooth;
 
   if (!ble_status) {
@@ -40,10 +40,10 @@ Future<void> uploadFiles() async {
     print(ble_status.toString());
   }
   var client = new SSHClient(
-    host: host,
-    port: port,
-    username: login,
-    passwordOrKey: pw,
+    host:" host",
+    port: 80,
+    username: "login",
+    passwordOrKey: "pw",
   );
   try {
     String result = await client.connect();
