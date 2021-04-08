@@ -309,13 +309,13 @@ class BLE_Client {
             _resultLen = _result.length;
             print("Sending  start command...");
 
-            String s = "\u0010recStrt(" +
+            String s = "recStrt(" +
                 Hz.toString() +
                 "," +
                 GS.toString() +
                 "," +
                 hour.toString() +
-                ");\n";
+                ")\n";
             // String s = "\u0010recStrt(100, 8, 25);\n";
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), false); //returns void

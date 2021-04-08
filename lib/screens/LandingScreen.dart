@@ -385,7 +385,7 @@ class _LandingScreenState extends State<LandingScreen> {
       await bleClient.initiateBLEClient().then((value) async {
         await bleClient.start_ble_scan().then((value) async {
           await bleClient.ble_connect().then((value) async {
-            await bleClient.bleStartRecord(25, 8, 25);
+            await bleClient.bleStartRecord(12.5, 8, 25);
             prefs.setString("recordStartedAt", DateTime.now().toString());
             prefs.setBool("isRecording", true);
             await bleClient.closeBLE();
