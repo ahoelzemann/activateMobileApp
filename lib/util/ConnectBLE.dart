@@ -58,23 +58,22 @@ class BLE_Client {
   //BluetoothDeviceState deviceState:
 
   BLE_Client._privateConstructor();
-
   static final BLE_Client _instance = BLE_Client._privateConstructor();
   var _scanSubscription;
   var _condeviceStateSubscription;
   var _characSubscription;
   var _bleonSubscription;
   var _responseSubscription;
-  bool _currentDeviceConnected = false;
+  bool _currentDeviceConnected;
   Peripheral _mydevice;
-  List<int> _result = new List(5000000);
-  List<int> _noFiles = new List(25);
+  List<int> _result;
+  List<int> _noFiles;
   int _idx;
-  int _idxFiles = 0;
-  int _saveData = 0;
-  int _dataSize = 0;
+  int _idxFiles;
+  int _saveData;
+  int _dataSize;
   int _resultLen;
-  int _numofFiles = 0;
+  int _numofFiles;
   List<Service> services;
   List<Characteristic> decviceCharacteristics;
   BleManager _activateBleManager;
@@ -86,6 +85,18 @@ class BLE_Client {
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
   factory BLE_Client() {
+
+    _instance._idx = 0;
+    _instance._result = new List(5000000);
+    _instance._noFiles = new List(25);
+    _instance._noFiles[0] = 0;
+    _instance._idxFiles = 1;
+    _instance._saveData = 0;
+    _instance._dataSize = 0;
+    _instance._numofFiles = 0;
+    _instance._currentDeviceConnected = false;
+    // _instance._devicesList = new List<ScanResult>();
+    // _instance._myHexFiles = [];
     return _instance;
   }
 
@@ -121,36 +132,44 @@ class BLE_Client {
 
   // }
 
-  void closeBLE() {
-    _characSubscription?.cancel();
-    _characSubscription = null;
-
+  void closeBLE() async{
+    // _characSubscription?.cancel();
+    // _characSubscription = null;
+    //
     _condeviceStateSubscription?.cancel();
-    _condeviceStateSubscription = null;
-
-    _bleonSubscription?.cancel();
-    _bleonSubscription = null;
+    // _condeviceStateSubscription = null;
+    //
+    // _bleonSubscription?.cancel();
+    // _bleonSubscription = null;
+    //
 
     _scanSubscription?.cancel();
-    _scanSubscription = null;
+    // _scanSubscription = null;
 
-    if (_currentDeviceConnected == true) {
-      _mydevice?.disconnectOrCancelConnection();
-      _mydevice = null;
-      _currentDeviceConnected = false;
+    // if (_currentDeviceConnected == true) {
+    //   _mydevice?.disconnectOrCancelConnection();
+    //   _mydevice = null;
+    //   _currentDeviceConnected = false;
+    // }
+    try {
+      bool connected = await _mydevice.isConnected();
+      if (connected) {
+        await _mydevice.disconnectOrCancelConnection();
+      }
+      await _activateBleManager.destroyClient();
+    } catch (e) {
+      print(e);
     }
-
-    _activateBleManager?.destroyClient();
     print("BLE Closed   //////////////");
   }
 
   Future<dynamic> initiateBLEClient() async {
-    _characSubscription?.cancel();
-    _characSubscription = null;
-    // _activateBleManager?.destroyClient();
-    _activateBleManager = BleManager();
-    _activateBleManager.setLogLevel(LogLevel.verbose);
-    await _activateBleManager.createClient(
+    // _instance._characSubscription?.cancel();
+    // _instance._characSubscription = null;
+
+    _instance._activateBleManager = BleManager();
+    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
+    await _instance._activateBleManager?.createClient(
         restoreStateIdentifier: "BLE Manager");
 
     return true;
@@ -163,7 +182,7 @@ class BLE_Client {
         _activateBleManager.observeBluetoothState().listen((btState) {
       if (btState == BluetoothState.POWERED_ON) {
         print("Satus:" + btState.toString());
-        //ble_start_record();
+
         completer.complete(true);
       } else if (btState == BluetoothState.POWERED_OFF) {
         _activateBleManager?.stopPeripheralScan();
@@ -175,7 +194,7 @@ class BLE_Client {
     });
 
     return completer.future;
-    //  if(scanState == true){return true;}
+
   }
 
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
@@ -183,9 +202,19 @@ class BLE_Client {
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        .startPeripheralScan()
-        .listen((ScanResult scanResult) {
+        .startPeripheralScan(scanMode: ScanMode.balanced
+
+      // uuids: [//service
+      //   "6e400001-b5a3-f393-e0a9-e50e24dcca9eb",
+      // ],
+
+    )
+        .listen((ScanResult scanResult) async{
       //Scan one peripheral and stop scanning
+      if (_mydevice != null) {
+        bool connected = await _mydevice.isConnected();
+        print("DeviceState: " + connected.toString());
+      }
 
       if ((scanResult.advertisementData.localName != null)) {
         String devicename = scanResult.advertisementData.localName.toString();
@@ -194,6 +223,8 @@ class BLE_Client {
           if (_currentDeviceConnected == false) {
             _mydevice = scanResult.peripheral;
             _activateBleManager.stopPeripheralScan();
+            _scanSubscription?.cancel();
+            // _scanSubscription = null;
             completer.complete(true);
           }
         }
@@ -210,35 +241,92 @@ class BLE_Client {
   Future<dynamic> ble_connect() async {
     Completer completer = new Completer();
     if (_mydevice != null) {
-      await _mydevice.connect();
-      int dummyCheck = 1;
-      _condeviceStateSubscription = _mydevice
-          .observeConnectionState(
-              emitCurrentValue: true, completeOnDisconnect: true)
-          .listen((connectionState) async {
-        if (connectionState == PeripheralConnectionState.connected) {
-          _currentDeviceConnected = true;
 
-          if (dummyCheck == 1) {
-            await _mydevice.discoverAllServicesAndCharacteristics();
-            services = await _mydevice.services(); //getting all services
-            decviceCharacteristics =
-                await _mydevice.characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
 
-            print("Status: Connected to " + _mydevice.name.toString());
-            completer.complete(true);
-            //discoverOurServices(_mydevice);
-            dummyCheck = 0;
+      bool connected = await _mydevice.isConnected();
+      if (connected) {
+        await _mydevice.disconnectOrCancelConnection();
+        await _mydevice.connect();
+
+
+        _condeviceStateSubscription?.cancel();
+        // _condeviceStateSubscription = null;
+
+        int dummyCheck = 1;
+        _condeviceStateSubscription = _mydevice
+            .observeConnectionState(
+            emitCurrentValue: true, completeOnDisconnect: true)
+            .listen((connectionState) async {
+          if (connectionState == PeripheralConnectionState.connected) {
+            _currentDeviceConnected = true;
+
+            if (dummyCheck == 1) {
+              await _mydevice.discoverAllServicesAndCharacteristics();
+              services = await _mydevice.services(); //getting all services
+              decviceCharacteristics =
+              await _mydevice.characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
+
+              print("Status: Connected to " + _mydevice.name.toString());
+              dummyCheck = 0;
+              completer.complete(true);
+
+
+            }
+          } else if (connectionState == PeripheralConnectionState.disconnected) {
+            print("Bluetooth Disconnected, ///////////////////////////////////");
+            _currentDeviceConnected = false;
+            closeBLE();
+            if (dummyCheck == 1) {
+              dummyCheck = 0;
+              completer.complete(false);
+
+            }
           }
-        } else if (connectionState == PeripheralConnectionState.disconnected) {
-          print("Bluetooth Disconnected, ///////////////////////////////////");
-          _currentDeviceConnected = false;
-          if (dummyCheck == 1) {
-            completer.complete(false);
-            dummyCheck = 0;
+        });
+      }else{
+
+        await _mydevice.connect();
+
+
+        _condeviceStateSubscription?.cancel();
+        // _condeviceStateSubscription = null;
+
+        int dummyCheck = 1;
+        _condeviceStateSubscription = _mydevice
+            .observeConnectionState(
+            emitCurrentValue: true, completeOnDisconnect: true)
+            .listen((connectionState) async {
+          if (connectionState == PeripheralConnectionState.connected) {
+            _currentDeviceConnected = true;
+
+            if (dummyCheck == 1) {
+              await _mydevice.discoverAllServicesAndCharacteristics();
+              services = await _mydevice.services(); //getting all services
+              decviceCharacteristics =
+              await _mydevice.characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
+
+              print("Status: Connected to " + _mydevice.name.toString());
+              dummyCheck = 0;
+              completer.complete(true);
+
+
+            }
+          } else if (connectionState == PeripheralConnectionState.disconnected) {
+            print("Bluetooth Disconnected, ///////////////////////////////////");
+            _currentDeviceConnected = false;
+            closeBLE();
+            if (dummyCheck == 1) {
+              dummyCheck = 0;
+              completer.complete(false);
+
+            }
           }
-        }
-      });
+        });
+      }
+
+
+    }else{
+      completer.complete(false);
     }
     return completer.future;
   }
@@ -284,7 +372,7 @@ class BLE_Client {
 
             String s = "\u0010recStop();\n";
             characteristic.write(
-                Uint8List.fromList(s.codeUnits), false); //returns void
+                Uint8List.fromList(s.codeUnits), false, transactionId: "stopRecord"); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
             completer.complete(true);
           }
@@ -318,7 +406,7 @@ class BLE_Client {
                 ")\n";
             // String s = "\u0010recStrt(100, 8, 25);\n";
             characteristic.write(
-                Uint8List.fromList(s.codeUnits), false); //returns void
+                Uint8List.fromList(s.codeUnits), false, transactionId: "startRecord"); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
             completer.complete(true);
           }
@@ -375,7 +463,7 @@ class BLE_Client {
                 Uint8List.fromList(s.codeUnits), true); //returns void
             await bleGetResponse();
             _responseSubscription?.cancel();
-            _responseSubscription = null;
+            // _responseSubscription = null;
             print(Uint8List.fromList(s.codeUnits).toString());
             completer.complete(true);
           }

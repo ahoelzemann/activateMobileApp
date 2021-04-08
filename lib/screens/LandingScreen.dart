@@ -388,7 +388,8 @@ class _LandingScreenState extends State<LandingScreen> {
             await bleClient.bleStartRecord(12.5, 8, 25);
             prefs.setString("recordStartedAt", DateTime.now().toString());
             prefs.setBool("isRecording", true);
-            await bleClient.closeBLE();
+            // bleClient.closeBLE();
+            // bleClient = null;
             Navigator.of(context).pop();
             Navigator.push(
               context,
@@ -415,7 +416,8 @@ class _LandingScreenState extends State<LandingScreen> {
           prefs.setString("recordStopedAt", DateTime.now().toString());
           prefs.setBool("isRecording", false);
           print('uploading data...');
-          await bleClient.closeBLE();
+          bleClient.closeBLE();
+          // bleClient = null;
           Navigator.of(context).pop();
           Navigator.push(
             context,
@@ -478,7 +480,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(seconds: 2))) ? true : false;
 
   bool timeToRecord = now.isBefore(
           DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))
