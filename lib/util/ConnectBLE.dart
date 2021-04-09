@@ -186,6 +186,7 @@ class BLE_Client {
         if (connected) {
           try {
             _responseSubscription?.cancel();
+            _characSubscription?.cancel();
             _condeviceStateSubscription?.cancel();
             await _mydevice.disconnectOrCancelConnection();
             _mydevice = null;
@@ -450,7 +451,7 @@ class BLE_Client {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
+
             print("Stop recording...");
 
             String s = "\u0010recStop();\n";
@@ -477,7 +478,7 @@ class BLE_Client {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
+
             print("Sending  start command...");
 
             String s = "recStrt(" +
@@ -510,7 +511,7 @@ class BLE_Client {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
+
             print("Sending  stop command...");
 
             String s = "\u0010stopUpload();\n";
@@ -542,7 +543,7 @@ class BLE_Client {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
+
             print("Sending  start command...");
 
             String s = "startUpload();\n";
@@ -574,20 +575,16 @@ class BLE_Client {
     print("ble start upload command done /////////////");
     String s;
     int fileCount = 0;
-    _saveData = 0;
     Completer completer = new Completer();
 
     services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
-
         decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             print(
                 "Status:" + _mydevice.name.toString() + " TX UUID discovered");
-            _resultLen = _result.length;
-            print("Waiting for Data ...");
-
+            print("WAITING FOR " + _numofFiles.toString()+ " FILES, THIS WILL TAKE SOME MINUTES ...");
             _characSubscription =
                 characteristic.monitor().listen((event) async {
               _dataSize = event.length;
@@ -620,7 +617,9 @@ class BLE_Client {
                       event[11] == 255 &&
                       event[12] == 255 &&
                       event[13] == fileCount) {
-                    print(fileCount.toString() +  "  " + _fileName.toString() +
+                    print(fileCount.toString() +
+                        "  " +
+                        _fileName.toString() +
                         " Done uploading //////////////////");
 
                     Directory tempDir = await getTemporaryDirectory();
@@ -628,13 +627,16 @@ class BLE_Client {
                     tempPath = tempPath + "/" + _fileName;
                     writeToFile(_result.sublist(0, _idx), tempPath);
                     _result = new List(5000000);
-                    print(fileCount.toString() + "  " + _fileName.toString() +
+                    print(fileCount.toString() +
+                        "  " +
+                        _fileName.toString() +
                         " saved to file //////////////////");
 
                     fileCount += 1;
-                    print(fileCount.toString() +
-                        " Start uploading ///////////////");
+
                     if (fileCount < _numofFiles) {
+                      print(fileCount.toString() +
+                          " Start uploading ///////////////");
                       s = "\u0010sendNext(" + fileCount.toString() + ")\n";
                       service.writeCharacteristic(
                           UUIDSTR_ISSC_TRANS_RX,
@@ -642,16 +644,16 @@ class BLE_Client {
                           true); //returns Characteristic to chain operations more easily
                     } else {
                       _idx = 0;
-                      print("all uploads rxed");
                       await blestopUpload();
+                      print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
+                      _characSubscription?.cancel();
                       completer.complete(_numofFiles);
                     }
                     _idx = 0;
                   }
                 } else if (((_dataSize == 20) || (_dataSize == 12))) {
                   //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
-                  // print(event.toString());
-                  for (int i = 0; i < event.length; i++) {
+                  for (int i = 0; i < _dataSize; i++) {
                     _result[_idx] = event[i];
                     _idx += 1;
                   }

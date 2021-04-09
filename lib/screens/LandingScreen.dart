@@ -386,7 +386,7 @@ class _LandingScreenState extends State<LandingScreen> {
             nfiles = await bleClient.bleStartUpload();
             bleClient.closeBLE();
             print("Your steps is: " + steps.toString() + " and active mins: " + actmins.toString());
-            print("No. of files: " + nfiles.toString());
+            print("No. of files expected: " + nfiles.toString());
           });
         });
       });
