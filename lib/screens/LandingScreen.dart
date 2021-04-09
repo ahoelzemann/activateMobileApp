@@ -366,69 +366,94 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   void _startRecording() async {
-    // print('startRecording');
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool ble_activated = await SystemShortcuts.checkBluetooth;
     if (!ble_activated) {
       await SystemShortcuts.bluetooth();
     }
     BLE_Client bleClient = new BLE_Client();
-    // await bleClient.checkBLEstate();
-    // await bleClient.start_ble_scan();
-    // await bleClient.ble_connect();
-    // await bleClient.bleStartRecord(12.5, 8, 25);
-    // prefs.setString("recordStartedAt", DateTime.now().toString());
-    // prefs.setBool("isRecording", true);
-
+    int steps;
+    int actmins;
     try {
-      // await bleClient.checkBLEstate().then((value) async {
       await bleClient.initiateBLEClient().then((value) async {
-
-          await bleClient.start_ble_scan().then((value) async {
-            await bleClient.ble_connect().then((value) async {
-              await bleClient.bleStartRecord(12.5, 8, 25);
-              prefs.setString("recordStartedAt", DateTime.now().toString());
-              prefs.setBool("isRecording", true);
-              // bleClient.closeBLE();
-              // bleClient = null;
-              Navigator.of(context).pop();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => LandingScreen()),
-              );
-            });
+        await bleClient.start_ble_scan().then((value) async {
+          await bleClient.ble_connect().then((value) async {
+            steps = await bleClient.bleSteps();
+            actmins = await bleClient.bleactMins();
+            bleClient.closeBLE();
+            print("Your steps is: " + steps.toString() + " and active mins: " + actmins.toString());
           });
-
+        });
       });
-
-      // print("success");
     } catch (e) {
-      print("recording could not start");
+      print("Could not get activities");
     }
+
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // bool ble_activated = await SystemShortcuts.checkBluetooth;
+    // if (!ble_activated) {
+    //   await SystemShortcuts.bluetooth();
+    // }
+    // BLE_Client bleClient = new BLE_Client();
+    // try {
+    //   // await bleClient.checkBLEstate().then((value) async {
+    //   await bleClient.initiateBLEClient().then((value) async {
+    //     await bleClient.start_ble_scan().then((value) async {
+    //       await bleClient.ble_connect().then((value) async {
+    //         await bleClient.bleStartRecord(12.5, 8, 25);
+    //         prefs.setString("recordStartedAt", DateTime.now().toString());
+    //         prefs.setBool("isRecording", true);
+    //         bleClient.closeBLE();
+    //         // bleClient = null;
+    //         Navigator.of(context).pop();
+    //         Navigator.push(
+    //           context,
+    //           MaterialPageRoute(builder: (context) => LandingScreen()),
+    //         );
+    //       });
+    //     });
+    //   });
+    //
+    //   // print("success");
+    // } catch (e) {
+    //   print("recording could not start");
+    // }
   }
 
   void _stopAndUpload() async {
-    print('stop recording');
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    BLE_Client bleClient = new BLE_Client();
-    await bleClient.initiateBLEClient().then((value) async {
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // prefs.setString("recordStopedAt", DateTime.now().toString());
+    // prefs.setBool("isRecording", false);
+    // Navigator.of(context).pop();
+    // Navigator.push(
+    //   context,
+    //   MaterialPageRoute(builder: (context) => LandingScreen()),
+    // );
 
-        await bleClient.start_ble_scan().then((value) async {
-          await bleClient.ble_connect().then((value) async {
-            await bleClient.bleStopRecord();
-            prefs.setString("recordStopedAt", DateTime.now().toString());
-            prefs.setBool("isRecording", false);
-            print('uploading data...');
-            bleClient.closeBLE();
-            // bleClient = null;
-            Navigator.of(context).pop();
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => LandingScreen()),
-            );
-          });
-        });
-    });
+
+    // print('stop recording');
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // BLE_Client bleClient = new BLE_Client();
+    // await bleClient.initiateBLEClient().then((value) async {
+    //
+    //     await bleClient.start_ble_scan().then((value) async {
+    //       await bleClient.ble_connect().then((value) async {
+    //         await bleClient.bleStopRecord();
+    //         prefs.setString("recordStopedAt", DateTime.now().toString());
+    //         prefs.setBool("isRecording", false);
+    //         print('uploading data...');
+    //         bleClient.closeBLE();
+    //         // bleClient = null;
+    //         Navigator.of(context).pop();
+    //         Navigator.push(
+    //           context,
+    //           MaterialPageRoute(builder: (context) => LandingScreen()),
+    //         );
+    //       });
+    //     });
+    // });
+
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size) {
