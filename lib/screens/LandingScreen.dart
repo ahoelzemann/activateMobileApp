@@ -375,14 +375,18 @@ class _LandingScreenState extends State<LandingScreen> {
     BLE_Client bleClient = new BLE_Client();
     int steps;
     int actmins;
+    int nfiles;
     try {
       await bleClient.initiateBLEClient().then((value) async {
         await bleClient.start_ble_scan().then((value) async {
           await bleClient.ble_connect().then((value) async {
             steps = await bleClient.bleSteps();
             actmins = await bleClient.bleactMins();
+            await bleClient.bleStopRecord();
+            nfiles = await bleClient.bleStartUpload();
             bleClient.closeBLE();
             print("Your steps is: " + steps.toString() + " and active mins: " + actmins.toString());
+            print("No. of files: " + nfiles.toString());
           });
         });
       });

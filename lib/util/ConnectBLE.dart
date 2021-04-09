@@ -39,7 +39,7 @@ class BLE_Client {
   String _nearestDeviceMac = "";
   var _actMins;
   var _steps;
-
+  String _fileName = " ";
   static const ISSC_PROPRIETARY_SERVICE_UUID =
       "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
   static const UUIDSTR_ISSC_TRANS_TX =
@@ -62,37 +62,8 @@ class BLE_Client {
     return _instance;
   }
 
-  // int _scanning = 0;
-  // String _checkdevice = "mydevice";
-
-  // var _deviceConnection;
-  // var _disdeviceStateSubscription;
-
-  // bool _scanState = false;
-
-  // List<ScanResult> _devicesList;
-  // List<String> _myHexFiles = [];
-
-  // List<int> _trueData = [];
-  // String _Current_Filename = " ";
-  // String _hexifiedData = " ";
-  // String _data = " ";
-  // String _mqtt_data = " ";
-
-  // bool _emitBleState = true;
-
-  // device Proprietary characteristics of the ISSC service
-
-  //device char for ISSC characteristics
-
-  // BLE_Client() {
-
-  // }
-
   void closeBLE() async {
-    // _characSubscription?.cancel();
-    // _characSubscription = null;
-    //
+    _characSubscription?.cancel();
     _condeviceStateSubscription?.cancel();
 
     _responseSubscription?.cancel();
@@ -289,9 +260,6 @@ class BLE_Client {
             print(
                 "Bluetooth Disconnected, ///////////////////////////////////");
             _currentDeviceConnected = false;
-            //await _mydevice?.disconnectOrCancelConnection();
-            //_mydevice = null;
-            //closeBLE();
             if (dummyCheck == 1) {
               dummyCheck = 0;
               completer.complete(false);
@@ -302,7 +270,6 @@ class BLE_Client {
         await _mydevice.connect();
 
         _condeviceStateSubscription?.cancel();
-        // _condeviceStateSubscription = null;
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -387,7 +354,6 @@ class BLE_Client {
   }
 
   Future<dynamic> bleactMins() async {
-
     Completer completer = new Completer();
     String s = " ";
     Characteristic charactx;
@@ -446,7 +412,6 @@ class BLE_Client {
     });
 
     return completer.future;
-
   }
 
   // void ble_parse_and_send() async {
@@ -522,7 +487,6 @@ class BLE_Client {
                 "," +
                 hour.toString() +
                 ")\n";
-            // String s = "\u0010recStrt(100, 8, 25);\n";
             characteristic.write(Uint8List.fromList(s.codeUnits), false,
                 transactionId: "startRecord"); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
@@ -582,13 +546,21 @@ class BLE_Client {
             print("Sending  start command...");
 
             String s = "startUpload();\n";
+            print(Uint8List.fromList(s.codeUnits).toString());
+            _responseSubscription = charactx.monitor().listen((event) async {
+              print(event.toString() + "  //////////////");
+              print(String.fromCharCodes(event));
+              if (event[0] == 61) {
+                String dd = String.fromCharCodes(event.sublist(
+                    event.indexOf(61) + 1,
+                    event.lastIndexOf(13))); //the number between = and \r
+                int noOfFiles = int.parse(dd.trim());
+                _responseSubscription?.cancel();
+                completer.complete(noOfFiles);
+              }
+            });
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
-            await bleGetResponse(charactx);
-            _responseSubscription?.cancel();
-            // _responseSubscription = null;
-            print(Uint8List.fromList(s.codeUnits).toString());
-            completer.complete(true);
           }
         });
       }
@@ -598,8 +570,8 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartUpload() async {
-    await bleStartUploadCommand();
-    print("ble strat done /////////////");
+    _numofFiles = await bleStartUploadCommand();
+    print("ble start upload command done /////////////");
     String s;
     int fileCount = 0;
     _saveData = 0;
@@ -630,12 +602,7 @@ class BLE_Client {
                       event[14] == 98 &&
                       event[15] == 105 &&
                       event[16] == 110) {
-                    //test fourth element for 115 ie s, currently not saving status message
-                    if (event[3] != 115) {
-                      _saveData = 1;
-                    } else {
-                      _saveData = 0;
-                    }
+                    _fileName = String.fromCharCodes(event);
                   }
                 } else if ((_dataSize == 15)) {
                   //check end of a file
@@ -653,32 +620,35 @@ class BLE_Client {
                       event[11] == 255 &&
                       event[12] == 255 &&
                       event[13] == fileCount) {
-                    if ((_saveData == 1)) {
-                      _noFiles[_idxFiles] = _idx;
-                      _idxFiles += 1;
-                    }
-
-                    _saveData = 0;
-                    print(fileCount.toString() +
+                    print(fileCount.toString() +  "  " + _fileName.toString() +
                         " Done uploading //////////////////");
-                    fileCount += 1;
 
+                    Directory tempDir = await getTemporaryDirectory();
+                    String tempPath = tempDir.path;
+                    tempPath = tempPath + "/" + _fileName;
+                    writeToFile(_result.sublist(0, _idx), tempPath);
+                    _result = new List(5000000);
+                    print(fileCount.toString() + "  " + _fileName.toString() +
+                        " saved to file //////////////////");
+
+                    fileCount += 1;
                     print(fileCount.toString() +
                         " Start uploading ///////////////");
                     if (fileCount < _numofFiles) {
-                      s = "\u0010sendNext(" + fileCount.toString() + ");\n";
+                      s = "\u0010sendNext(" + fileCount.toString() + ")\n";
                       service.writeCharacteristic(
                           UUIDSTR_ISSC_TRANS_RX,
                           Uint8List.fromList(s.codeUnits),
                           true); //returns Characteristic to chain operations more easily
-
                     } else {
+                      _idx = 0;
+                      print("all uploads rxed");
                       await blestopUpload();
-                      completer.complete(true);
+                      completer.complete(_numofFiles);
                     }
+                    _idx = 0;
                   }
-                } else if (((_dataSize == 20) || (_dataSize == 12)) &&
-                    (_saveData == 1)) {
+                } else if (((_dataSize == 20) || (_dataSize == 12))) {
                   //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
                   // print(event.toString());
                   for (int i = 0; i < event.length; i++) {
@@ -689,7 +659,7 @@ class BLE_Client {
               }
             });
 
-            s = "\u0010sendNext(" + fileCount.toString() + ");\n";
+            s = "\u0010sendNext(" + fileCount.toString() + ")\n";
             service.writeCharacteristic(
                 UUIDSTR_ISSC_TRANS_RX,
                 Uint8List.fromList(s.codeUnits),
@@ -702,7 +672,17 @@ class BLE_Client {
 
     return completer.future;
   }
+
+  // Future<void> writeToFile(ByteData data, String path) {
+  //   final buffer = data.buffer;
+  //   return new File(path).writeAsBytes(
+  //       buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+  // }
+  Future<void> writeToFile(List<int> data, String path) {
+    return new File(path).writeAsBytes(data);
+  }
 }
+
 //
 // class ConnectBLE extends StatefulWidget {
 //   final BangleStorage storage;
