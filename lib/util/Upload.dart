@@ -40,6 +40,7 @@ Future<void> uploadFiles() async {
     ble_status = await SystemShortcuts.checkBluetooth;
     print(ble_status.toString());
   }
+  var filePaths;
   var client = new SSHClient(
     // host: host,
     // port: port,
@@ -66,7 +67,7 @@ Future<void> uploadFiles() async {
           //Directory tempDir = await getApplicationDocumentsDirectory();
           Directory tempDir =  await getTemporaryDirectory();
           String localFilesDirectory = tempDir.path+"/daily_data/";
-          var filePaths = io.Directory(localFilesDirectory).listSync();
+          filePaths = io.Directory(localFilesDirectory).listSync();
           String serverPath;
           try {
             print(await client.sftpMkdir(serverFilePath));
@@ -92,6 +93,7 @@ Future<void> uploadFiles() async {
                   print(progress); // read upload progress
                 },
               ));
+              File(localFilePath).delete();
             } catch (e) {
               print(e);
               await Future.delayed(Duration(seconds: 10));
@@ -103,15 +105,19 @@ Future<void> uploadFiles() async {
                   });
             }
           }
+          filePaths = io.Directory(localFilesDirectory).listSync();
+          print(filePaths);
         } catch (e) {
           print(e.toString());
         }
 
         print(await client.disconnectSFTP());
         client.disconnect();
+
       }
     }
   } on PlatformException catch (e) {
     print('Error: ${e.code}\nError Message: ${e.message}');
   }
+
 }
