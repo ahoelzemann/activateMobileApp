@@ -63,7 +63,8 @@ Future<void> uploadFiles() async {
           //List<String> testfiles = getTestFilesPaths();
           String localFilePath;
           String serverFileName;
-          Directory tempDir = await getApplicationDocumentsDirectory();
+          //Directory tempDir = await getApplicationDocumentsDirectory();
+          Directory tempDir =  await getTemporaryDirectory();
           String localFilesDirectory = tempDir.path+"/daily_data/";
           var filePaths = io.Directory(localFilesDirectory).listSync();
           String serverPath;

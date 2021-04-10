@@ -594,11 +594,14 @@ class BLE_Client {
 
         decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
+            _resultLen = _result.length;
             print(
                 "Status:" + _mydevice.name.toString() + " TX UUID discovered");
             print("WAITING FOR " +
                 _numofFiles.toString() +
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
+
+
             _characSubscription =
                 characteristic.monitor().listen((event) async {
               _dataSize = event.length;
