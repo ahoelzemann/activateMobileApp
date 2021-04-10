@@ -28,11 +28,11 @@ Future<void> uploadFiles() async {
     4.) Implement iOS version with an UploadButton [x]
     5.) Save files from Bangle to temporary folder on device needs to be a method --> fail safe with while loop
     */
-  // final storage = new FlutterSecureStorage();
-  // String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
-  // int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
-  // String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-  // String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+  final storage = new FlutterSecureStorage();
+  String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
+  int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
+  String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+  String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
   bool ble_status = await SystemShortcuts.checkBluetooth;
 
   if (!ble_status) {
@@ -42,14 +42,14 @@ Future<void> uploadFiles() async {
   }
   var filePaths;
   var client = new SSHClient(
-    // host: host,
-    // port: port,
-    // username: login,
-    // passwordOrKey: pw,
-    host: "131.173.80.175",
-    port : int.parse("22"),
-    username: "trac2move_upload",
-    passwordOrKey: "5aU=txXKoU!",
+    host: host,
+    port: port,
+    username: login,
+    passwordOrKey: pw,
+    // host: "131.173.80.175",
+    // port : int.parse("22"),
+    // username: "trac2move_upload",
+    // passwordOrKey: "5aU=txXKoU!",
   );
   try {
     String result = await client.connect();
