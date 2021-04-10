@@ -12,6 +12,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:io' as io;
 
 Future<void> writeToFile(ByteData data, String path) {
   final buffer = data.buffer;
@@ -28,10 +29,10 @@ Future<void> uploadFiles() async {
     5.) Save files from Bangle to temporary folder on device needs to be a method --> fail safe with while loop
     */
   final storage = new FlutterSecureStorage();
-  // String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
-  // int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
-  // String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-  // String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+  String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
+  int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
+  String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+  String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
   bool ble_status = await SystemShortcuts.checkBluetooth;
 
   if (!ble_status) {
@@ -40,10 +41,14 @@ Future<void> uploadFiles() async {
     print(ble_status.toString());
   }
   var client = new SSHClient(
-    host:" host",
-    port: 80,
-    username: "login",
-    passwordOrKey: "pw",
+    // host: host,
+    // port: port,
+    // username: login,
+    // passwordOrKey: pw,
+    host: "131.173.80.175",
+    port : int.parse("22"),
+    username: "trac2move_upload",
+    passwordOrKey: "5aU=txXKoU!",
   );
   try {
     String result = await client.connect();
@@ -58,7 +63,9 @@ Future<void> uploadFiles() async {
           List<String> testfiles = getTestFilesPaths();
           String localFilePath;
           String serverFileName;
-          Directory tempDir = await getTemporaryDirectory();
+          Directory tempDir = await getApplicationDocumentsDirectory();
+          String localFilesDirectory = tempDir.path+"/daily_data/";
+          var filePaths = io.Directory(localFilesDirectory).listSync();
           String serverPath;
           try {
             print(await client.sftpMkdir(serverFilePath));
@@ -66,7 +73,7 @@ Future<void> uploadFiles() async {
             print('Folder already exists');
           }
           // ToDO: Download Files from Bangle here, save in a local temp folder and delete them after upload
-          for (int i = 0; i < testfiles.length; i++) {
+          for (int i = 0; i < filePaths.length; i++) {
             localFilePath = testfiles[i];
             serverFileName = localFilePath.split("/").last;
             serverPath = serverFilePath;
