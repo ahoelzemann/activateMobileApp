@@ -28,11 +28,11 @@ Future<void> uploadFiles() async {
     4.) Implement iOS version with an UploadButton [x]
     5.) Save files from Bangle to temporary folder on device needs to be a method --> fail safe with while loop
     */
-  final storage = new FlutterSecureStorage();
-  String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
-  int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
-  String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-  String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+  // final storage = new FlutterSecureStorage();
+  // String host = utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
+  // int port = int.parse(utf8.decode(base64.decode(await storage.read(key: 'port'))));
+  // String login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+  // String pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
   bool ble_status = await SystemShortcuts.checkBluetooth;
 
   if (!ble_status) {
@@ -74,7 +74,7 @@ Future<void> uploadFiles() async {
           }
           // ToDO: Download Files from Bangle here, save in a local temp folder and delete them after upload
           for (int i = 0; i < filePaths.length; i++) {
-            localFilePath = testfiles[i];
+            localFilePath = filePaths[i].path;
             serverFileName = localFilePath.split("/").last;
             serverPath = serverFilePath;
             String tempPath = tempDir.path;
