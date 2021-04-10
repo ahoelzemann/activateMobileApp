@@ -666,7 +666,7 @@ class BLE_Client {
                     } else {
                       _idx = 0;
                       await blestopUpload();
-                      upload.uploadFiles();
+                      // upload.uploadFiles();
                       print("DONE UPLOADING, " +
                           fileCount.toString() +
                           " FILES RECEIVED");

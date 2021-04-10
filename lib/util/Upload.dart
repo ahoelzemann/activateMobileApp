@@ -86,7 +86,7 @@ Future<void> uploadFiles() async {
             try {
               print("Upload file: " + serverPath);
               print(await client.sftpUpload(
-                path: tempPath,
+                path: localFilePath,
                 toPath: serverPath,
                 callback: (progress) {
                   print(progress); // read upload progress
