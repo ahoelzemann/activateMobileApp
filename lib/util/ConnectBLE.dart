@@ -83,10 +83,9 @@ class BLE_Client {
         _mydevice = null;
         _currentDeviceConnected = false;
       }
-      if(_instance._activateBleManager != null){
+      if (_instance._activateBleManager != null) {
         await _instance._activateBleManager.destroyClient();
       }
-
     } catch (e) {
       print(e);
     }
@@ -97,10 +96,10 @@ class BLE_Client {
     // _instance._characSubscription?.cancel();
     // _instance._characSubscription = null;
 
-
     _instance._activateBleManager = BleManager();
     // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-    await _instance._activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
+    await _instance._activateBleManager
+        .createClient(restoreStateIdentifier: "BLE Manager");
 
     return true;
   }
@@ -534,6 +533,7 @@ class BLE_Client {
   Future<dynamic> bleStartUploadCommand() async {
     Completer completer = new Completer();
     Characteristic charactx;
+    String s = " ";
     services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
@@ -550,12 +550,19 @@ class BLE_Client {
 
             print("Sending  start command...");
 
-            String s = "startUpload();\n";
+            s = "\u0010startUpload()\n";
+            print(s);
+            print(Uint8List.fromList(s.codeUnits).toString());
+            characteristic.write(
+                Uint8List.fromList(s.codeUnits), true); //returns void
+
+            s = "nofiles\n";
+            print(s);
             print(Uint8List.fromList(s.codeUnits).toString());
             _responseSubscription = charactx.monitor().listen((event) async {
               print(event.toString() + "  //////////////");
               print(String.fromCharCodes(event));
-              if (event[0] == 61) {
+              if (event[0] == 110 && event[4] == 108) {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
@@ -566,6 +573,7 @@ class BLE_Client {
             });
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
+
           }
         });
       }
@@ -580,15 +588,17 @@ class BLE_Client {
     String s;
     int fileCount = 0;
     Completer completer = new Completer();
-
     services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
+
         decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             print(
                 "Status:" + _mydevice.name.toString() + " TX UUID discovered");
-            print("WAITING FOR " + _numofFiles.toString()+ " FILES, THIS WILL TAKE SOME MINUTES ...");
+            print("WAITING FOR " +
+                _numofFiles.toString() +
+                " FILES, THIS WILL TAKE SOME MINUTES ...");
             _characSubscription =
                 characteristic.monitor().listen((event) async {
               _dataSize = event.length;
@@ -628,8 +638,9 @@ class BLE_Client {
 
                     //Directory tempDir = await getApplicationDocumentsDirectory();
                     Directory tempDir = await getTemporaryDirectory();
-                    await Directory(tempDir.path+'/daily_data').create(recursive: true);
-                    String tempPath = tempDir.path+'/daily_data';
+                    await Directory(tempDir.path + '/daily_data')
+                        .create(recursive: true);
+                    String tempPath = tempDir.path + '/daily_data';
                     tempPath = tempPath + "/" + _fileName;
                     writeToFile(_result.sublist(0, _idx), tempPath);
 
@@ -653,7 +664,9 @@ class BLE_Client {
                       _idx = 0;
                       await blestopUpload();
                       upload.uploadFiles();
-                      print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
+                      print("DONE UPLOADING, " +
+                          fileCount.toString() +
+                          " FILES RECEIVED");
                       _characSubscription?.cancel();
                       completer.complete(_numofFiles);
                     }
