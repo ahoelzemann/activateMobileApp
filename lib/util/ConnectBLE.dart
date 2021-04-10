@@ -9,6 +9,7 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:ui';
 import 'package:convert/convert.dart';
 import 'package:trac2move/util/DataLoader.dart' as DataLoader;
+import 'package:trac2move/util/Upload.dart' as upload;
 import 'dart:convert';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -82,7 +83,10 @@ class BLE_Client {
         _mydevice = null;
         _currentDeviceConnected = false;
       }
-      await _activateBleManager.destroyClient();
+      if(_instance._activateBleManager != null){
+        await _instance._activateBleManager.destroyClient();
+      }
+
     } catch (e) {
       print(e);
     }
@@ -93,10 +97,10 @@ class BLE_Client {
     // _instance._characSubscription?.cancel();
     // _instance._characSubscription = null;
 
+
     _instance._activateBleManager = BleManager();
     // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-    await _instance._activateBleManager
-        ?.createClient(restoreStateIdentifier: "BLE Manager");
+    await _instance._activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
 
     return true;
   }
@@ -622,10 +626,13 @@ class BLE_Client {
                         _fileName.toString() +
                         " Done uploading //////////////////");
 
+                    //Directory tempDir = await getApplicationDocumentsDirectory();
                     Directory tempDir = await getTemporaryDirectory();
-                    String tempPath = tempDir.path;
+                    await Directory(tempDir.path+'/daily_data').create(recursive: true);
+                    String tempPath = tempDir.path+'/daily_data';
                     tempPath = tempPath + "/" + _fileName;
                     writeToFile(_result.sublist(0, _idx), tempPath);
+
                     _result = new List(5000000);
                     print(fileCount.toString() +
                         "  " +
@@ -645,6 +652,7 @@ class BLE_Client {
                     } else {
                       _idx = 0;
                       await blestopUpload();
+                      upload.uploadFiles();
                       print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
                       _characSubscription?.cancel();
                       completer.complete(_numofFiles);

@@ -60,7 +60,7 @@ Future<void> uploadFiles() async {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           String studienID = prefs.getStringList('participant')[1];
           String serverFilePath = "activity_data/" + studienID;
-          List<String> testfiles = getTestFilesPaths();
+          //List<String> testfiles = getTestFilesPaths();
           String localFilePath;
           String serverFileName;
           Directory tempDir = await getApplicationDocumentsDirectory();
@@ -79,9 +79,9 @@ Future<void> uploadFiles() async {
             serverPath = serverFilePath;
             String tempPath = tempDir.path;
             tempPath = tempPath + "/" + serverFileName;
-            await rootBundle.load(localFilePath).then((value) {
-              writeToFile(value, tempPath);
-            });
+            // await rootBundle.load(localFilePath).then((value) {
+            //   writeToFile(value, tempPath);
+            // });
             try {
               print("Upload file: " + serverPath);
               print(await client.sftpUpload(
