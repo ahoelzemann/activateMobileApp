@@ -11,11 +11,13 @@ import 'package:convert/convert.dart';
 import 'package:trac2move/util/DataLoader.dart' as DataLoader;
 import 'package:trac2move/util/Upload.dart' as upload;
 import 'dart:convert';
+import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class BLE_Client {
-  BLE_Client._privateConstructor();
+  BleManager _activateBleManager = BleManager();
+
 
   static final BLE_Client _instance = BLE_Client._privateConstructor();
   var _scanSubscription;
@@ -35,7 +37,7 @@ class BLE_Client {
   int _numofFiles;
   List<Service> services;
   List<Characteristic> decviceCharacteristics;
-  BleManager _activateBleManager;
+  // BleManager _activateBleManager;
   String _nearestDeviceName = "";
   String _nearestDeviceMac = "";
   var _actMins;
@@ -49,24 +51,25 @@ class BLE_Client {
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
   factory BLE_Client() {
-    _instance._activateBleManager = BleManager();
-    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-    _instance._activateBleManager
-        .createClient(restoreStateIdentifier: "BLE Manager");
-    _instance._idx = 0;
-    _instance._result = new List(5000000);
-    _instance._noFiles = new List(25);
-    _instance._noFiles[0] = 0;
-    _instance._idxFiles = 1;
-    _instance._saveData = 0;
-    _instance._dataSize = 0;
-    _instance._numofFiles = 0;
-    _instance._currentDeviceConnected = false;
-    // _instance._devicesList = new List<ScanResult>();
-    // _instance._myHexFiles = [];
     return _instance;
   }
 
+  BLE_Client._privateConstructor() {
+    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
+    _activateBleManager
+        .createClient(restoreStateIdentifier: "BLE Manager");
+    _idx = 0;
+    _result = new List(5000000);
+    _noFiles = new List(25);
+    _noFiles[0] = 0;
+    _idxFiles = 1;
+    _saveData = 0;
+    _dataSize = 0;
+    _numofFiles = 0;
+    _currentDeviceConnected = false;
+    // _instance._devicesList = new List<ScanResult>();
+    // _instance._myHexFiles = [];
+  }
   void closeBLE() async {
     _characSubscription?.cancel();
     _condeviceStateSubscription?.cancel();
@@ -74,7 +77,7 @@ class BLE_Client {
     _responseSubscription?.cancel();
     // _condeviceStateSubscription = null;
     //
-    // _bleonSubscription?.cancel();
+    _bleonSubscription?.cancel();
     // _bleonSubscription = null;
     //
 
@@ -84,11 +87,11 @@ class BLE_Client {
     try {
       if (_currentDeviceConnected == true) {
         await _mydevice.disconnectOrCancelConnection();
-        _mydevice = null;
+        // _mydevice = null;
         _currentDeviceConnected = false;
       }
-      if (_instance._activateBleManager != null) {
-        _instance._activateBleManager.destroyClient();
+      if (_activateBleManager != null) {
+        _activateBleManager.destroyClient();
       }
     } catch (e) {
       print(e);
@@ -138,7 +141,8 @@ class BLE_Client {
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        .startPeripheralScan(scanMode: ScanMode.balanced)
+        // .startPeripheralScan(scanMode: ScanMode.balanced)
+        .startPeripheralScan()
         .listen((ScanResult scanResult) async {
       //Scan one peripheral and stop scanning
 
@@ -181,7 +185,8 @@ class BLE_Client {
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        .startPeripheralScan(scanMode: ScanMode.balanced)
+        // .startPeripheralScan(scanMode: ScanMode.balanced)
+        .startPeripheralScan()
         .listen((ScanResult scanResult) async {
       //Scan one peripheral and stop scanning
       if (_mydevice != null) {

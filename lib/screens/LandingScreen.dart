@@ -368,10 +368,10 @@ class _LandingScreenState extends State<LandingScreen> {
   void _startRecording() async {
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool ble_activated = await SystemShortcuts.checkBluetooth;
-    if (!ble_activated) {
-      await SystemShortcuts.bluetooth();
-    }
+    // bool ble_activated = await SystemShortcuts.checkBluetooth;
+    // if (!ble_activated) {
+    //   await SystemShortcuts.bluetooth();
+    // }
     BLE_Client bleClient = new BLE_Client();
     int steps;
     int actmins;
@@ -379,9 +379,14 @@ class _LandingScreenState extends State<LandingScreen> {
     // bleClient.checkBLEstate();
     try {
       // await bleClient.initiateBLEClient().then((value) async {
+      await bleClient.checkBLEstate().then((value) async {
         await bleClient.start_ble_scan().then((value) async {
           await bleClient.ble_connect().then((value) async {
             steps = await bleClient.bleSteps();
+            // bleClient.closeBLE();
+            // bleClient = new BLE_Client();
+            // await bleClient.start_ble_scan();
+            // await bleClient.ble_connect();
             actmins = await bleClient.bleactMins();
             await bleClient.bleStopRecord();
             nfiles = await bleClient.bleStartUpload();
@@ -391,6 +396,7 @@ class _LandingScreenState extends State<LandingScreen> {
             print("No. of files expected: " + nfiles.toString());
           });
         });
+      });
       // });
     } catch (e) {
       print("Could not get activities");
