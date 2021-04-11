@@ -18,8 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BLE_Client {
   BleManager _activateBleManager = BleManager();
 
-
-  static final BLE_Client _instance = BLE_Client._privateConstructor();
+  // static final BLE_Client _instance = BLE_Client._privateConstructor();
   var _scanSubscription;
   var _condeviceStateSubscription;
   var _characSubscription;
@@ -35,8 +34,9 @@ class BLE_Client {
   int _dataSize;
   int _resultLen;
   int _numofFiles;
-  List<Service> services;
-  List<Characteristic> decviceCharacteristics;
+  List<Service> _services;
+  List<Characteristic> _decviceCharacteristics;
+
   // BleManager _activateBleManager;
   String _nearestDeviceName = "";
   String _nearestDeviceMac = "";
@@ -50,14 +50,8 @@ class BLE_Client {
   static const UUIDSTR_ISSC_TRANS_RX =
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
-  factory BLE_Client() {
-    return _instance;
-  }
-
-  BLE_Client._privateConstructor() {
-    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-    _activateBleManager
-        .createClient(restoreStateIdentifier: "BLE Manager");
+  BLE_Client() {
+    _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
     _idx = 0;
     _result = new List(5000000);
     _noFiles = new List(25);
@@ -67,43 +61,99 @@ class BLE_Client {
     _dataSize = 0;
     _numofFiles = 0;
     _currentDeviceConnected = false;
-    // _instance._devicesList = new List<ScanResult>();
-    // _instance._myHexFiles = [];
   }
+
+  // BLE_Client._privateConstructor() {
+  //   // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
+  //   _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
+  //   _idx = 0;
+  //   _result = new List(5000000);
+  //   _noFiles = new List(25);
+  //   _noFiles[0] = 0;
+  //   _idxFiles = 1;
+  //   _saveData = 0;
+  //   _dataSize = 0;
+  //   _numofFiles = 0;
+  //   _currentDeviceConnected = false;
+  //   // _instance._devicesList = new List<ScanResult>();
+  //   // _instance._myHexFiles = [];
+  // }
+
   void closeBLE() async {
-    _characSubscription?.cancel();
-    _condeviceStateSubscription?.cancel();
-
-    _responseSubscription?.cancel();
-    // _condeviceStateSubscription = null;
-    //
-    _bleonSubscription?.cancel();
-    // _bleonSubscription = null;
-    //
-
-    _scanSubscription?.cancel();
-    // _scanSubscription = null;
-
     try {
-      if (_currentDeviceConnected == true) {
+      // if (_currentDeviceConnected == true) {
+      //   await _mydevice.disconnectOrCancelConnection();
+      //   // _mydevice = null;
+      //   _currentDeviceConnected = false;
+      // }
+      if (await _mydevice.isConnected()) {
         await _mydevice.disconnectOrCancelConnection();
-        // _mydevice = null;
-        _currentDeviceConnected = false;
       }
+      if (_scanSubscription != null) {
+        await _scanSubscription.cancel();
+      }
+      if (_characSubscription != null) {
+        await _characSubscription.cancel();
+      }
+      if (_condeviceStateSubscription != null) {
+        await _condeviceStateSubscription.cancel();
+      }
+      if (_responseSubscription != null) {
+        await _responseSubscription.cancel();
+      }
+      if (_bleonSubscription != null) {
+        await _bleonSubscription.cancel();
+      }
+      // await _characSubscription?.cancel();
+      // _condeviceStateSubscription?.cancel();
+
+      // _responseSubscription?.cancel();
+      // _condeviceStateSubscription = null;
+      //
+      // _bleonSubscription?.cancel();
+      // _bleonSubscription = null;
+      //
+
+      // _scanSubscription?.cancel();
+      // _scanSubscription = null;
+
+
       if (_activateBleManager != null) {
         _activateBleManager.destroyClient();
       }
     } catch (e) {
       print(e);
+      // print('');
     }
+    // _activateBleManager = null;
+    // _scanSubscription = null;
+    // _condeviceStateSubscription = null;
+    // _characSubscription = null;
+    // _bleonSubscription = null;
+    // _responseSubscription = null;
+    // _currentDeviceConnected = null;
+    // _mydevice = null;
+    // _result = null;
+    // _noFiles = null;
+    // _idx = null;
+    // _idxFiles = null;
+    // _saveData = null;
+    // _dataSize = null;
+    // _resultLen = null;
+    // _numofFiles = null;
+    // _services = null;
+    // _decviceCharacteristics = null;
+    // _nearestDeviceName  = null;
+    // _nearestDeviceMac  = null;
+    // _actMins = null;
+    // _steps = null;
+    // _fileName = null;
     print("BLE Closed   //////////////");
   }
 
   Future<dynamic> initiateBLEClient() async {
     // _instance._characSubscription?.cancel();
     // _instance._characSubscription = null;
-
-
 
     return true;
   }
@@ -257,8 +307,8 @@ class BLE_Client {
 
             if (dummyCheck == 1) {
               await _mydevice.discoverAllServicesAndCharacteristics();
-              services = await _mydevice.services(); //getting all services
-              decviceCharacteristics = await _mydevice
+              _services = await _mydevice.services(); //getting all services
+              _decviceCharacteristics = await _mydevice
                   .characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
 
               print("Status: Connected to " + _mydevice.name.toString());
@@ -291,8 +341,8 @@ class BLE_Client {
 
             if (dummyCheck == 1) {
               await _mydevice.discoverAllServicesAndCharacteristics();
-              services = await _mydevice.services(); //getting all services
-              decviceCharacteristics = await _mydevice
+              _services = await _mydevice.services(); //getting all services
+              _decviceCharacteristics = await _mydevice
                   .characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
 
               print("Status: Connected to " + _mydevice.name.toString());
@@ -322,16 +372,16 @@ class BLE_Client {
     Completer completer = new Completer();
     String s = " ";
     Characteristic charactx;
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             charactx = characteristic;
           }
         });
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -367,16 +417,16 @@ class BLE_Client {
     Completer completer = new Completer();
     String s = " ";
     Characteristic charactx;
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             charactx = characteristic;
           }
         });
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -452,11 +502,11 @@ class BLE_Client {
   Future<dynamic> bleStopRecord() async {
     Completer completer = new Completer();
 
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) {
+        _decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -479,11 +529,11 @@ class BLE_Client {
   Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
     Completer completer = new Completer();
 
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) {
+        _decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -512,11 +562,11 @@ class BLE_Client {
   Future<dynamic> blestopUpload() async {
     Completer completer = new Completer();
 
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) {
+        _decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -540,16 +590,16 @@ class BLE_Client {
     Completer completer = new Completer();
     Characteristic charactx;
     String s = " ";
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             charactx = characteristic;
           }
         });
-        decviceCharacteristics.forEach((characteristic) async {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
@@ -594,11 +644,11 @@ class BLE_Client {
     String s;
     int fileCount = 0;
     Completer completer = new Completer();
-    services.forEach((service) {
+    _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        decviceCharacteristics.forEach((characteristic) {
+        _decviceCharacteristics.forEach((characteristic) {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
             _resultLen = _result.length;
             print(
@@ -606,7 +656,6 @@ class BLE_Client {
             print("WAITING FOR " +
                 _numofFiles.toString() +
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
-
 
             _characSubscription =
                 characteristic.monitor().listen((event) async {

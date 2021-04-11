@@ -401,7 +401,7 @@ class _LandingScreenState extends State<LandingScreen> {
     } catch (e) {
       print("Could not get activities");
     }
-
+    bleClient = null;
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // bool ble_activated = await SystemShortcuts.checkBluetooth;
     // if (!ble_activated) {
