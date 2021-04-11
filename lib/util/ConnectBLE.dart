@@ -125,29 +125,6 @@ class BLE_Client {
       print(e);
       // print('');
     }
-    // _activateBleManager = null;
-    // _scanSubscription = null;
-    // _condeviceStateSubscription = null;
-    // _characSubscription = null;
-    // _bleonSubscription = null;
-    // _responseSubscription = null;
-    // _currentDeviceConnected = null;
-    // _mydevice = null;
-    // _result = null;
-    // _noFiles = null;
-    // _idx = null;
-    // _idxFiles = null;
-    // _saveData = null;
-    // _dataSize = null;
-    // _resultLen = null;
-    // _numofFiles = null;
-    // _services = null;
-    // _decviceCharacteristics = null;
-    // _nearestDeviceName  = null;
-    // _nearestDeviceMac  = null;
-    // _actMins = null;
-    // _steps = null;
-    // _fileName = null;
     print("BLE Closed   //////////////");
   }
 
