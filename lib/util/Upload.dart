@@ -105,8 +105,8 @@ Future<void> uploadFiles() async {
                   });
             }
           }
-          filePaths = io.Directory(localFilesDirectory).listSync();
-          print(filePaths);
+          // filePaths = io.Directory(localFilesDirectory).listSync();
+          // print(filePaths);
         } catch (e) {
           print(e.toString());
         }

@@ -376,8 +376,9 @@ class _LandingScreenState extends State<LandingScreen> {
     int steps;
     int actmins;
     int nfiles;
+    // bleClient.checkBLEstate();
     try {
-      await bleClient.initiateBLEClient().then((value) async {
+      // await bleClient.initiateBLEClient().then((value) async {
         await bleClient.start_ble_scan().then((value) async {
           await bleClient.ble_connect().then((value) async {
             steps = await bleClient.bleSteps();
@@ -390,7 +391,7 @@ class _LandingScreenState extends State<LandingScreen> {
             print("No. of files expected: " + nfiles.toString());
           });
         });
-      });
+      // });
     } catch (e) {
       print("Could not get activities");
     }

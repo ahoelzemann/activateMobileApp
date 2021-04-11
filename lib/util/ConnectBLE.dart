@@ -88,7 +88,7 @@ class BLE_Client {
         _currentDeviceConnected = false;
       }
       if (_instance._activateBleManager != null) {
-        await _instance._activateBleManager.destroyClient();
+        _instance._activateBleManager.destroyClient();
       }
     } catch (e) {
       print(e);
