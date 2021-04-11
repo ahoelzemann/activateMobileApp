@@ -49,6 +49,10 @@ class BLE_Client {
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
   factory BLE_Client() {
+    _instance._activateBleManager = BleManager();
+    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
+    _instance._activateBleManager
+        .createClient(restoreStateIdentifier: "BLE Manager");
     _instance._idx = 0;
     _instance._result = new List(5000000);
     _instance._noFiles = new List(25);
@@ -96,10 +100,7 @@ class BLE_Client {
     // _instance._characSubscription?.cancel();
     // _instance._characSubscription = null;
 
-    _instance._activateBleManager = BleManager();
-    // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-    await _instance._activateBleManager
-        .createClient(restoreStateIdentifier: "BLE Manager");
+
 
     return true;
   }
