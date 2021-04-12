@@ -1,16 +1,7 @@
-import 'dart:ffi';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_ble_lib/flutter_ble_lib.dart';
-import 'dart:ui';
-import 'package:convert/convert.dart';
-import 'package:trac2move/util/DataLoader.dart' as DataLoader;
-import 'package:trac2move/util/Upload.dart' as upload;
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +9,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 class BLE_Client {
   BleManager _activateBleManager = BleManager();
 
-  // static final BLE_Client _instance = BLE_Client._privateConstructor();
   var _scanSubscription;
   var _condeviceStateSubscription;
   var _characSubscription;
@@ -29,15 +19,12 @@ class BLE_Client {
   List<int> _result;
   List<int> _noFiles;
   int _idx;
-  int _idxFiles;
-  int _saveData;
   int _dataSize;
   int _resultLen;
   int _numofFiles;
   List<Service> _services;
   List<Characteristic> _decviceCharacteristics;
 
-  // BleManager _activateBleManager;
   String _nearestDeviceName = "";
   String _nearestDeviceMac = "";
   var _actMins;
@@ -56,106 +43,21 @@ class BLE_Client {
     _result = new List(5000000);
     _noFiles = new List(25);
     _noFiles[0] = 0;
-    _idxFiles = 1;
-    _saveData = 0;
     _dataSize = 0;
     _numofFiles = 0;
     _currentDeviceConnected = false;
   }
 
-  // BLE_Client._privateConstructor() {
-  //   // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-  //   _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
-  //   _idx = 0;
-  //   _result = new List(5000000);
-  //   _noFiles = new List(25);
-  //   _noFiles[0] = 0;
-  //   _idxFiles = 1;
-  //   _saveData = 0;
-  //   _dataSize = 0;
-  //   _numofFiles = 0;
-  //   _currentDeviceConnected = false;
-  //   // _instance._devicesList = new List<ScanResult>();
-  //   // _instance._myHexFiles = [];
-  // }
-
-  void closeBLE() async {
-    try {
-      // if (_currentDeviceConnected == true) {
-      //   await _mydevice.disconnectOrCancelConnection();
-      //   // _mydevice = null;
-      //   _currentDeviceConnected = false;
-      // }
-      if (await _mydevice.isConnected()) {
-        await _mydevice.disconnectOrCancelConnection();
-      }
-      if (_scanSubscription != null) {
-        await _scanSubscription.cancel();
-      }
-      if (_characSubscription != null) {
-        await _characSubscription.cancel();
-      }
-      if (_condeviceStateSubscription != null) {
-        await _condeviceStateSubscription.cancel();
-      }
-      if (_responseSubscription != null) {
-        await _responseSubscription.cancel();
-      }
-      if (_bleonSubscription != null) {
-        await _bleonSubscription.cancel();
-      }
-      // await _characSubscription?.cancel();
-      // _condeviceStateSubscription?.cancel();
-
-      // _responseSubscription?.cancel();
-      // _condeviceStateSubscription = null;
-      //
-      // _bleonSubscription?.cancel();
-      // _bleonSubscription = null;
-      //
-
-      // _scanSubscription?.cancel();
-      // _scanSubscription = null;
-
-
-      if (_activateBleManager != null) {
-        _activateBleManager.destroyClient();
-      }
-    } catch (e) {
-      print(e);
-      // print('');
-    }
-    // _activateBleManager = null;
-    // _scanSubscription = null;
-    // _condeviceStateSubscription = null;
-    // _characSubscription = null;
-    // _bleonSubscription = null;
-    // _responseSubscription = null;
-    // _currentDeviceConnected = null;
-    // _mydevice = null;
-    // _result = null;
-    // _noFiles = null;
-    // _idx = null;
-    // _idxFiles = null;
-    // _saveData = null;
-    // _dataSize = null;
-    // _resultLen = null;
-    // _numofFiles = null;
-    // _services = null;
-    // _decviceCharacteristics = null;
-    // _nearestDeviceName  = null;
-    // _nearestDeviceMac  = null;
-    // _actMins = null;
-    // _steps = null;
-    // _fileName = null;
-    print("BLE Closed   //////////////");
+  String getBleDeviceName() {
+    return _mydevice.name.toString();
   }
 
-  Future<dynamic> initiateBLEClient() async {
-    // _instance._characSubscription?.cancel();
-    // _instance._characSubscription = null;
+  String getNearestDeviceMac() {
+    return _nearestDeviceMac;
+  }
 
-    return true;
+  String getNearestDeviceName() {
+    return _nearestDeviceName;
   }
 
   Future<dynamic> checkBLEstate() async {
@@ -179,63 +81,11 @@ class BLE_Client {
     return completer.future;
   }
 
-  String getnearestDeviceMac() {
-    return _nearestDeviceMac;
-  }
-
-  String nearestDeviceName() {
-    return _nearestDeviceName;
-  }
-
-  Future<dynamic> find_nearest_device() async {
-    Completer completer = new Completer();
-
-    _scanSubscription = _activateBleManager
-        // .startPeripheralScan(scanMode: ScanMode.balanced)
-        .startPeripheralScan()
-        .listen((ScanResult scanResult) async {
-      //Scan one peripheral and stop scanning
-
-      String devicename = scanResult.advertisementData.localName.toString();
-
-      String macNum = scanResult.peripheral.identifier.toString();
-      int RSSI = scanResult.rssi;
-
-      print(devicename +
-          " " +
-          macNum +
-          " mac number//////////  " +
-          RSSI.toString());
-
-      if (devicename != null) {
-        if (devicename.contains('Bangle.js') && (RSSI >= -60)) {
-          _activateBleManager.stopPeripheralScan();
-          _scanSubscription?.cancel();
-          print("Our Device is found: " +
-              devicename +
-              " " +
-              macNum +
-              " " +
-              RSSI.toString());
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          prefs.setString("macnum", macNum);
-          prefs.setString("Devicename", devicename);
-          // _nearestDeviceMac = macNum;
-          // _nearestDeviceName = devicename;
-          completer.complete(true);
-        }
-      }
-    });
-
-    return completer.future;
-  }
-
-  ///// **** Scan and Stop Bluetooth Methods  ***** /////
+///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        // .startPeripheralScan(scanMode: ScanMode.balanced)
         .startPeripheralScan()
         .listen((ScanResult scanResult) async {
       //Scan one peripheral and stop scanning
@@ -282,10 +132,6 @@ class BLE_Client {
     return completer.future;
   }
 
-  String getBleDeviceName() {
-    return _mydevice.name.toString();
-  }
-
   Future<dynamic> ble_connect() async {
     Completer completer = new Completer();
     if (_mydevice != null) {
@@ -295,7 +141,6 @@ class BLE_Client {
         await _mydevice.connect();
 
         _condeviceStateSubscription?.cancel();
-        // _condeviceStateSubscription = null;
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -368,158 +213,41 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> bleSteps() async {
-    Completer completer = new Completer();
-    String s = " ";
-    Characteristic charactx;
-    _services.forEach((service) {
-      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-        print("Status:" + _mydevice.name.toString() + " service discovered");
-
-        _decviceCharacteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-            charactx = characteristic;
-          }
-        });
-        _decviceCharacteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-            print(
-                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
-            print("Sending  bleSteps command...");
-
-            s = "steps\n";
-            print(Uint8List.fromList(s.codeUnits).toString());
-            _responseSubscription = charactx.monitor().listen((event) async {
-              print(event.toString() + "  //////////////");
-              print(String.fromCharCodes(event));
-              if (event[0] == 115 && event[4] == 115) {
-                String dd = String.fromCharCodes(event.sublist(
-                    event.indexOf(61) + 1,
-                    event.lastIndexOf(13))); //the number between = and \r
-                _steps = int.parse(dd.trim());
-                _responseSubscription?.cancel();
-                completer.complete(_steps);
-              }
-            });
-            characteristic.write(
-                Uint8List.fromList(s.codeUnits), true); //returns void
-
-          }
-        });
-      }
-    });
-
-    return completer.future;
-  }
-
-  Future<dynamic> bleactMins() async {
-    Completer completer = new Completer();
-    String s = " ";
-    Characteristic charactx;
-    _services.forEach((service) {
-      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-        print("Status:" + _mydevice.name.toString() + " service discovered");
-
-        _decviceCharacteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-            charactx = characteristic;
-          }
-        });
-        _decviceCharacteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-            print(
-                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-            _resultLen = _result.length;
-            print("Sending  actMins command...");
-
-            s = "actMins\n";
-            print(Uint8List.fromList(s.codeUnits).toString());
-            _responseSubscription = charactx.monitor().listen((event) async {
-              print(event.toString() + "  //////////////");
-              print(String.fromCharCodes(event));
-              if (event[0] == 97 && event[4] == 105) {
-                String dd = String.fromCharCodes(event.sublist(
-                    event.indexOf(61) + 1,
-                    event.lastIndexOf(13))); //the number between = and \r
-                _actMins = int.parse(dd.trim());
-                _responseSubscription?.cancel();
-                completer.complete(_actMins);
-              }
-            });
-            characteristic.write(
-                Uint8List.fromList(s.codeUnits), true); //returns void
-
-          }
-        });
-      }
-    });
-
-    return completer.future;
-  }
-
-  Future<dynamic> bleGetResponse(Characteristic characteristic) async {
+  Future<dynamic> find_nearest_device() async {
     Completer completer = new Completer();
 
-    print("Waiting for Reponse ...");
-    _responseSubscription = characteristic.monitor().listen((event) async {
-      print(event.toString() + "  //////////////");
-      print(String.fromCharCodes(event));
-      String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
-          event.lastIndexOf(13))); //the number between = and \r
-      int num = int.parse(dd.trim());
-      completer.complete(num);
-    });
+    _scanSubscription = _activateBleManager
+        // .startPeripheralScan(scanMode: ScanMode.balanced)
+        .startPeripheralScan()
+        .listen((ScanResult scanResult) async {
+      //Scan one peripheral and stop scanning
 
-    return completer.future;
-  }
+      String devicename = scanResult.advertisementData.localName.toString();
 
-  // void ble_parse_and_send() async {
-  //   print(" Parse Data /////////////////////////////////////");
-  //   //Start mqqt task
-  //   if (_result.isEmpty == false) {
-  //     for (int i = 0; i < (_idxFiles - 1); i++) {
-  //       print(i.toString() + " ////////////////////");
-  //       print(_noFiles[i].toString() + " ////////////////////");
-  //       print(_noFiles[i + 1].toString() + " ////////////////////");
-  //       _hexifiedData = hex
-  //           .encode(_result.sublist(_noFiles[i], _noFiles[i + 1]))
-  //           .toString();
-  //       _myHexFiles.add(_hexifiedData);
-  //     }
-  //
-  //     if (_myHexFiles.isEmpty == false) {
-  //       _mqtt_data =
-  //       await connector.CurrentParticipant(connection).then((value) async {
-  //         return DataLoader.loadFilesReturnAsJson(_myHexFiles, value.studienID);
-  //       });
-  //       client.mqtt_connect_and_send(_mqtt_data);
-  //     }
-  //   }
-  //   //End mqtt task
-  // }
+      String macNum = scanResult.peripheral.identifier.toString();
+      int RSSI = scanResult.rssi;
 
-  Future<dynamic> bleStopRecord() async {
-    Completer completer = new Completer();
+      print(devicename +
+          " " +
+          macNum +
+          " mac number//////////  " +
+          RSSI.toString());
 
-    _services.forEach((service) {
-      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-        print("Status:" + _mydevice.name.toString() + " service discovered");
-
-        _decviceCharacteristics.forEach((characteristic) {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-            print(
-                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
-
-            print("Stop recording...");
-
-            String s = "\u0010recStop();\n";
-            characteristic.write(Uint8List.fromList(s.codeUnits), false,
-                transactionId: "stopRecord"); //returns void
-            print(Uint8List.fromList(s.codeUnits).toString());
-            completer.complete(true);
-          }
-        });
+      if (devicename != null) {
+        if (devicename.contains('Bangle.js') && (RSSI >= -60)) {
+          _activateBleManager.stopPeripheralScan();
+          _scanSubscription?.cancel();
+          print("Our Device is found: " +
+              devicename +
+              " " +
+              macNum +
+              " " +
+              RSSI.toString());
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          prefs.setString("macnum", macNum);
+          prefs.setString("Devicename", devicename);
+          completer.complete(true);
+        }
       }
     });
 
@@ -559,7 +287,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> blestopUpload() async {
+  Future<dynamic> bleStopRecord() async {
     Completer completer = new Completer();
 
     _services.forEach((service) {
@@ -571,11 +299,11 @@ class BLE_Client {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
 
-            print("Sending  stop command...");
+            print("Stop recording...");
 
-            String s = "\u0010stopUpload();\n";
-            characteristic.write(
-                Uint8List.fromList(s.codeUnits), false); //returns void
+            String s = "\u0010recStop();\n";
+            characteristic.write(Uint8List.fromList(s.codeUnits), false,
+                transactionId: "stopRecord"); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
             completer.complete(true);
           }
@@ -754,81 +482,174 @@ class BLE_Client {
     return completer.future;
   }
 
-  // Future<void> writeToFile(ByteData data, String path) {
-  //   final buffer = data.buffer;
-  //   return new File(path).writeAsBytes(
-  //       buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
+  Future<dynamic> blestopUpload() async {
+    Completer completer = new Completer();
+
+    _services.forEach((service) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        print("Status:" + _mydevice.name.toString() + " service discovered");
+
+        _decviceCharacteristics.forEach((characteristic) {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print(
+                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
+
+            print("Sending  stop command...");
+
+            String s = "\u0010stopUpload();\n";
+            characteristic.write(
+                Uint8List.fromList(s.codeUnits), false); //returns void
+            print(Uint8List.fromList(s.codeUnits).toString());
+            completer.complete(true);
+          }
+        });
+      }
+    });
+
+    return completer.future;
+  }
+
+  Future<dynamic> bleSteps() async {
+    Completer completer = new Completer();
+    String s = " ";
+    Characteristic charactx;
+    _services.forEach((service) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        print("Status:" + _mydevice.name.toString() + " service discovered");
+
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
+            charactx = characteristic;
+          }
+        });
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print(
+                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
+            _resultLen = _result.length;
+            print("Sending  bleSteps command...");
+
+            s = "steps\n";
+            print(Uint8List.fromList(s.codeUnits).toString());
+            _responseSubscription = charactx.monitor().listen((event) async {
+              print(event.toString() + "  //////////////");
+              print(String.fromCharCodes(event));
+              if (event[0] == 115 && event[4] == 115) {
+                String dd = String.fromCharCodes(event.sublist(
+                    event.indexOf(61) + 1,
+                    event.lastIndexOf(13))); //the number between = and \r
+                _steps = int.parse(dd.trim());
+                _responseSubscription?.cancel();
+                completer.complete(_steps);
+              }
+            });
+            characteristic.write(
+                Uint8List.fromList(s.codeUnits), true); //returns void
+
+          }
+        });
+      }
+    });
+
+    return completer.future;
+  }
+
+  Future<dynamic> bleactMins() async {
+    Completer completer = new Completer();
+    String s = " ";
+    Characteristic charactx;
+    _services.forEach((service) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        print("Status:" + _mydevice.name.toString() + " service discovered");
+
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
+            charactx = characteristic;
+          }
+        });
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print(
+                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
+            _resultLen = _result.length;
+            print("Sending  actMins command...");
+
+            s = "actMins\n";
+            print(Uint8List.fromList(s.codeUnits).toString());
+            _responseSubscription = charactx.monitor().listen((event) async {
+              print(event.toString() + "  //////////////");
+              print(String.fromCharCodes(event));
+              if (event[0] == 97 && event[4] == 105) {
+                String dd = String.fromCharCodes(event.sublist(
+                    event.indexOf(61) + 1,
+                    event.lastIndexOf(13))); //the number between = and \r
+                _actMins = int.parse(dd.trim());
+                _responseSubscription?.cancel();
+                completer.complete(_actMins);
+              }
+            });
+            characteristic.write(
+                Uint8List.fromList(s.codeUnits), true); //returns void
+
+          }
+        });
+      }
+    });
+
+    return completer.future;
+  }
+
+  // Future<dynamic> bleGetResponse(Characteristic characteristic) async {
+  //   Completer completer = new Completer();
+  //
+  //   print("Waiting for Reponse ...");
+  //   _responseSubscription = characteristic.monitor().listen((event) async {
+  //     print(event.toString() + "  //////////////");
+  //     print(String.fromCharCodes(event));
+  //     String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
+  //         event.lastIndexOf(13))); //the number between = and \r
+  //     int num = int.parse(dd.trim());
+  //     completer.complete(num);
+  //   });
+  //
+  //   return completer.future;
   // }
-  Future<void> writeToFile(List<int> data, String path) {
-    return new File(path).writeAsBytes(data);
+
+  void closeBLE() async {
+    try {
+      if (_currentDeviceConnected == true) {
+        await _mydevice.disconnectOrCancelConnection();
+        _currentDeviceConnected = false;
+      }
+      if (await _mydevice.isConnected()) {
+        await _mydevice.disconnectOrCancelConnection();
+      }
+      if (_scanSubscription != null) {
+        await _scanSubscription.cancel();
+      }
+      if (_characSubscription != null) {
+        await _characSubscription.cancel();
+      }
+      if (_condeviceStateSubscription != null) {
+        await _condeviceStateSubscription.cancel();
+      }
+      if (_responseSubscription != null) {
+        await _responseSubscription.cancel();
+      }
+      if (_bleonSubscription != null) {
+        await _bleonSubscription.cancel();
+      }
+
+      if (_activateBleManager != null) {
+        _activateBleManager.destroyClient();
+      }
+    } catch (e) {
+      print(e);
+    }
+    print("BLE Closed   //////////////");
   }
 }
 
-//
-// class ConnectBLE extends StatefulWidget {
-//   final BangleStorage storage;
-//
-//   ConnectBLE({Key key, @required this.storage}) : super(key: key);
-//
-//   //ConnectBLE({Key key,}) : super(key: key);
-//
-//   @override
-//   _ConnectBLEState createState() => _ConnectBLEState();
-// }
-//
-// class _ConnectBLEState extends State<ConnectBLE> {
-//   String bleStatus;
-//   BLE_Client bleClient = new BLE_Client();
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     bleStatus = "Satus: Starting scan.";
-//
-//     bleCaller();
-//   }
-//
-//   void bleCaller() async {
-//     BLE_Client bleClient = new BLE_Client();
-//
-//     await bleClient.checkBLEstate();
-//     await bleClient.start_ble_scan();
-//     await bleClient.ble_connect();
-//     //await bleClient.bleStartRecord(100,8,25);
-//     await bleClient.bleStopRecord();
-//     await bleClient.bleStartUpload();
-//     // bleClient.ble_parse_and_send();
-//     bleClient.closeBLE();
-//     print("Done ///////");
-//   }
-//
-//   @override
-//   void dispose() {
-//     bleClient.closeBLE();
-//     super.dispose();
-//   }
-//
-//   void changedata(String newdata) {
-//     setState(() {
-//       bleStatus = newdata;
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) => Scaffold(
-//     appBar: AppBar(
-//       title: Text('Scanner'),
-//     ),
-//     body: Container(
-//         height: 60,
-//         //width: 500,
-//         padding: const EdgeInsets.symmetric(
-//           vertical: 10.0,
-//           horizontal: 0.0,
-//         ),
-//         child: Text("$bleStatus",
-//             style:
-//             TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-//             textAlign: TextAlign.start)),
-//   );
-// }
+Future<void> writeToFile(List<int> data, String path) {
+  return new File(path).writeAsBytes(data);
+}
