@@ -365,119 +365,46 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  void _startRecording() async {
+  void _stopRecordingAndUpload() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool ble_activated = await SystemShortcuts.checkBluetooth;
-    // if (!ble_activated) {
-    //   await SystemShortcuts.bluetooth();
-    // }
-    // BLE_Client bleClient = new BLE_Client();
+    bool bleActivated = await SystemShortcuts.checkBluetooth;
+    if (!bleActivated) {
+      await SystemShortcuts.bluetooth();
+    }
     int steps;
     int actmins;
     int nfiles;
-    // bleClient.checkBLEstate();
-    // try {
-    //   await bleClient.start_ble_scan().then((value) async {
-    //     await bleClient.ble_connect();
-    //     await bleClient.bleStopRecord();
-    //     nfiles = await bleClient.bleStartUpload();
-    //     bleClient.closeBLE();
-    //   });
-
-      // await bleClient.initiateBLEClient().then((value) async {
-      // await bleClient.checkBLEstate().then((value) async {
-
 
     await BLE.doUpload().then((value) {
-      if (value==true) {
+      if (value == true) {
         upload.uploadFiles();
+        prefs.setString("recordStopedAt", DateTime.now().toString());
+        prefs.setBool("isRecording", false);
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LandingScreen()),
+        );
       }
     });
-        // await bleClient.start_ble_scan().then((value) async {
-        //   await bleClient.ble_connect().then((value) async {
-        //     // steps = await bleClient.bleSteps();
-        //     // bleClient.closeBLE();
-        //     // bleClient = new BLE_Client();
-        //     // await bleClient.start_ble_scan();
-        //     // await bleClient.ble_connect();
-        //     // actmins = await bleClient.bleactMins();
-        //     await bleClient.bleStopRecord();
-        //     nfiles = await bleClient.bleStartUpload();
-        //     bleClient.closeBLE();
-
-            // print("Your steps is: " +
-            //     steps.toString() +
-            //     " and active mins: " +
-            //     actmins.toString());
-            // print("No. of files expected: " + nfiles.toString());
-        //   });
-        // });
-      // });
-    // } catch (e) {
-    //   print("Could not get activities");
-    // }
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool ble_activated = await SystemShortcuts.checkBluetooth;
-    // if (!ble_activated) {
-    //   await SystemShortcuts.bluetooth();
-    // }
-    // BLE_Client bleClient = new BLE_Client();
-    // try {
-    //   // await bleClient.checkBLEstate().then((value) async {
-    //   await bleClient.initiateBLEClient().then((value) async {
-    //     await bleClient.start_ble_scan().then((value) async {
-    //       await bleClient.ble_connect().then((value) async {
-    //         await bleClient.bleStartRecord(12.5, 8, 25);
-    //         prefs.setString("recordStartedAt", DateTime.now().toString());
-    //         prefs.setBool("isRecording", true);
-    //         bleClient.closeBLE();
-    //         // bleClient = null;
-    //         Navigator.of(context).pop();
-    //         Navigator.push(
-    //           context,
-    //           MaterialPageRoute(builder: (context) => LandingScreen()),
-    //         );
-    //       });
-    //     });
-    //   });
-    //
-    //   // print("success");
-    // } catch (e) {
-    //   print("recording could not start");
-    // }
   }
 
-  void _stopAndUpload() async {
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // prefs.setString("recordStopedAt", DateTime.now().toString());
-    // prefs.setBool("isRecording", false);
-    // Navigator.of(context).pop();
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => LandingScreen()),
-    // );
 
-    // print('stop recording');
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // BLE_Client bleClient = new BLE_Client();
-    // await bleClient.initiateBLEClient().then((value) async {
-    //
-    //     await bleClient.start_ble_scan().then((value) async {
-    //       await bleClient.ble_connect().then((value) async {
-    //         await bleClient.bleStopRecord();
-    //         prefs.setString("recordStopedAt", DateTime.now().toString());
-    //         prefs.setBool("isRecording", false);
-    //         print('uploading data...');
-    //         bleClient.closeBLE();
-    //         // bleClient = null;
-    //         Navigator.of(context).pop();
-    //         Navigator.push(
-    //           context,
-    //           MaterialPageRoute(builder: (context) => LandingScreen()),
-    //         );
-    //       });
-    //     });
-    // });
+  void _startRecording() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+
+    await BLE.startRecording().then((value) {
+      if (value==true) {
+        prefs.setString("recordStartedAt", DateTime.now().toString());
+        prefs.setBool("isRecording", true);
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LandingScreen()),
+        );
+      }
+    });
+
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size) {
@@ -485,7 +412,7 @@ class _LandingScreenState extends State<LandingScreen> {
     if (action == 0) {
       fun = () => _startRecording();
     } else {
-      fun = () => _stopAndUpload();
+      fun = () => _stopRecordingAndUpload();
     }
 
     return Container(
@@ -530,12 +457,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(seconds: 5))) ? true : false;
-
-  bool timeToRecord = now.isBefore(
-          DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))
-      ? true
-      : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
