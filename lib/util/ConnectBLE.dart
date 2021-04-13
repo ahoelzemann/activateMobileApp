@@ -1,24 +1,46 @@
-import 'dart:ffi';
 import 'dart:io';
-import 'dart:convert';
 import 'dart:typed_data';
-import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_ble_lib/flutter_ble_lib.dart';
-import 'dart:ui';
-import 'package:convert/convert.dart';
-import 'package:trac2move/util/DataLoader.dart' as DataLoader;
-import 'package:trac2move/util/Upload.dart' as upload;
-import 'dart:convert';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class BLE_Client {
-  BleManager _activateBleManager = BleManager();
+Future<bool> doUpload() async {
+  BLE_Client bleClient = new BLE_Client();
 
-  // static final BLE_Client _instance = BLE_Client._privateConstructor();
+  await Future.delayed(Duration(milliseconds: 500));
+
+  try {
+
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStopRecord();
+    await bleClient.bleStartUpload();
+    await bleClient.closeBLE();
+
+    // bleClient = null;
+
+    return true;
+
+  } catch (e) {
+
+    print('Connection failed:');
+    print('connecting again.....');
+    // await Future.delayed(Duration(seconds: 3));
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStopRecord();
+    await bleClient.bleStartUpload();
+    await bleClient.closeBLE();
+
+
+    return false;
+  }
+}
+class BLE_Client {
+  BleManager _activateBleManager = new BleManager();
+
   var _scanSubscription;
   var _condeviceStateSubscription;
   var _characSubscription;
@@ -29,15 +51,12 @@ class BLE_Client {
   List<int> _result;
   List<int> _noFiles;
   int _idx;
-  int _idxFiles;
-  int _saveData;
   int _dataSize;
   int _resultLen;
   int _numofFiles;
   List<Service> _services;
   List<Characteristic> _decviceCharacteristics;
 
-  // BleManager _activateBleManager;
   String _nearestDeviceName = "";
   String _nearestDeviceMac = "";
   var _actMins;
@@ -50,42 +69,36 @@ class BLE_Client {
   static const UUIDSTR_ISSC_TRANS_RX =
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
+
   BLE_Client() {
     _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
     _idx = 0;
     _result = new List(5000000);
     _noFiles = new List(25);
     _noFiles[0] = 0;
-    _idxFiles = 1;
-    _saveData = 0;
     _dataSize = 0;
     _numofFiles = 0;
     _currentDeviceConnected = false;
   }
+  Future<BLE_Client> create() async {
+    BLE_Client bleClient = new BLE_Client();
+    _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
+    _idx = 0;
+    _result = new List(5000000);
+    _noFiles = new List(25);
+    _noFiles[0] = 0;
+    _dataSize = 0;
+    _numofFiles = 0;
+    _currentDeviceConnected = false;
 
-  // BLE_Client._privateConstructor() {
-  //   // _instance._activateBleManager.setLogLevel(LogLevel.verbose);
-  //   _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
-  //   _idx = 0;
-  //   _result = new List(5000000);
-  //   _noFiles = new List(25);
-  //   _noFiles[0] = 0;
-  //   _idxFiles = 1;
-  //   _saveData = 0;
-  //   _dataSize = 0;
-  //   _numofFiles = 0;
-  //   _currentDeviceConnected = false;
-  //   // _instance._devicesList = new List<ScanResult>();
-  //   // _instance._myHexFiles = [];
-  // }
-
+    return bleClient;
+  }
   void closeBLE() async {
     try {
-      // if (_currentDeviceConnected == true) {
-      //   await _mydevice.disconnectOrCancelConnection();
-      //   // _mydevice = null;
-      //   _currentDeviceConnected = false;
-      // }
+      if (_currentDeviceConnected == true) {
+        await _mydevice.disconnectOrCancelConnection();
+        _currentDeviceConnected = false;
+      }
       if (await _mydevice.isConnected()) {
         await _mydevice.disconnectOrCancelConnection();
       }
@@ -104,34 +117,17 @@ class BLE_Client {
       if (_bleonSubscription != null) {
         await _bleonSubscription.cancel();
       }
-      // await _characSubscription?.cancel();
-      // _condeviceStateSubscription?.cancel();
-
-      // _responseSubscription?.cancel();
-      // _condeviceStateSubscription = null;
-      //
-      // _bleonSubscription?.cancel();
-      // _bleonSubscription = null;
-      //
-
-      // _scanSubscription?.cancel();
-      // _scanSubscription = null;
-
 
       if (_activateBleManager != null) {
         _activateBleManager.destroyClient();
       }
     } catch (e) {
       print(e);
-      // print('');
     }
     print("BLE Closed   //////////////");
   }
 
   Future<dynamic> initiateBLEClient() async {
-    // _instance._characSubscription?.cancel();
-    // _instance._characSubscription = null;
-
     return true;
   }
 
@@ -197,8 +193,6 @@ class BLE_Client {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setString("macnum", macNum);
           prefs.setString("Devicename", devicename);
-          // _nearestDeviceMac = macNum;
-          // _nearestDeviceName = devicename;
           completer.complete(true);
         }
       }
@@ -209,13 +203,13 @@ class BLE_Client {
 
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
-        // .startPeripheralScan(scanMode: ScanMode.balanced)
-        .startPeripheralScan()
+        .startPeripheralScan(scanMode: ScanMode.balanced)
+        // .startPeripheralScan()
         .listen((ScanResult scanResult) async {
-      //Scan one peripheral and stop scanning
       if (_mydevice != null) {
         bool connected = await _mydevice.isConnected();
         print("DeviceState: " + connected.toString());
@@ -250,8 +244,8 @@ class BLE_Client {
       if ((devicename == name) || (macNum == mac)) {
         _activateBleManager.stopPeripheralScan();
         _mydevice = scanResult.peripheral;
-        _scanSubscription?.cancel();
-        print("start_ble_scan Our Device is found " + macNum);
+        // _scanSubscription?.cancel();
+        print("stop_ble_scan Our Device is found " + macNum);
         completer.complete(true);
       }
     });
@@ -264,6 +258,7 @@ class BLE_Client {
   }
 
   Future<dynamic> ble_connect() async {
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
     if (_mydevice != null) {
       bool connected = await _mydevice.isConnected();
@@ -272,7 +267,6 @@ class BLE_Client {
         await _mydevice.connect();
 
         _condeviceStateSubscription?.cancel();
-        // _condeviceStateSubscription = null;
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -331,7 +325,6 @@ class BLE_Client {
             print(
                 "Bluetooth Disconnected, ///////////////////////////////////");
             _currentDeviceConnected = false;
-            //closeBLE();
             if (dummyCheck == 1) {
               dummyCheck = 0;
               completer.complete(false);
@@ -450,31 +443,6 @@ class BLE_Client {
 
     return completer.future;
   }
-
-  // void ble_parse_and_send() async {
-  //   print(" Parse Data /////////////////////////////////////");
-  //   //Start mqqt task
-  //   if (_result.isEmpty == false) {
-  //     for (int i = 0; i < (_idxFiles - 1); i++) {
-  //       print(i.toString() + " ////////////////////");
-  //       print(_noFiles[i].toString() + " ////////////////////");
-  //       print(_noFiles[i + 1].toString() + " ////////////////////");
-  //       _hexifiedData = hex
-  //           .encode(_result.sublist(_noFiles[i], _noFiles[i + 1]))
-  //           .toString();
-  //       _myHexFiles.add(_hexifiedData);
-  //     }
-  //
-  //     if (_myHexFiles.isEmpty == false) {
-  //       _mqtt_data =
-  //       await connector.CurrentParticipant(connection).then((value) async {
-  //         return DataLoader.loadFilesReturnAsJson(_myHexFiles, value.studienID);
-  //       });
-  //       client.mqtt_connect_and_send(_mqtt_data);
-  //     }
-  //   }
-  //   //End mqtt task
-  // }
 
   Future<dynamic> bleStopRecord() async {
     Completer completer = new Completer();
@@ -640,10 +608,6 @@ class BLE_Client {
 
               if (_idx < _resultLen) {
                 if (_dataSize == 17) {
-                  // 46 is .
-                  // 98 is b
-                  // 105 is i
-                  // 110 is n
                   if (event[13] == 46 &&
                       event[14] == 98 &&
                       event[15] == 105 &&
@@ -731,15 +695,12 @@ class BLE_Client {
     return completer.future;
   }
 
-  // Future<void> writeToFile(ByteData data, String path) {
-  //   final buffer = data.buffer;
-  //   return new File(path).writeAsBytes(
-  //       buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-  // }
   Future<void> writeToFile(List<int> data, String path) {
     return new File(path).writeAsBytes(data);
   }
 }
+
+
 
 //
 // class ConnectBLE extends StatefulWidget {
