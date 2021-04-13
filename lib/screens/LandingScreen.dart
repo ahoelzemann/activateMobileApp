@@ -10,7 +10,7 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/ConnectBLE.dart';
+import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 import 'package:trac2move/util/Upload.dart' as upload;
 import 'package:system_shortcuts/system_shortcuts.dart';
 
@@ -366,42 +366,56 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 
   void _startRecording() async {
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // bool ble_activated = await SystemShortcuts.checkBluetooth;
     // if (!ble_activated) {
     //   await SystemShortcuts.bluetooth();
     // }
-    BLE_Client bleClient = new BLE_Client();
+    // BLE_Client bleClient = new BLE_Client();
     int steps;
     int actmins;
     int nfiles;
     // bleClient.checkBLEstate();
-    try {
+    // try {
+    //   await bleClient.start_ble_scan().then((value) async {
+    //     await bleClient.ble_connect();
+    //     await bleClient.bleStopRecord();
+    //     nfiles = await bleClient.bleStartUpload();
+    //     bleClient.closeBLE();
+    //   });
+
       // await bleClient.initiateBLEClient().then((value) async {
-      await bleClient.checkBLEstate().then((value) async {
-        await bleClient.start_ble_scan().then((value) async {
-          await bleClient.ble_connect().then((value) async {
-            steps = await bleClient.bleSteps();
-            // bleClient.closeBLE();
-            // bleClient = new BLE_Client();
-            // await bleClient.start_ble_scan();
-            // await bleClient.ble_connect();
-            actmins = await bleClient.bleactMins();
-            await bleClient.bleStopRecord();
-            nfiles = await bleClient.bleStartUpload();
-            bleClient.closeBLE();
-            upload.uploadFiles();
-            print("Your steps is: " + steps.toString() + " and active mins: " + actmins.toString());
-            print("No. of files expected: " + nfiles.toString());
-          });
-        });
-      });
+      // await bleClient.checkBLEstate().then((value) async {
+
+
+    await BLE.doUpload().then((value) {
+      if (value==true) {
+        upload.uploadFiles();
+      }
+    });
+        // await bleClient.start_ble_scan().then((value) async {
+        //   await bleClient.ble_connect().then((value) async {
+        //     // steps = await bleClient.bleSteps();
+        //     // bleClient.closeBLE();
+        //     // bleClient = new BLE_Client();
+        //     // await bleClient.start_ble_scan();
+        //     // await bleClient.ble_connect();
+        //     // actmins = await bleClient.bleactMins();
+        //     await bleClient.bleStopRecord();
+        //     nfiles = await bleClient.bleStartUpload();
+        //     bleClient.closeBLE();
+
+            // print("Your steps is: " +
+            //     steps.toString() +
+            //     " and active mins: " +
+            //     actmins.toString());
+            // print("No. of files expected: " + nfiles.toString());
+        //   });
+        // });
       // });
-    } catch (e) {
-      print("Could not get activities");
-    }
-    bleClient = null;
+    // } catch (e) {
+    //   print("Could not get activities");
+    // }
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // bool ble_activated = await SystemShortcuts.checkBluetooth;
     // if (!ble_activated) {
@@ -443,7 +457,6 @@ class _LandingScreenState extends State<LandingScreen> {
     //   MaterialPageRoute(builder: (context) => LandingScreen()),
     // );
 
-
     // print('stop recording');
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // BLE_Client bleClient = new BLE_Client();
@@ -465,7 +478,6 @@ class _LandingScreenState extends State<LandingScreen> {
     //       });
     //     });
     // });
-
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size) {
