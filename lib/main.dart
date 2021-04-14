@@ -8,6 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:ssh/ssh.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
+import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 
 
 void main() async{
@@ -16,6 +17,7 @@ void main() async{
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool firstRun = prefs.getBool('firstRun');
+  await BLE.getStepsAndMinutes();
   if (firstRun == null) {
     final storage = new FlutterSecureStorage();
     await storage.write(key: 'serverAddress', value: base64.encode(utf8.encode("131.173.80.175")));

@@ -6,6 +6,40 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+Future<bool> getStepsAndMinutes() async {
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(milliseconds: 500));
+
+  try {
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleSteps();
+    await bleClient.bleactMins();
+    await bleClient.closeBLE();
+
+    return true;
+  } catch (e) {
+    try {
+      print('Connection failed:');
+      print('connecting again in 3 seconds.....');
+      await Future.delayed(Duration(seconds: 3));
+      await bleClient.start_ble_scan();
+      await bleClient.ble_connect();
+      await bleClient.bleSteps();
+      await bleClient.bleactMins();
+      await bleClient.closeBLE();
+
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+
+  }
+}
+
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
 
@@ -365,6 +399,7 @@ class BLE_Client {
   Future<dynamic> bleSteps() async {
     Completer completer = new Completer();
     String s = " ";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     Characteristic charactx;
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
@@ -391,7 +426,7 @@ class BLE_Client {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
-                _steps = int.parse(dd.trim());
+                prefs.setInt("current_steps", int.parse(dd.trim()));
                 _responseSubscription?.cancel();
                 completer.complete(_steps);
               }
@@ -410,6 +445,7 @@ class BLE_Client {
   Future<dynamic> bleactMins() async {
     Completer completer = new Completer();
     String s = " ";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     Characteristic charactx;
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
@@ -436,7 +472,7 @@ class BLE_Client {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
-                _actMins = int.parse(dd.trim());
+                prefs.setInt("current_active_minutes", int.parse(dd.trim()));
                 _responseSubscription?.cancel();
                 completer.complete(_actMins);
               }
