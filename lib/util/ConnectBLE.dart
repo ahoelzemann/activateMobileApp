@@ -6,13 +6,46 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
+
+Future<bool> getStepsAndMinutes() async {
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(milliseconds: 500));
+
+  try {
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleSteps();
+    await bleClient.bleactMins();
+    await bleClient.closeBLE();
+
+    return true;
+  } catch (e) {
+    try {
+      print('Connection failed:');
+      print('connecting again in 3 seconds.....');
+      await Future.delayed(Duration(seconds: 3));
+      await bleClient.start_ble_scan();
+      await bleClient.ble_connect();
+      await bleClient.bleSteps();
+      await bleClient.bleactMins();
+      await bleClient.closeBLE();
+
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+
+  }
+}
+
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
-
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStopRecord();
@@ -22,9 +55,7 @@ Future<bool> doUpload() async {
     // bleClient = null;
 
     return true;
-
   } catch (e) {
-
     print('Connection failed:');
     print('connecting again.....');
     // await Future.delayed(Duration(seconds: 3));
@@ -34,10 +65,35 @@ Future<bool> doUpload() async {
     await bleClient.bleStartUpload();
     await bleClient.closeBLE();
 
+    return false;
+  }
+}
+
+Future<bool> startRecording() async {
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(milliseconds: 500));
+
+  try {
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStartRecord(12.5, 8, 25);
+    await bleClient.closeBLE();
+
+    return true;
+  } catch (e) {
+    print('Connection failed:');
+    print('connecting again.....');
+    // await Future.delayed(Duration(seconds: 3));
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStartRecord(12.5, 8, 25);
+    await bleClient.closeBLE();
 
     return false;
   }
 }
+
 class BLE_Client {
   BleManager _activateBleManager = new BleManager();
 
@@ -69,7 +125,6 @@ class BLE_Client {
   static const UUIDSTR_ISSC_TRANS_RX =
       "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
 
-
   BLE_Client() {
     _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
     _idx = 0;
@@ -80,6 +135,7 @@ class BLE_Client {
     _numofFiles = 0;
     _currentDeviceConnected = false;
   }
+
   Future<BLE_Client> create() async {
     BLE_Client bleClient = new BLE_Client();
     _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
@@ -93,7 +149,9 @@ class BLE_Client {
 
     return bleClient;
   }
+
   void closeBLE() async {
+    await Future.delayed(Duration(milliseconds: 500));
     try {
       if (_currentDeviceConnected == true) {
         await _mydevice.disconnectOrCancelConnection();
@@ -206,10 +264,10 @@ class BLE_Client {
     await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
-    _scanSubscription = _activateBleManager
-        .startPeripheralScan(scanMode: ScanMode.balanced)
-        // .startPeripheralScan()
-        .listen((ScanResult scanResult) async {
+    _scanSubscription =
+        _activateBleManager.startPeripheralScan(scanMode: ScanMode.balanced)
+            // .startPeripheralScan()
+            .listen((ScanResult scanResult) async {
       if (_mydevice != null) {
         bool connected = await _mydevice.isConnected();
         print("DeviceState: " + connected.toString());
@@ -341,6 +399,7 @@ class BLE_Client {
   Future<dynamic> bleSteps() async {
     Completer completer = new Completer();
     String s = " ";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     Characteristic charactx;
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
@@ -367,7 +426,7 @@ class BLE_Client {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
-                _steps = int.parse(dd.trim());
+                prefs.setInt("current_steps", int.parse(dd.trim()));
                 _responseSubscription?.cancel();
                 completer.complete(_steps);
               }
@@ -386,6 +445,7 @@ class BLE_Client {
   Future<dynamic> bleactMins() async {
     Completer completer = new Completer();
     String s = " ";
+    SharedPreferences prefs = await SharedPreferences.getInstance();
     Characteristic charactx;
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
@@ -412,7 +472,7 @@ class BLE_Client {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
-                _actMins = int.parse(dd.trim());
+                prefs.setInt("current_active_minutes", int.parse(dd.trim()));
                 _responseSubscription?.cancel();
                 completer.complete(_actMins);
               }
@@ -445,6 +505,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStopRecord() async {
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     _services.forEach((service) {
@@ -472,6 +533,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     _services.forEach((service) {
@@ -584,6 +646,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartUpload() async {
+    await Future.delayed(Duration(milliseconds: 500));
     _numofFiles = await bleStartUploadCommand();
     print("ble start upload command done /////////////");
     String s;
@@ -699,8 +762,6 @@ class BLE_Client {
     return new File(path).writeAsBytes(data);
   }
 }
-
-
 
 //
 // class ConnectBLE extends StatefulWidget {

@@ -32,8 +32,10 @@ class _LandingScreenState extends State<LandingScreen> {
     final text_width = size.width - (size.width * 0.35);
     final icon_margins = EdgeInsets.only(
         left: icon_width * 0.3, top: 0.0, bottom: 0.0, right: icon_width * 0.1);
-
+    final GlobalKey<ScaffoldState> _scaffoldKey =
+        new GlobalKey<ScaffoldState>();
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
           title: Text(
             'Trac2Move',
@@ -59,18 +61,18 @@ class _LandingScreenState extends State<LandingScreen> {
                           (BuildContext context, AsyncSnapshot<int> snapshot) {
                         if (snapshot.hasData) {
                           if (snapshot.data == 0) {
-                            return _getSaveButton(
-                                'Aufnahme beginnen', Colors.green, 0, size);
+                            return _getSaveButton('Aufnahme beginnen',
+                                Colors.green, 0, size, context, _scaffoldKey);
                           } else if (snapshot.data == 1) {
-                            return _getSaveButton(
-                                'Aufnahme speichern', Colors.orange, 1, size);
+                            return _getSaveButton('Aufnahme speichern',
+                                Colors.orange, 1, size, context, _scaffoldKey);
                           } else if (snapshot.data == 2) {
                             return Image.asset(
                                 'assets/images/lp_background.png',
                                 fit: BoxFit.fill);
                           } else if (snapshot.data == 3) {
-                            return _getSaveButton(
-                                'Aufnahme beginnen', Colors.green, 0, size);
+                            return _getSaveButton('Aufnahme beginnen',
+                                Colors.green, 0, size, context, _scaffoldKey);
                           } else {
                             return Image.asset(
                                 'assets/images/lp_background.png',
@@ -113,33 +115,56 @@ class _LandingScreenState extends State<LandingScreen> {
                             ),
                             child: Align(
                               alignment: Alignment.centerLeft,
-                              child: AutoSizeText.rich(
-                                TextSpan(
-                                  text: "Bereits",
-                                  style: TextStyle(
-                                      fontFamily: "PlayfairDisplay",
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white),
-                                  children: <TextSpan>[
-                                    TextSpan(
-                                        text: ' 1000',
-                                        style: TextStyle(
-                                            fontFamily: "PlayfairDisplay",
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white)),
-                                    TextSpan(
-                                        text: ' Schritte gelaufen.',
-                                        style: TextStyle(
-                                            fontFamily: "PlayfairDisplay",
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white)),
-                                  ],
-                                ),
-                                textAlign: TextAlign.left,
-                                presetFontSizes: [20, 19, 18, 15, 12],
-                                minFontSize: 12,
-                                maxFontSize: 20,
-                              ),
+                              child: FutureBuilder(
+                                  future: getSteps(),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot<String> snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: "Bereits ",
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white),
+                                            children: <TextSpan>[
+                                              TextSpan(
+                                                  text: snapshot.data,
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                      "PlayfairDisplay",
+                                                      fontWeight: FontWeight.bold,
+                                                      color: Colors.white)),
+                                              TextSpan(
+                                                  text: ' Schritte gelaufen.',
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                      "PlayfairDisplay",
+                                                      fontWeight: FontWeight.w500,
+                                                      color: Colors.white)),
+                                            ],
+                                          ),
+                                          textAlign: TextAlign.left,
+                                          presetFontSizes: [20, 19, 18, 15, 12],
+                                          minFontSize: 12,
+                                          maxFontSize: 20,
+                                        ),
+                                      );
+                                    } else {
+                                      return Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: AutoSizeText(
+                                              'Es konnte kein Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                              style: TextStyle(
+                                                  fontFamily: "PlayfairDisplay",
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
+                                              textAlign: TextAlign.center,
+                                              textScaleFactor: 1));
+                                    }
+                                  })
                             ))
                       ]),
                       Row(children: [
@@ -161,36 +186,88 @@ class _LandingScreenState extends State<LandingScreen> {
                               vertical: 20.0,
                               horizontal: 10.0,
                             ),
-                            child: Align(
-                              alignment: Alignment.centerLeft,
-                              child: AutoSizeText.rich(
-                                TextSpan(
-                                  text: "Bereits",
-                                  style: TextStyle(
-                                      fontFamily: "PlayfairDisplay",
-                                      fontWeight: FontWeight.w500,
-                                      color: Colors.white),
-                                  children: <TextSpan>[
-                                    TextSpan(
-                                        text: ' 20',
-                                        style: TextStyle(
-                                            fontFamily: "PlayfairDisplay",
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white)),
-                                    TextSpan(
-                                        text: ' Minuten aktiv gewesen.',
-                                        style: TextStyle(
-                                            fontFamily: "PlayfairDisplay",
-                                            fontWeight: FontWeight.w500,
-                                            color: Colors.white)),
-                                  ],
-                                ),
-                                textAlign: TextAlign.left,
-                                presetFontSizes: [20, 19, 18, 15, 12],
-                                minFontSize: 8,
-                                maxFontSize: 20,
-                              ),
-                            ))
+                            child: FutureBuilder(
+                                future: getActiveMinutes(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<String> snapshot) {
+                                  if (snapshot.hasData) {
+                                    return Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: AutoSizeText.rich(
+                                        TextSpan(
+                                          text: "Bereits ",
+                                          style: TextStyle(
+                                              fontFamily: "PlayfairDisplay",
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                                text: snapshot.data,
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white)),
+                                            TextSpan(
+                                                text: ' Minuten aktiv gewesen.',
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.white)),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.left,
+                                        presetFontSizes: [20, 19, 18, 15, 12],
+                                        minFontSize: 12,
+                                        maxFontSize: 20,
+                                      ),
+                                    );
+                                  } else {
+                                    return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText(
+                                            'Es konnte keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            textScaleFactor: 1));
+                                  }
+                                })
+
+                            // Align(
+                            //   alignment: Alignment.centerLeft,
+                            //   child: AutoSizeText.rich(
+                            //     TextSpan(
+                            //       text: "Bereits",
+                            //       style: TextStyle(
+                            //           fontFamily: "PlayfairDisplay",
+                            //           fontWeight: FontWeight.w500,
+                            //           color: Colors.white),
+                            //       children: <TextSpan>[
+                            //         TextSpan(
+                            //             text: ' 20',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.bold,
+                            //                 color: Colors.white)),
+                            //         TextSpan(
+                            //             text: ' Minuten aktiv gewesen.',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.w500,
+                            //                 color: Colors.white)),
+                            //       ],
+                            //     ),
+                            //     textAlign: TextAlign.left,
+                            //     presetFontSizes: [20, 19, 18, 15, 12],
+                            //     minFontSize: 8,
+                            //     maxFontSize: 20,
+                            //   ),
+                            // ),
+                            )
                       ]),
                       Row(children: [
                         Container(
@@ -212,7 +289,7 @@ class _LandingScreenState extends State<LandingScreen> {
                               horizontal: 10.0,
                             ),
                             child: FutureBuilder(
-                                future: getStepsAndActiveMinutes(),
+                                future: getGoals(),
                                 builder: (BuildContext context,
                                     AsyncSnapshot<List> snapshot) {
                                   if (snapshot.hasData) {
@@ -294,31 +371,25 @@ class _LandingScreenState extends State<LandingScreen> {
                 color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
             ),
-            // ListTile(
-            //   title: Text(
-            //       DateTime.now().isAfter(DateTime(DateTime.now().year,
-            //                   DateTime.now().month, DateTime.now().day)
-            //               .add(Duration(hours: 20)))
-            //           ? 'Messung hochladen'
-            //           : 'Messung ist noch nicht beendet',
-            //       style: TextStyle(
-            //         fontFamily: "PlayfairDisplay",
-            //         fontWeight: FontWeight.bold,
-            //         color: DateTime.now().isAfter(DateTime(DateTime.now().year,
-            //                     DateTime.now().month, DateTime.now().day)
-            //                 .add(Duration(hours: 20)))
-            //             ? Colors.black
-            //             : Colors.blueGrey,
-            //       )),
-            //   enabled: DateTime.now().isAfter(DateTime(DateTime.now().year,
-            //               DateTime.now().month, DateTime.now().day)
-            //           .add(Duration(hours: 20)))
-            //       ? true
-            //       : false,
-            //   onTap: () {
-            //     upload.uploadFiles();
-            //   },
-            // ),
+            ListTile(
+              title: Text('Status Zurücksetzen',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("recordStopedAt", DateTime.now().toString());
+                prefs.setBool("isRecording", false);
+                prefs.remove("recordStartedAt");
+                prefs.setBool("isRecording", false);
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => LandingScreen()),
+                );
+              },
+            ),
             ListTile(
               title: Text('Kontakt',
                   style: TextStyle(
@@ -349,6 +420,28 @@ class _LandingScreenState extends State<LandingScreen> {
               },
             ),
             ListTile(
+                title: Text('Schritte und Aktive Minuten synchronisieren',
+                    style: TextStyle(
+                        fontFamily: "PlayfairDisplay",
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black)),
+                onTap: () {}
+                //   Navigator.pop(context);
+                //   _scaffoldKey.currentState.showSnackBar(
+                //       new SnackBar(duration: const Duration(minutes: 5), content:
+                //       new Row(
+                //         children: <Widget>[
+                //           new CircularProgressIndicator(),
+                //           new Text("  Signing-In...")
+                //         ],
+                //       ),
+                //       ));
+                //   _handleSignIn()
+                //       .whenComplete(() => _reloadPage(context, _scaffoldKey));
+                //   //Navigator.pop(context);
+                // },
+                ),
+            ListTile(
               title: Text('App beenden',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
@@ -365,127 +458,48 @@ class _LandingScreenState extends State<LandingScreen> {
     );
   }
 
-  void _startRecording() async {
+  void _stopRecordingAndUpload() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool ble_activated = await SystemShortcuts.checkBluetooth;
-    // if (!ble_activated) {
-    //   await SystemShortcuts.bluetooth();
-    // }
-    // BLE_Client bleClient = new BLE_Client();
-    int steps;
-    int actmins;
-    int nfiles;
-    // bleClient.checkBLEstate();
-    // try {
-    //   await bleClient.start_ble_scan().then((value) async {
-    //     await bleClient.ble_connect();
-    //     await bleClient.bleStopRecord();
-    //     nfiles = await bleClient.bleStartUpload();
-    //     bleClient.closeBLE();
-    //   });
-
-      // await bleClient.initiateBLEClient().then((value) async {
-      // await bleClient.checkBLEstate().then((value) async {
-
+    bool bleActivated = await SystemShortcuts.checkBluetooth;
+    if (!bleActivated) {
+      await SystemShortcuts.bluetooth();
+    }
 
     await BLE.doUpload().then((value) {
-      if (value==true) {
+      if (value == true) {
         upload.uploadFiles();
+        prefs.setString("recordStopedAt", DateTime.now().toString());
+        prefs.setBool("isRecording", false);
+        Navigator.of(context).pop();
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => LandingScreen()),
+        );
       }
     });
-        // await bleClient.start_ble_scan().then((value) async {
-        //   await bleClient.ble_connect().then((value) async {
-        //     // steps = await bleClient.bleSteps();
-        //     // bleClient.closeBLE();
-        //     // bleClient = new BLE_Client();
-        //     // await bleClient.start_ble_scan();
-        //     // await bleClient.ble_connect();
-        //     // actmins = await bleClient.bleactMins();
-        //     await bleClient.bleStopRecord();
-        //     nfiles = await bleClient.bleStartUpload();
-        //     bleClient.closeBLE();
-
-            // print("Your steps is: " +
-            //     steps.toString() +
-            //     " and active mins: " +
-            //     actmins.toString());
-            // print("No. of files expected: " + nfiles.toString());
-        //   });
-        // });
-      // });
-    // } catch (e) {
-    //   print("Could not get activities");
-    // }
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // bool ble_activated = await SystemShortcuts.checkBluetooth;
-    // if (!ble_activated) {
-    //   await SystemShortcuts.bluetooth();
-    // }
-    // BLE_Client bleClient = new BLE_Client();
-    // try {
-    //   // await bleClient.checkBLEstate().then((value) async {
-    //   await bleClient.initiateBLEClient().then((value) async {
-    //     await bleClient.start_ble_scan().then((value) async {
-    //       await bleClient.ble_connect().then((value) async {
-    //         await bleClient.bleStartRecord(12.5, 8, 25);
-    //         prefs.setString("recordStartedAt", DateTime.now().toString());
-    //         prefs.setBool("isRecording", true);
-    //         bleClient.closeBLE();
-    //         // bleClient = null;
-    //         Navigator.of(context).pop();
-    //         Navigator.push(
-    //           context,
-    //           MaterialPageRoute(builder: (context) => LandingScreen()),
-    //         );
-    //       });
-    //     });
-    //   });
-    //
-    //   // print("success");
-    // } catch (e) {
-    //   print("recording could not start");
-    // }
   }
 
-  void _stopAndUpload() async {
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // prefs.setString("recordStopedAt", DateTime.now().toString());
-    // prefs.setBool("isRecording", false);
-    // Navigator.of(context).pop();
-    // Navigator.push(
-    //   context,
-    //   MaterialPageRoute(builder: (context) => LandingScreen()),
-    // );
-
-    // print('stop recording');
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // BLE_Client bleClient = new BLE_Client();
-    // await bleClient.initiateBLEClient().then((value) async {
-    //
-    //     await bleClient.start_ble_scan().then((value) async {
-    //       await bleClient.ble_connect().then((value) async {
-    //         await bleClient.bleStopRecord();
-    //         prefs.setString("recordStopedAt", DateTime.now().toString());
-    //         prefs.setBool("isRecording", false);
-    //         print('uploading data...');
-    //         bleClient.closeBLE();
-    //         // bleClient = null;
-    //         Navigator.of(context).pop();
-    //         Navigator.push(
-    //           context,
-    //           MaterialPageRoute(builder: (context) => LandingScreen()),
-    //         );
-    //       });
-    //     });
-    // });
+  void _startRecording(
+      BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
+    _scaffoldKey.currentState.showSnackBar(new SnackBar(
+      duration: const Duration(minutes: 5),
+      content: new Row(
+        children: <Widget>[
+          new CircularProgressIndicator(),
+          new Text("  Starte Bangle...")
+        ],
+      ),
+    ));
+    BLE.startRecording().whenComplete(() => _reloadPage(context, _scaffoldKey));
   }
 
-  Widget _getSaveButton(String actionText, Color color, int action, Size size) {
+  Widget _getSaveButton(String actionText, Color color, int action, Size size,
+      BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) {
     var fun;
     if (action == 0) {
-      fun = () => _startRecording();
+      fun = () => _startRecording(context, _scaffoldKey);
     } else {
-      fun = () => _stopAndUpload();
+      fun = () => _stopRecordingAndUpload();
     }
 
     return Container(
@@ -504,12 +518,44 @@ class _LandingScreenState extends State<LandingScreen> {
   }
 }
 
-Future<List> getStepsAndActiveMinutes() async {
-  return await SharedPreferences.getInstance().then((value) {
-    List<int> result = [];
+void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
+  _scaffoldKey.currentState.hideCurrentSnackBar();
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  prefs.setString("recordStartedAt", DateTime.now().toString());
+  prefs.setBool("isRecording", true);
+  await Future.delayed(Duration(seconds: 3));
+  Navigator.of(context).pop();
+  Navigator.push(
+    context,
+    MaterialPageRoute(builder: (context) => LandingScreen()),
+  );
+}
+
+
+Future<List> getGoals() async {
+  List<int> result = [];
+  return await SharedPreferences.getInstance().then((value) async {
     result.add(value.getInt('steps'));
     result.add(value.getInt('active_minutes'));
     return result;
+  });
+}
+
+Future<String> getActiveMinutes() async {
+  return await SharedPreferences.getInstance().then((value) async {
+    // return await BLE.getStepsAndMinutes().then((completer) {
+      return value.getInt('current_active_minutes').toString();
+    // });
+
+  });
+}
+
+Future<String> getSteps() async {
+  return await SharedPreferences.getInstance().then((value) async {
+    // return await BLE.getStepsAndMinutes().then((completer) {
+      return value.getInt('current_steps').toString();
+    // });
+
   });
 }
 
@@ -530,12 +576,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(seconds: 5))) ? true : false;
-
-  bool timeToRecord = now.isBefore(
-          DateTime(now.year, now.month, now.day).add(Duration(hours: 6)))
-      ? true
-      : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
