@@ -372,6 +372,17 @@ class _LandingScreenState extends State<LandingScreen> {
               ),
             ),
             ListTile(
+              title: Text('For Henry',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                await BLE.doUpload();
+                //do your stuff
+              },
+            ),
+            ListTile(
               title: Text('Status Zurücksetzen',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
