@@ -368,9 +368,9 @@ class MapScreenState extends State<ProfilePage> {
                 textColor: Colors.white,
                 color: Colors.green,
                 onPressed: () async {
+                  await BLE.nearestDevice();
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   String bangle_name = prefs.getString("Devicename");
-                  await BLE.nearestDevice();
                   if (createUser) {
                     Future<String> result = _saveUserOnServer(
                         ageToSave,
