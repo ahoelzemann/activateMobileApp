@@ -6,6 +6,37 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 
+Future<bool> nearestDevice() async {
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(milliseconds: 500));
+
+  try {
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.find_nearest_device();
+    bleClient.closeBLE();
+
+    return true;
+  } catch (e) {
+    try {
+      print('Connection failed:');
+      print('connecting again in 3 seconds.....');
+      await Future.delayed(Duration(seconds: 3));
+      await bleClient.start_ble_scan();
+      await bleClient.ble_connect();
+      await bleClient.find_nearest_device();
+      bleClient.closeBLE();
+
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+
+  }
+}
+
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
