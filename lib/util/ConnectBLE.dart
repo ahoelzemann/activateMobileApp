@@ -5,15 +5,14 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-
+import 'package:trac2move/util/Upload.dart' as upload;
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
-    await bleClient.start_ble_scan();
-    await bleClient.ble_connect();
+
     await bleClient.find_nearest_device();
     bleClient.closeBLE();
 
@@ -23,8 +22,6 @@ Future<bool> nearestDevice() async {
       print('Connection failed:');
       print('connecting again in 3 seconds.....');
       await Future.delayed(Duration(seconds: 3));
-      await bleClient.start_ble_scan();
-      await bleClient.ble_connect();
       await bleClient.find_nearest_device();
       bleClient.closeBLE();
 
@@ -81,7 +78,11 @@ Future<bool> doUpload() async {
     await bleClient.ble_connect();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
+    await bleClient.blestopUpload();
     await bleClient.closeBLE();
+    upload.uploadFiles();
+
+
 
     // bleClient = null;
 
@@ -94,7 +95,10 @@ Future<bool> doUpload() async {
     await bleClient.ble_connect();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
+    await bleClient.blestopUpload();
     await bleClient.closeBLE();
+    upload.uploadFiles();
+
 
     return false;
   }
@@ -167,19 +171,6 @@ class BLE_Client {
     _currentDeviceConnected = false;
   }
 
-  Future<BLE_Client> create() async {
-    BLE_Client bleClient = new BLE_Client();
-    _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
-    _idx = 0;
-    _result = new List(5000000);
-    _noFiles = new List(25);
-    _noFiles[0] = 0;
-    _dataSize = 0;
-    _numofFiles = 0;
-    _currentDeviceConnected = false;
-
-    return bleClient;
-  }
 
   void closeBLE() async {
     await Future.delayed(Duration(milliseconds: 500));
@@ -650,13 +641,17 @@ class BLE_Client {
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
 
-            s = "nofiles\n";
+
+            s = "\x10var l=ls()\n";
+            characteristic.write(
+                Uint8List.fromList(s.codeUnits), true); //returns void
+            s ="l.length\n";
             print(s);
             print(Uint8List.fromList(s.codeUnits).toString());
             _responseSubscription = charactx.monitor().listen((event) async {
               print(event.toString() + "  //////////////");
               print(String.fromCharCodes(event));
-              if (event[0] == 110 && event[4] == 108) {
+              if (event[0] == 108 && event[2] == 108) {
                 String dd = String.fromCharCodes(event.sublist(
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
