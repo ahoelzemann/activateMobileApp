@@ -27,7 +27,9 @@ void main() async{
   }
   else if (Platform.isIOS) {
     statusStorage = await Permission.storage.request();
-    // statusBLE = await Permission.bluetooth.request();
+    if (await Permission.bluetooth.isDenied) {
+      BLE.createPermission();
+    }
   }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -44,7 +46,6 @@ void main() async{
     prefs.setBool('firstRun', false);
   }
   else {
-
     await BLE.getStepsAndMinutes();
   }
   // final cron = Cron();

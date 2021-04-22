@@ -7,6 +7,11 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
 
+Future<bool> createPermission() async {
+  BLE_Client bleClient = new BLE_Client();
+  await Future.delayed(Duration(milliseconds: 500));
+  bleClient.closeBLE();
+}
 
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
@@ -14,7 +19,6 @@ Future<bool> nearestDevice() async {
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
-
     await bleClient.find_nearest_device();
     bleClient.closeBLE();
 
@@ -27,15 +31,12 @@ Future<bool> nearestDevice() async {
       await bleClient.find_nearest_device();
       bleClient.closeBLE();
 
-
       return true;
     } catch (e) {
       return false;
     }
-
   }
 }
-
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
@@ -47,7 +48,7 @@ Future<bool> getStepsAndMinutes() async {
     await bleClient.ble_connect();
     await bleClient.bleSteps();
     await bleClient.bleactMins();
-    await bleClient.closeBLE();
+    bleClient.closeBLE();
 
     return true;
   } catch (e) {
@@ -59,14 +60,12 @@ Future<bool> getStepsAndMinutes() async {
       await bleClient.ble_connect();
       await bleClient.bleSteps();
       await bleClient.bleactMins();
-      await bleClient.closeBLE();
-
+      bleClient.closeBLE();
 
       return true;
     } catch (e) {
       return false;
     }
-
   }
 }
 
@@ -81,10 +80,8 @@ Future<bool> doUpload() async {
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
-    await bleClient.closeBLE();
+    bleClient.closeBLE();
     upload.uploadFiles();
-
-
 
     // bleClient = null;
 
@@ -98,9 +95,8 @@ Future<bool> doUpload() async {
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
-    await bleClient.closeBLE();
+    bleClient.closeBLE();
     upload.uploadFiles();
-
 
     return false;
   }
@@ -116,7 +112,7 @@ Future<bool> startRecording() async {
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStartRecord(12.5, 8, 25);
-    await bleClient.closeBLE();
+    bleClient.closeBLE();
 
     return true;
   } catch (e) {
@@ -126,7 +122,7 @@ Future<bool> startRecording() async {
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStartRecord(12.5, 8, 25);
-    await bleClient.closeBLE();
+    bleClient.closeBLE();
 
     return false;
   }
@@ -173,7 +169,6 @@ class BLE_Client {
     _numofFiles = 0;
     _currentDeviceConnected = false;
   }
-
 
   void closeBLE() async {
     await Future.delayed(Duration(milliseconds: 1000));
@@ -241,6 +236,7 @@ class BLE_Client {
   }
 
   Future<dynamic> find_nearest_device() async {
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     _scanSubscription = _activateBleManager
@@ -565,8 +561,8 @@ class BLE_Client {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        _decviceCharacteristics.forEach((characteristic) async{
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX){
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
 
@@ -647,11 +643,10 @@ class BLE_Client {
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
 
-
             s = "\x10var l=ls()\n";
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
-            s ="l.length\n";
+            s = "l.length\n";
             print(s);
             print(Uint8List.fromList(s.codeUnits).toString());
             _responseSubscription = charactx.monitor().listen((event) async {
@@ -766,7 +761,7 @@ class BLE_Client {
                     }
                     _idx = 0;
                   }
-                } else if (((_dataSize == 20) )) {
+                } else if (((_dataSize == 20))) {
                   //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
                   for (int i = 0; i < _dataSize; i++) {
                     _result[_idx] = event[i];
