@@ -36,6 +36,7 @@ dependencies:
   flutter_secure_storage: ^4.1.0
   system_shortcuts: ^1.0.0
   auto_size_text: ^2.1.0
+  permission_handler: ^7.0.0
 
   flutter:
     sdk: flutter

@@ -6,10 +6,12 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
+
+
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
+  await Future.delayed(Duration(milliseconds: 1000));
 
   try {
 
@@ -38,7 +40,7 @@ Future<bool> nearestDevice() async {
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
+  await Future.delayed(Duration(milliseconds: 1000));
 
   try {
     await bleClient.start_ble_scan();
@@ -71,7 +73,7 @@ Future<bool> getStepsAndMinutes() async {
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
+  await Future.delayed(Duration(milliseconds: 1000));
 
   try {
     await bleClient.start_ble_scan();
@@ -107,9 +109,10 @@ Future<bool> doUpload() async {
 Future<bool> startRecording() async {
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
+  await Future.delayed(Duration(milliseconds: 1000));
 
   try {
+    await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStartRecord(12.5, 8, 25);
@@ -173,30 +176,27 @@ class BLE_Client {
 
 
   void closeBLE() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     try {
-      if (_currentDeviceConnected == true) {
-        await _mydevice.disconnectOrCancelConnection();
-        _currentDeviceConnected = false;
-      }
-      if (await _mydevice.isConnected()) {
-        await _mydevice.disconnectOrCancelConnection();
-      }
-      if (_scanSubscription != null) {
-        await _scanSubscription.cancel();
-      }
-      if (_characSubscription != null) {
-        await _characSubscription.cancel();
-      }
-      if (_condeviceStateSubscription != null) {
-        await _condeviceStateSubscription.cancel();
-      }
-      if (_responseSubscription != null) {
-        await _responseSubscription.cancel();
-      }
-      if (_bleonSubscription != null) {
-        await _bleonSubscription.cancel();
-      }
+      // if (_currentDeviceConnected == true) {
+      //   await _mydevice.disconnectOrCancelConnection();
+      //   _currentDeviceConnected = false;
+      // }
+      // if (_scanSubscription != null) {
+      //   await _scanSubscription.cancel();
+      // }
+      // if (_characSubscription != null) {
+      //   await _characSubscription.cancel();
+      // }
+      // if (_condeviceStateSubscription != null) {
+      //   await _condeviceStateSubscription.cancel();
+      // }
+      // if (_responseSubscription != null) {
+      //   await _responseSubscription.cancel();
+      // }
+      // if (_bleonSubscription != null) {
+      //   await _bleonSubscription.cancel();
+      // }
 
       if (_activateBleManager != null) {
         _activateBleManager.destroyClient();
@@ -261,7 +261,7 @@ class BLE_Client {
           RSSI.toString());
 
       if (devicename != null) {
-        if (devicename.contains('Bangle.js') && (RSSI >= -60)) {
+        if (devicename.contains('Bangle.js') && (RSSI >= -100)) {
           _activateBleManager.stopPeripheralScan();
           _scanSubscription?.cancel();
           print("Our Device is found: " +
@@ -283,7 +283,7 @@ class BLE_Client {
 
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     _scanSubscription =
@@ -338,7 +338,7 @@ class BLE_Client {
   }
 
   Future<dynamic> ble_connect() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
     if (_mydevice != null) {
       bool connected = await _mydevice.isConnected();
@@ -419,6 +419,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleSteps() async {
+    await Future.delayed(Duration(milliseconds: 200));
     Completer completer = new Completer();
     String s = " ";
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -465,6 +466,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleactMins() async {
+    await Future.delayed(Duration(milliseconds: 200));
     Completer completer = new Completer();
     String s = " ";
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -511,6 +513,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleGetResponse(Characteristic characteristic) async {
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     print("Waiting for Reponse ...");
@@ -527,7 +530,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStopRecord() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     _services.forEach((service) {
@@ -555,15 +558,15 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        _decviceCharacteristics.forEach((characteristic) {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+        _decviceCharacteristics.forEach((characteristic) async{
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX){
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
 
@@ -576,6 +579,7 @@ class BLE_Client {
                 "," +
                 hour.toString() +
                 ")\n";
+            await Future.delayed(Duration(milliseconds: 100));
             characteristic.write(Uint8List.fromList(s.codeUnits), false,
                 transactionId: "startRecord"); //returns void
             print(Uint8List.fromList(s.codeUnits).toString());
@@ -589,6 +593,7 @@ class BLE_Client {
   }
 
   Future<dynamic> blestopUpload() async {
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
     _services.forEach((service) {
@@ -616,6 +621,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartUploadCommand() async {
+    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
     Characteristic charactx;
     String s = " ";
@@ -672,7 +678,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleStartUpload() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 1000));
     _numofFiles = await bleStartUploadCommand();
     print("ble start upload command done /////////////");
     String s;
@@ -760,7 +766,7 @@ class BLE_Client {
                     }
                     _idx = 0;
                   }
-                } else if (((_dataSize == 20) || (_dataSize == 12))) {
+                } else if (((_dataSize == 20) )) {
                   //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
                   for (int i = 0; i < _dataSize; i++) {
                     _result[_idx] = event[i];
@@ -788,72 +794,3 @@ class BLE_Client {
     return new File(path).writeAsBytes(data);
   }
 }
-
-//
-// class ConnectBLE extends StatefulWidget {
-//   final BangleStorage storage;
-//
-//   ConnectBLE({Key key, @required this.storage}) : super(key: key);
-//
-//   //ConnectBLE({Key key,}) : super(key: key);
-//
-//   @override
-//   _ConnectBLEState createState() => _ConnectBLEState();
-// }
-//
-// class _ConnectBLEState extends State<ConnectBLE> {
-//   String bleStatus;
-//   BLE_Client bleClient = new BLE_Client();
-//
-//   @override
-//   void initState() {
-//     super.initState();
-//     bleStatus = "Satus: Starting scan.";
-//
-//     bleCaller();
-//   }
-//
-//   void bleCaller() async {
-//     BLE_Client bleClient = new BLE_Client();
-//
-//     await bleClient.checkBLEstate();
-//     await bleClient.start_ble_scan();
-//     await bleClient.ble_connect();
-//     //await bleClient.bleStartRecord(100,8,25);
-//     await bleClient.bleStopRecord();
-//     await bleClient.bleStartUpload();
-//     // bleClient.ble_parse_and_send();
-//     bleClient.closeBLE();
-//     print("Done ///////");
-//   }
-//
-//   @override
-//   void dispose() {
-//     bleClient.closeBLE();
-//     super.dispose();
-//   }
-//
-//   void changedata(String newdata) {
-//     setState(() {
-//       bleStatus = newdata;
-//     });
-//   }
-//
-//   @override
-//   Widget build(BuildContext context) => Scaffold(
-//     appBar: AppBar(
-//       title: Text('Scanner'),
-//     ),
-//     body: Container(
-//         height: 60,
-//         //width: 500,
-//         padding: const EdgeInsets.symmetric(
-//           vertical: 10.0,
-//           horizontal: 0.0,
-//         ),
-//         child: Text("$bleStatus",
-//             style:
-//             TextStyle(fontWeight: FontWeight.bold, color: Colors.black),
-//             textAlign: TextAlign.start)),
-//   );
-// }

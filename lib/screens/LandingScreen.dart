@@ -431,28 +431,6 @@ class _LandingScreenState extends State<LandingScreen> {
               },
             ),
             ListTile(
-                title: Text('Schritte und Aktive Minuten synchronisieren',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () {}
-                //   Navigator.pop(context);
-                //   _scaffoldKey.currentState.showSnackBar(
-                //       new SnackBar(duration: const Duration(minutes: 5), content:
-                //       new Row(
-                //         children: <Widget>[
-                //           new CircularProgressIndicator(),
-                //           new Text("  Signing-In...")
-                //         ],
-                //       ),
-                //       ));
-                //   _handleSignIn()
-                //       .whenComplete(() => _reloadPage(context, _scaffoldKey));
-                //   //Navigator.pop(context);
-                // },
-                ),
-            ListTile(
               title: Text('App beenden',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
