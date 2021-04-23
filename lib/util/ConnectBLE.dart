@@ -6,13 +6,13 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
+
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
-
     await bleClient.find_nearest_device();
     bleClient.closeBLE();
 
@@ -25,15 +25,12 @@ Future<bool> nearestDevice() async {
       await bleClient.find_nearest_device();
       bleClient.closeBLE();
 
-
       return true;
     } catch (e) {
       return false;
     }
-
   }
 }
-
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
@@ -59,12 +56,10 @@ Future<bool> getStepsAndMinutes() async {
       await bleClient.bleactMins();
       await bleClient.closeBLE();
 
-
       return true;
     } catch (e) {
       return false;
     }
-
   }
 }
 
@@ -82,8 +77,6 @@ Future<bool> doUpload() async {
     await bleClient.closeBLE();
     upload.uploadFiles();
 
-
-
     // bleClient = null;
 
     return true;
@@ -98,7 +91,6 @@ Future<bool> doUpload() async {
     await bleClient.blestopUpload();
     await bleClient.closeBLE();
     upload.uploadFiles();
-
 
     return false;
   }
@@ -147,7 +139,7 @@ class BLE_Client {
   int _numofFiles;
   List<Service> _services;
   List<Characteristic> _decviceCharacteristics;
-
+  int _logData = 0;
   String _nearestDeviceName = "";
   String _nearestDeviceMac = "";
   var _actMins;
@@ -170,7 +162,6 @@ class BLE_Client {
     _numofFiles = 0;
     _currentDeviceConnected = false;
   }
-
 
   void closeBLE() async {
     await Future.delayed(Duration(milliseconds: 500));
@@ -641,11 +632,10 @@ class BLE_Client {
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
 
-
             s = "\x10var l=ls()\n";
             characteristic.write(
                 Uint8List.fromList(s.codeUnits), true); //returns void
-            s ="l.length\n";
+            s = "l.length\n";
             print(s);
             print(Uint8List.fromList(s.codeUnits).toString());
             _responseSubscription = charactx.monitor().listen((event) async {
@@ -671,111 +661,113 @@ class BLE_Client {
     return completer.future;
   }
 
+  Future<dynamic> blerxData(
+      int fileCount, Service service, Characteristic characteristic) async {
+    Completer completer = new Completer();
+    String s;
+    _characSubscription = characteristic.monitor().listen((event) async {
+      _dataSize = event.length;
+      // print(String.fromCharCodes(event));
+      if (_idx < _resultLen) {
+        if (_logData == 1) {
+          //check end of a file
+          if (_dataSize == 15 &&
+              event[0] == 255 &&
+              event[1] == 255 &&
+              event[2] == 255 &&
+              event[3] == 255 &&
+              event[4] == 255 &&
+              event[5] == 0 &&
+              event[6] == 0 &&
+              event[7] == 0 &&
+              event[8] == 0 &&
+              event[9] == 0 &&
+              event[10] == 0 &&
+              event[11] == 255 &&
+              event[12] == 255 &&
+              event[13] == fileCount) {
+            if (_characSubscription != null) {
+              await _characSubscription.cancel();
+            }
+            completer.complete(1);
+          } else {
+            for (int i = 0; i < _dataSize; i++) {
+              _result[_idx] = event[i];
+              _idx += 1;
+            }
+          }
+        } else if (_dataSize == 17) {
+          if (event[13] == 46 &&
+              event[14] == 98 &&
+              event[15] == 105 &&
+              event[16] == 110) {
+            _fileName = String.fromCharCodes(event);
+            _logData = 1;
+          }
+        }
+
+      }
+    });
+
+    s = "\u0010sendNext(" + fileCount.toString() + ")\n";
+    service.writeCharacteristic(
+        UUIDSTR_ISSC_TRANS_RX, Uint8List.fromList(s.codeUnits), true);
+
+    return completer.future;
+  }
+
   Future<dynamic> bleStartUpload() async {
     await Future.delayed(Duration(milliseconds: 500));
     _numofFiles = await bleStartUploadCommand();
     print("ble start upload command done /////////////");
-    String s;
     int fileCount = 0;
+    _resultLen = _result.length;
     Completer completer = new Completer();
     _services.forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
         print("Status:" + _mydevice.name.toString() + " service discovered");
 
-        _decviceCharacteristics.forEach((characteristic) {
+        _decviceCharacteristics.forEach((characteristic) async {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-            _resultLen = _result.length;
             print(
                 "Status:" + _mydevice.name.toString() + " TX UUID discovered");
             print("WAITING FOR " +
                 _numofFiles.toString() +
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
 
-            _characSubscription =
-                characteristic.monitor().listen((event) async {
-              _dataSize = event.length;
+            for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
+              _logData = 0;
+              _idx = 0;
 
-              if (_idx < _resultLen) {
-                if (_dataSize == 17) {
-                  if (event[13] == 46 &&
-                      event[14] == 98 &&
-                      event[15] == 105 &&
-                      event[16] == 110) {
-                    _fileName = String.fromCharCodes(event);
-                  }
-                } else if ((_dataSize == 15)) {
-                  //check end of a file
-                  if (event[0] == 255 &&
-                      event[1] == 255 &&
-                      event[2] == 255 &&
-                      event[3] == 255 &&
-                      event[4] == 255 &&
-                      event[5] == 0 &&
-                      event[6] == 0 &&
-                      event[7] == 0 &&
-                      event[8] == 0 &&
-                      event[9] == 0 &&
-                      event[10] == 0 &&
-                      event[11] == 255 &&
-                      event[12] == 255 &&
-                      event[13] == fileCount) {
-                    print(fileCount.toString() +
-                        "  " +
-                        _fileName.toString() +
-                        " Done uploading //////////////////");
+              print(fileCount.toString() + " Start uploading ///////////////");
 
-                    //Directory tempDir = await getApplicationDocumentsDirectory();
-                    Directory tempDir = await getTemporaryDirectory();
-                    await Directory(tempDir.path + '/daily_data')
-                        .create(recursive: true);
-                    String tempPath = tempDir.path + '/daily_data';
-                    tempPath = tempPath + "/" + _fileName;
-                    writeToFile(_result.sublist(0, _idx), tempPath);
+              await blerxData(
+                  fileCount, service, characteristic); // upload data
 
-                    _result = new List(5000000);
-                    print(fileCount.toString() +
-                        "  " +
-                        _fileName.toString() +
-                        " saved to file //////////////////");
+              print(fileCount.toString() +
+                  "  " +
+                  _fileName.toString() +
+                  " Done uploading //////////////////");
 
-                    fileCount += 1;
+              //Directory tempDir = await getApplicationDocumentsDirectory();
+              Directory tempDir = await getTemporaryDirectory();
+              await Directory(tempDir.path + '/daily_data')
+                  .create(recursive: true);
+              String tempPath = tempDir.path + '/daily_data';
+              tempPath = tempPath + "/" + _fileName;
+              writeToFile(_result.sublist(0, _idx), tempPath);
 
-                    if (fileCount < _numofFiles) {
-                      print(fileCount.toString() +
-                          " Start uploading ///////////////");
-                      s = "\u0010sendNext(" + fileCount.toString() + ")\n";
-                      service.writeCharacteristic(
-                          UUIDSTR_ISSC_TRANS_RX,
-                          Uint8List.fromList(s.codeUnits),
-                          true); //returns Characteristic to chain operations more easily
-                    } else {
-                      _idx = 0;
-                      await blestopUpload();
-                      // upload.uploadFiles();
-                      print("DONE UPLOADING, " +
-                          fileCount.toString() +
-                          " FILES RECEIVED");
-                      _characSubscription?.cancel();
-                      completer.complete(_numofFiles);
-                    }
-                    _idx = 0;
-                  }
-                } else if (((_dataSize == 20) || (_dataSize == 12))) {
-                  //testing for data size 12 as well because the last data packet of  each file is 12 in size not 20
-                  for (int i = 0; i < _dataSize; i++) {
-                    _result[_idx] = event[i];
-                    _idx += 1;
-                  }
-                }
-              }
-            });
-
-            s = "\u0010sendNext(" + fileCount.toString() + ")\n";
-            service.writeCharacteristic(
-                UUIDSTR_ISSC_TRANS_RX,
-                Uint8List.fromList(s.codeUnits),
-                true); //returns Characteristic to chain operations more easily
-
+              _result = new List(5000000);
+              print(fileCount.toString() +
+                  "  " +
+                  _fileName.toString() +
+                  " saved to file //////////////////");
+              await Future.delayed(Duration(milliseconds: 500));
+            } //end of for statement
+            await blestopUpload();
+            print(
+                "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
+            completer.complete(_numofFiles);
           }
         });
       }
