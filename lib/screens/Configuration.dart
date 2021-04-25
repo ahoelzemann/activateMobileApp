@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:trac2move/screens/Overlay.dart';
 
 int steps;
 int active_minutes;
@@ -173,7 +174,7 @@ class _ConfigurationState extends State<Configuration> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => LandingScreen()),
+                    MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
                   );
                 }),
           ),

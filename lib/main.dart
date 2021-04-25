@@ -11,8 +11,12 @@ import 'dart:convert';
 import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
+import 'package:trac2move/screens/Overlay.dart';
+
+// ToDo: Overlay
 
 void main() async{
+
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
@@ -77,7 +81,7 @@ SetFirstPage() {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.done) {
           if (snapshot.hasData) {
-            return LandingScreen();
+            return Stack(children: [LandingScreen(), OverlayView()],);
           } else {
             return ProfilePage(createUser: true);
           }

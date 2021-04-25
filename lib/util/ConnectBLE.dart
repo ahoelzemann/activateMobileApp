@@ -108,7 +108,7 @@ Future<bool> startRecording() async {
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
-    await bleClient.checkBLEstate();
+    // await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStartRecord(12.5, 8, 25);
@@ -320,7 +320,7 @@ class BLE_Client {
       if ((devicename == name) || (macNum == mac)) {
         _activateBleManager.stopPeripheralScan();
         _mydevice = scanResult.peripheral;
-        // _scanSubscription?.cancel();
+        _scanSubscription?.cancel();
         print("stop_ble_scan Our Device is found " + macNum);
         completer.complete(true);
       }

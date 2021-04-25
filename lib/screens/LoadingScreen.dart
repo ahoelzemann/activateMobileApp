@@ -18,11 +18,6 @@ class LoadingScreen extends StatelessWidget {
           height: size.height,
           color: Color.fromRGBO(57, 70, 84, 1.0),
 
-          // child: Image.asset(
-          //     'assets/images/activate.png',
-          //     alignment: Alignment.center,
-          //   )
-
       ),
     );
   }
