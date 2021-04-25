@@ -315,7 +315,7 @@ class BLE_Client {
       if ((devicename == name) || (macNum == mac)) {
         _activateBleManager.stopPeripheralScan();
         _mydevice = scanResult.peripheral;
-        // _scanSubscription?.cancel();
+        _scanSubscription?.cancel();
         print("stop_ble_scan Our Device is found " + macNum);
         completer.complete(true);
       }
@@ -671,7 +671,7 @@ class BLE_Client {
       if (_idx < _resultLen) {
         if (_logData == 1) {
           //check end of a file
-          if (_dataSize == 15 &&
+          if (_dataSize >= 15 &&
               event[0] == 255 &&
               event[1] == 255 &&
               event[2] == 255 &&
@@ -705,7 +705,11 @@ class BLE_Client {
             _logData = 1;
           }
         }
-
+      } else {
+        if (_characSubscription != null) {
+          await _characSubscription.cancel();
+        }
+        completer.complete(1);
       }
     });
 
@@ -736,6 +740,7 @@ class BLE_Client {
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
 
             for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
+              await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
               _idx = 0;
 
@@ -746,7 +751,7 @@ class BLE_Client {
 
               print(fileCount.toString() +
                   "  " +
-                  _fileName.toString() +
+                  _fileName.toString() + "  file size  " + _idx.toString() +
                   " Done uploading //////////////////");
 
               //Directory tempDir = await getApplicationDocumentsDirectory();
@@ -762,9 +767,9 @@ class BLE_Client {
                   "  " +
                   _fileName.toString() +
                   " saved to file //////////////////");
-              await Future.delayed(Duration(milliseconds: 500));
+
             } //end of for statement
-            await blestopUpload();
+
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
             completer.complete(_numofFiles);
