@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:flutter/services.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
@@ -12,6 +13,7 @@ import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
+import 'package:system_shortcuts/system_shortcuts.dart';
 
 // ToDo: Overlay
 
@@ -35,6 +37,10 @@ void main() async{
       BLE.createPermission();
     }
   }
+  var test = SystemShortcuts.checkBluetooth;
+  // if (SystemShortcuts.checkBluetooth == false) {
+  //
+  // }
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool firstRun = prefs.getBool('firstRun');

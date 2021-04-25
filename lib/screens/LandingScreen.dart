@@ -414,7 +414,6 @@ class _LandingScreenState extends State<LandingScreen> {
               onTap: () async {
                 Navigator.pop(context);
                 showOverlay();
-                //do your stuff
               },
             ),
             ListTile(
@@ -497,7 +496,7 @@ class _LandingScreenState extends State<LandingScreen> {
         Navigator.of(context).pop();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => LandingScreen()),
+          MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
         );
       }
     });
@@ -550,7 +549,7 @@ class _LandingScreenState extends State<LandingScreen> {
 }
 
 void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
-  _scaffoldKey.currentState.hideCurrentSnackBar();
+  // _scaffoldKey.currentState.hideCurrentSnackBar();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString("recordStartedAt", DateTime.now().toString());
   prefs.setBool("isRecording", true);

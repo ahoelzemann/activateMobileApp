@@ -44,6 +44,7 @@ Future<bool> getStepsAndMinutes() async {
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
+    // await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleSteps();
@@ -83,8 +84,6 @@ Future<bool> doUpload() async {
     bleClient.closeBLE();
     upload.uploadFiles();
 
-
-
     // bleClient = null;
 
     return true;
@@ -105,21 +104,28 @@ Future<bool> doUpload() async {
 }
 
 Future<bool> startRecording() async {
+  await Future.delayed(Duration(milliseconds: 750));
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
-
   try {
-    await bleClient.start_ble_scan();
-    await bleClient.ble_connect();
-    await bleClient.bleStartRecord(12.5, 8, 25);
-    bleClient.closeBLE();
-
-    return true;
+    await bleClient.checkBLEstate().then((value) async {
+      if (value == BluetoothState.POWERED_ON) {
+        print("BLE Status has been checked: " + value.toString());
+        await Future.delayed(Duration(milliseconds: 750));
+        await bleClient.start_ble_scan();
+        await bleClient.ble_connect();
+        await bleClient.bleStartRecord(12.5, 8, 25);
+        bleClient.closeBLE();
+        return true;
+      } else {
+        print("Bluetooth State: "+ value.toString());
+        return false;
+      }
+    });
   } catch (e) {
     print('Connection failed:');
     print('connecting again.....');
-    // await Future.delayed(Duration(seconds: 3));
+    await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStartRecord(12.5, 8, 25);
@@ -153,15 +159,13 @@ class BLE_Client {
   var _actMins;
   var _steps;
   String _fileName = " ";
-  static const ISSC_PROPRIETARY_SERVICE_UUID =
-      "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
-  static const UUIDSTR_ISSC_TRANS_TX =
+  String ISSC_PROPRIETARY_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
+  String UUIDSTR_ISSC_TRANS_TX =
       "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; //get data from bangle
-  static const UUIDSTR_ISSC_TRANS_RX =
-      "6e400002-b5a3-f393-e0a9-e50e24dcca9e"; //send data from bangle
+  String UUIDSTR_ISSC_TRANS_RX = "6e400002-b5a3-f393-e0a9-e50e24dcca9e";
 
   BLE_Client() {
-    _activateBleManager.createClient(restoreStateIdentifier: "BLE Manager");
+    createClient();
     _idx = 0;
     _result = new List(5000000);
     _noFiles = new List(25);
@@ -169,33 +173,34 @@ class BLE_Client {
     _dataSize = 0;
     _numofFiles = 0;
     _currentDeviceConnected = false;
+    //send data from bangle
   }
 
   void closeBLE() async {
     await Future.delayed(Duration(milliseconds: 1000));
     try {
-      // if (_currentDeviceConnected == true) {
-      //   await _mydevice.disconnectOrCancelConnection();
-      //   _currentDeviceConnected = false;
-      // }
-      // if (_scanSubscription != null) {
-      //   await _scanSubscription.cancel();
-      // }
-      // if (_characSubscription != null) {
-      //   await _characSubscription.cancel();
-      // }
-      // if (_condeviceStateSubscription != null) {
-      //   await _condeviceStateSubscription.cancel();
-      // }
-      // if (_responseSubscription != null) {
-      //   await _responseSubscription.cancel();
-      // }
-      // if (_bleonSubscription != null) {
-      //   await _bleonSubscription.cancel();
-      // }
+      if (_currentDeviceConnected == true) {
+        await _mydevice.disconnectOrCancelConnection();
+        _currentDeviceConnected = false;
+      }
+      if (_scanSubscription != null) {
+        await _scanSubscription.cancel();
+      }
+      if (_characSubscription != null) {
+        await _characSubscription.cancel();
+      }
+      if (_condeviceStateSubscription != null) {
+        await _condeviceStateSubscription.cancel();
+      }
+      if (_responseSubscription != null) {
+        await _responseSubscription.cancel();
+      }
+      if (_bleonSubscription != null) {
+        await _bleonSubscription.cancel();
+      }
 
       if (_activateBleManager != null) {
-        _activateBleManager.destroyClient();
+        await _activateBleManager.destroyClient();
       }
     } catch (e) {
       print(e);
@@ -203,43 +208,63 @@ class BLE_Client {
     print("BLE Closed   //////////////");
   }
 
-  Future<dynamic> initiateBLEClient() async {
+  Future<bool> createClient() async {
+    await _activateBleManager.createClient(
+        restoreStateIdentifier: "BLE Manager");
+    _activateBleManager.setLogLevel(LogLevel.verbose);
+
     return true;
   }
 
   Future<dynamic> checkBLEstate() async {
     Completer completer = new Completer();
-
+    await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
     _bleonSubscription =
-        _activateBleManager.observeBluetoothState().listen((btState) {
-      if (btState == BluetoothState.POWERED_ON) {
-        print("Satus:" + btState.toString());
+        _activateBleManager.observeBluetoothState().listen((btState) async {
+      await _bleonSubscription.cancel();
+      switch (btState) {
+        case BluetoothState.POWERED_ON:
+          {
+            print("Satus:" + btState.toString());
+            completer.complete(btState);
+            break;
+          }
+        case BluetoothState.UNKNOWN:
+          {
+            completer.complete(btState);
+            break;
+          }
+        case BluetoothState.UNSUPPORTED:
+          {
+            completer.complete(btState);
+            break;
+          }
 
-        completer.complete(true);
-      } else if (btState == BluetoothState.POWERED_OFF) {
-        _activateBleManager?.stopPeripheralScan();
-        _currentDeviceConnected = false;
-        completer.complete(false);
-      } else {
-        completer.complete(false);
+        case BluetoothState.UNAUTHORIZED:
+          {
+            completer.complete(btState);
+            break;
+          }
+        case BluetoothState.POWERED_OFF:
+          {
+            completer.complete(btState);
+            break;
+          }
+        case BluetoothState.RESETTING:
+          {
+            completer.complete(btState);
+            break;
+          }
       }
     });
 
     return completer.future;
   }
 
-  String getnearestDeviceMac() {
-    return _nearestDeviceMac;
-  }
-
-  String nearestDeviceName() {
-    return _nearestDeviceName;
-  }
-
   Future<dynamic> find_nearest_device() async {
     await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
-
+    Map devices;
     _scanSubscription = _activateBleManager
         // .startPeripheralScan(scanMode: ScanMode.balanced)
         .startPeripheralScan()
@@ -259,8 +284,8 @@ class BLE_Client {
 
       if (devicename != null) {
         if (devicename.contains('Bangle.js') && (RSSI >= -100)) {
-          _activateBleManager.stopPeripheralScan();
-          _scanSubscription?.cancel();
+          await _activateBleManager.stopPeripheralScan();
+          await _scanSubscription.cancel();
           print("Our Device is found: " +
               devicename +
               " " +
@@ -280,52 +305,54 @@ class BLE_Client {
 
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
-    await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
-
-    _scanSubscription =
-        _activateBleManager.startPeripheralScan(scanMode: ScanMode.balanced)
-            // .startPeripheralScan()
-            .listen((ScanResult scanResult) async {
-      if (_mydevice != null) {
-        bool connected = await _mydevice.isConnected();
-        print("DeviceState: " + connected.toString());
-        if (connected) {
-          try {
-            _responseSubscription?.cancel();
-            _characSubscription?.cancel();
-            _condeviceStateSubscription?.cancel();
-            await _mydevice.disconnectOrCancelConnection();
-            _mydevice = null;
-            _currentDeviceConnected = false;
-          } catch (e) {
-            print("Disconnecting device before new scan process");
+    try {
+      await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
+      _scanSubscription = _activateBleManager
+          .startPeripheralScan()
+          .listen((ScanResult scanResult) async {
+        if (_mydevice != null) {
+          bool connected = await _mydevice.isConnected();
+          print("DeviceState: " + connected.toString());
+          if (connected) {
+            try {
+              await _responseSubscription?.cancel();
+              await _characSubscription?.cancel();
+              await _condeviceStateSubscription?.cancel();
+              await _mydevice.disconnectOrCancelConnection();
+              _mydevice = null;
+              _currentDeviceConnected = false;
+            } catch (e) {
+              print("Disconnecting device before new scan process");
+            }
           }
         }
-      }
 
-      String devicename = scanResult.advertisementData.localName.toString();
+        String devicename = scanResult.advertisementData.localName.toString();
 
-      String macNum = scanResult.peripheral.identifier.toString();
-      int RSSI = scanResult.rssi;
+        String macNum = scanResult.peripheral.identifier.toString();
+        int RSSI = scanResult.rssi;
 
-      print("start_ble_scan " +
-          devicename +
-          " " +
-          macNum +
-          " mac number//////////  " +
-          RSSI.toString());
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      String mac = prefs.getString("macnum");
-      String name = prefs.getString("Devicename");
-      if ((devicename == name) || (macNum == mac)) {
-        _activateBleManager.stopPeripheralScan();
-        _mydevice = scanResult.peripheral;
-        _scanSubscription?.cancel();
-        print("stop_ble_scan Our Device is found " + macNum);
-        completer.complete(true);
-      }
-    });
+        print("start_ble_scan " +
+            devicename +
+            " " +
+            macNum +
+            " mac number//////////  " +
+            RSSI.toString());
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        String mac = prefs.getString("macnum");
+        String name = prefs.getString("Devicename");
+        if ((devicename == name) || (macNum == mac)) {
+          await _activateBleManager.stopPeripheralScan();
+          _mydevice = scanResult.peripheral;
+          await _scanSubscription.cancel();
+          print("stop_ble_scan Our Device is found " + macNum);
+          completer.complete(true);
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
 
     return completer.future;
   }
@@ -343,7 +370,7 @@ class BLE_Client {
         await _mydevice.disconnectOrCancelConnection();
         await _mydevice.connect();
 
-        _condeviceStateSubscription?.cancel();
+        await _condeviceStateSubscription?.cancel();
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -377,7 +404,7 @@ class BLE_Client {
       } else {
         await _mydevice.connect();
 
-        _condeviceStateSubscription?.cancel();
+        await _condeviceStateSubscription?.cancel();
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -447,7 +474,7 @@ class BLE_Client {
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
                 prefs.setInt("current_steps", int.parse(dd.trim()));
-                _responseSubscription?.cancel();
+                await _responseSubscription?.cancel();
                 completer.complete(_steps);
               }
             });
@@ -494,7 +521,7 @@ class BLE_Client {
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
                 prefs.setInt("current_active_minutes", int.parse(dd.trim()));
-                _responseSubscription?.cancel();
+                await _responseSubscription?.cancel();
                 completer.complete(_actMins);
               }
             });
@@ -657,7 +684,7 @@ class BLE_Client {
                     event.indexOf(61) + 1,
                     event.lastIndexOf(13))); //the number between = and \r
                 int noOfFiles = int.parse(dd.trim());
-                _responseSubscription?.cancel();
+                await _responseSubscription?.cancel();
                 completer.complete(noOfFiles);
               }
             });
@@ -762,7 +789,9 @@ class BLE_Client {
 
               print(fileCount.toString() +
                   "  " +
-                  _fileName.toString() + "  file size  " + _idx.toString() +
+                  _fileName.toString() +
+                  "  file size  " +
+                  _idx.toString() +
                   " Done uploading //////////////////");
 
               //Directory tempDir = await getApplicationDocumentsDirectory();
@@ -778,7 +807,6 @@ class BLE_Client {
                   "  " +
                   _fileName.toString() +
                   " saved to file //////////////////");
-
             } //end of for statement
 
             print(
