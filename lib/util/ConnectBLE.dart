@@ -218,9 +218,9 @@ class BLE_Client {
 
   Future<dynamic> checkBLEstate() async {
     Completer completer = new Completer();
-    await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
+    // await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
     _bleonSubscription =
-        _activateBleManager.observeBluetoothState().listen((btState) async {
+        await _activateBleManager.observeBluetoothState().listen((btState) async {
       await _bleonSubscription.cancel();
       switch (btState) {
         case BluetoothState.POWERED_ON:
@@ -265,7 +265,7 @@ class BLE_Client {
     await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
     Map devices;
-    _scanSubscription = _activateBleManager
+    _scanSubscription = await _activateBleManager
         // .startPeripheralScan(scanMode: ScanMode.balanced)
         .startPeripheralScan()
         .listen((ScanResult scanResult) async {
@@ -308,7 +308,7 @@ class BLE_Client {
     Completer completer = new Completer();
     try {
       await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
-      _scanSubscription = _activateBleManager
+      _scanSubscription = await _activateBleManager
           .startPeripheralScan()
           .listen((ScanResult scanResult) async {
         if (_mydevice != null) {
@@ -595,6 +595,24 @@ class BLE_Client {
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
 
             print("Sending  start command...");
+            DateTime date = DateTime.now();
+            int currentTimeZoneOffset =  date.timeZoneOffset.inHours; // convert to double
+             // if (E.setTimeZone) E.setTimeZone(" + currentTimeZoneOffset / -60 + ");\n
+            print('setting time');
+            String timeCmd = "\u0010setTime(";
+            characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
+                transactionId: "setTime");
+            timeCmd = (date.millisecondsSinceEpoch / 1000).toString()  + ");";
+            characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
+                transactionId: "setTime");
+            timeCmd = "if (E.setTimeZone) ";
+            characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
+                transactionId: "setTime");
+            timeCmd = "E.setTimeZone(" + currentTimeZoneOffset.toString() + ")\n";
+            characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
+                transactionId: "setTime"); //returns void
+            print(Uint8List.fromList(timeCmd.codeUnits).toString());
+            print("time set");
 
             String s = "recStrt(" +
                 Hz.toString() +

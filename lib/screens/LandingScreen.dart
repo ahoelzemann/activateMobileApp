@@ -487,12 +487,13 @@ class _LandingScreenState extends State<LandingScreen> {
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
-
+    showOverlay();
     await BLE.doUpload().then((value) {
       if (value == true) {
         upload.uploadFiles();
         prefs.setString("recordStopedAt", DateTime.now().toString());
         prefs.setBool("isRecording", false);
+        hideOverlay();
         Navigator.of(context).pop();
         Navigator.push(
           context,
@@ -517,7 +518,6 @@ class _LandingScreenState extends State<LandingScreen> {
     showOverlay();
     BLE.startRecording().whenComplete(() async {
       await Future.delayed(Duration(seconds: 2));
-      hideOverlay();
       _reloadPage(context, _scaffoldKey);
     });
 
@@ -554,6 +554,7 @@ void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
   prefs.setString("recordStartedAt", DateTime.now().toString());
   prefs.setBool("isRecording", true);
   await Future.delayed(Duration(seconds: 3));
+  hideOverlay();
   Navigator.of(context).pop();
   Navigator.push(
     context,
