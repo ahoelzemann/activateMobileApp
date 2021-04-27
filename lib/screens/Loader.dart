@@ -4,7 +4,7 @@ class Loader {
   static final Loader appLoader = Loader();
   ValueNotifier<bool> loaderShowingNotifier = ValueNotifier(false);
   ValueNotifier<String> loaderTextNotifier = ValueNotifier('error message');
-  ValueNotifier<Icon> loaderIconNotifier = ValueNotifier(Icon(Icons.track_changes_rounded, color: Colors.black, size: 50));
+  ValueNotifier<Container> loaderIconNotifier = ValueNotifier(Container(child: Icon(Icons.track_changes_rounded, color: Colors.black, size: 50)));
 
   void showLoader() {
     loaderShowingNotifier.value = true;
@@ -19,6 +19,6 @@ class Loader {
   }
 
   void setImage(icon) {
-    loaderIconNotifier.value = icon;
+    loaderIconNotifier.value = Container(child: icon);
   }
 }

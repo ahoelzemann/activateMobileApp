@@ -331,8 +331,9 @@ class BLE_Client {
   ///// **** Scan and Stop Bluetooth Methods  ***** /////
   Future<dynamic> start_ble_scan() async {
     Completer completer = new Completer();
+    bool firstTry = true;
     try {
-      await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
+      // await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
       _scanSubscription = await _activateBleManager
           .startPeripheralScan()
           .listen((ScanResult scanResult) async {
@@ -367,12 +368,15 @@ class BLE_Client {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         String mac = prefs.getString("macnum");
         String name = prefs.getString("Devicename");
-        if ((devicename == name) || (macNum == mac)) {
-          await _activateBleManager.stopPeripheralScan();
-          _mydevice = scanResult.peripheral;
-          await _scanSubscription.cancel();
-          print("stop_ble_scan Our Device is found " + macNum);
-          completer.complete(true);
+        if (((devicename == name) || (macNum == mac)) && firstTry) {
+          firstTry = false;
+          await _activateBleManager.stopPeripheralScan().then((value) async {
+            _mydevice = scanResult.peripheral;
+            await _scanSubscription.cancel();
+            print("stop_ble_scan Our Device is found id:" + macNum + " devicename: " + devicename);
+            completer.complete(true);
+          });
+
         }
       });
     } catch (e) {
@@ -625,16 +629,16 @@ class BLE_Client {
             print('setting time');
             String timeCmd = "\u0010setTime(";
             characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
-                transactionId: "setTime");
+                transactionId: "setTime0");
             timeCmd = (date.millisecondsSinceEpoch / 1000).toString()  + ");";
             characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
-                transactionId: "setTime");
+                transactionId: "setTime1");
             timeCmd = "if (E.setTimeZone) ";
             characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
-                transactionId: "setTime");
+                transactionId: "setTime2");
             timeCmd = "E.setTimeZone(" + currentTimeZoneOffset.toString() + ")\n";
             characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
-                transactionId: "setTime"); //returns void
+                transactionId: "setTime3"); //returns void
             print(Uint8List.fromList(timeCmd.codeUnits).toString());
             print("time set");
 
@@ -796,7 +800,7 @@ class BLE_Client {
     s = "\u0010sendNext(" + fileCount.toString() + ")\n";
     service.writeCharacteristic(
         UUIDSTR_ISSC_TRANS_RX, Uint8List.fromList(s.codeUnits), true);
-
+    print(s);
     return completer.future;
   }
 

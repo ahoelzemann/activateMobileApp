@@ -17,6 +17,7 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 bool _isButtonDisabled;
+
 class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
@@ -31,15 +32,13 @@ class _LandingScreenState extends State<LandingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery
-        .of(context)
-        .size;
+    final Size size = MediaQuery.of(context).size;
     final icon_width = size.width * 0.2;
     final text_width = size.width - (size.width * 0.35);
     final icon_margins = EdgeInsets.only(
         left: icon_width * 0.3, top: 0.0, bottom: 0.0, right: icon_width * 0.1);
     final GlobalKey<ScaffoldState> _scaffoldKey =
-    new GlobalKey<ScaffoldState>();
+        new GlobalKey<ScaffoldState>();
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -93,10 +92,7 @@ class _LandingScreenState extends State<LandingScreen> {
             Row(children: [
               Image.asset('assets/images/divider.png',
                   fit: BoxFit.fill,
-                  height: MediaQuery
-                      .of(context)
-                      .size
-                      .height * 0.08,
+                  height: MediaQuery.of(context).size.height * 0.08,
                   width: size.width)
             ]),
             Expanded(
@@ -105,24 +101,18 @@ class _LandingScreenState extends State<LandingScreen> {
                     children: [
                       Row(children: [
                         Container(
-                          height: MediaQuery
-                              .of(context)
-                              .size
-                              .height * 0.1,
+                          height: MediaQuery.of(context).size.height * 0.1,
                           width: icon_width,
                           margin: icon_margins,
                           child:
-                          new LayoutBuilder(builder: (context, constraint) {
+                              new LayoutBuilder(builder: (context, constraint) {
                             return new Icon(Icons.directions_walk_rounded,
                                 color: Colors.white,
                                 size: constraint.biggest.height);
                           }),
                         ),
                         Container(
-                            height: MediaQuery
-                                .of(context)
-                                .size
-                                .height * 0.133,
+                            height: MediaQuery.of(context).size.height * 0.133,
                             width: text_width,
                             padding: const EdgeInsets.symmetric(
                               vertical: 20.0,
@@ -149,17 +139,17 @@ class _LandingScreenState extends State<LandingScreen> {
                                                     text: snapshot.data,
                                                     style: TextStyle(
                                                         fontFamily:
-                                                        "PlayfairDisplay",
-                                                        fontWeight: FontWeight
-                                                            .bold,
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.bold,
                                                         color: Colors.white)),
                                                 TextSpan(
                                                     text: ' Schritte gelaufen.',
                                                     style: TextStyle(
                                                         fontFamily:
-                                                        "PlayfairDisplay",
-                                                        fontWeight: FontWeight
-                                                            .w500,
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.w500,
                                                         color: Colors.white)),
                                               ],
                                             ),
@@ -181,35 +171,29 @@ class _LandingScreenState extends State<LandingScreen> {
                                             child: AutoSizeText(
                                                 'Es konnte kein Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
                                                 style: TextStyle(
-                                                    fontFamily: "PlayfairDisplay",
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.white),
                                                 textAlign: TextAlign.center,
                                                 textScaleFactor: 1));
                                       }
-                                    })
-                            ))
+                                    })))
                       ]),
                       Row(children: [
                         Container(
-                          height: MediaQuery
-                              .of(context)
-                              .size
-                              .height * 0.1,
+                          height: MediaQuery.of(context).size.height * 0.1,
                           width: icon_width,
                           margin: icon_margins,
                           child:
-                          new LayoutBuilder(builder: (context, constraint) {
+                              new LayoutBuilder(builder: (context, constraint) {
                             return new Icon(Ionicons.fitness_outline,
                                 color: Colors.white,
                                 size: constraint.biggest.height);
                           }),
                         ),
                         Container(
-                            height: MediaQuery
-                                .of(context)
-                                .size
-                                .height * 0.133,
+                            height: MediaQuery.of(context).size.height * 0.133,
                             width: text_width,
                             padding: const EdgeInsets.symmetric(
                               vertical: 20.0,
@@ -234,14 +218,14 @@ class _LandingScreenState extends State<LandingScreen> {
                                                 text: snapshot.data,
                                                 style: TextStyle(
                                                     fontFamily:
-                                                    "PlayfairDisplay",
+                                                        "PlayfairDisplay",
                                                     fontWeight: FontWeight.bold,
                                                     color: Colors.white)),
                                             TextSpan(
                                                 text: ' Minuten aktiv gewesen.',
                                                 style: TextStyle(
                                                     fontFamily:
-                                                    "PlayfairDisplay",
+                                                        "PlayfairDisplay",
                                                     fontWeight: FontWeight.w500,
                                                     color: Colors.white)),
                                           ],
@@ -266,58 +250,52 @@ class _LandingScreenState extends State<LandingScreen> {
                                   }
                                 })
 
-                          // Align(
-                          //   alignment: Alignment.centerLeft,
-                          //   child: AutoSizeText.rich(
-                          //     TextSpan(
-                          //       text: "Bereits",
-                          //       style: TextStyle(
-                          //           fontFamily: "PlayfairDisplay",
-                          //           fontWeight: FontWeight.w500,
-                          //           color: Colors.white),
-                          //       children: <TextSpan>[
-                          //         TextSpan(
-                          //             text: ' 20',
-                          //             style: TextStyle(
-                          //                 fontFamily: "PlayfairDisplay",
-                          //                 fontWeight: FontWeight.bold,
-                          //                 color: Colors.white)),
-                          //         TextSpan(
-                          //             text: ' Minuten aktiv gewesen.',
-                          //             style: TextStyle(
-                          //                 fontFamily: "PlayfairDisplay",
-                          //                 fontWeight: FontWeight.w500,
-                          //                 color: Colors.white)),
-                          //       ],
-                          //     ),
-                          //     textAlign: TextAlign.left,
-                          //     presetFontSizes: [20, 19, 18, 15, 12],
-                          //     minFontSize: 8,
-                          //     maxFontSize: 20,
-                          //   ),
-                          // ),
-                        )
+                            // Align(
+                            //   alignment: Alignment.centerLeft,
+                            //   child: AutoSizeText.rich(
+                            //     TextSpan(
+                            //       text: "Bereits",
+                            //       style: TextStyle(
+                            //           fontFamily: "PlayfairDisplay",
+                            //           fontWeight: FontWeight.w500,
+                            //           color: Colors.white),
+                            //       children: <TextSpan>[
+                            //         TextSpan(
+                            //             text: ' 20',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.bold,
+                            //                 color: Colors.white)),
+                            //         TextSpan(
+                            //             text: ' Minuten aktiv gewesen.',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.w500,
+                            //                 color: Colors.white)),
+                            //       ],
+                            //     ),
+                            //     textAlign: TextAlign.left,
+                            //     presetFontSizes: [20, 19, 18, 15, 12],
+                            //     minFontSize: 8,
+                            //     maxFontSize: 20,
+                            //   ),
+                            // ),
+                            )
                       ]),
                       Row(children: [
                         Container(
-                          height: MediaQuery
-                              .of(context)
-                              .size
-                              .height * 0.1,
+                          height: MediaQuery.of(context).size.height * 0.1,
                           width: icon_width,
                           margin: icon_margins,
                           child:
-                          new LayoutBuilder(builder: (context, constraint) {
+                              new LayoutBuilder(builder: (context, constraint) {
                             return new Icon(EvilIcons.trophy,
                                 color: Colors.white,
                                 size: constraint.biggest.height);
                           }),
                         ),
                         Container(
-                            height: MediaQuery
-                                .of(context)
-                                .size
-                                .height * 0.133,
+                            height: MediaQuery.of(context).size.height * 0.133,
                             width: text_width,
                             padding: const EdgeInsets.symmetric(
                               vertical: 20.0,
@@ -342,26 +320,26 @@ class _LandingScreenState extends State<LandingScreen> {
                                                   text: ' Schritte\n',
                                                   style: TextStyle(
                                                       fontFamily:
-                                                      "PlayfairDisplay",
+                                                          "PlayfairDisplay",
                                                       fontWeight:
-                                                      FontWeight.w500,
+                                                          FontWeight.w500,
                                                       color: Colors.white)),
                                               TextSpan(
                                                   text: snapshot.data[1]
                                                       .toString(),
                                                   style: TextStyle(
                                                       fontFamily:
-                                                      "PlayfairDisplay",
+                                                          "PlayfairDisplay",
                                                       fontWeight:
-                                                      FontWeight.bold,
+                                                          FontWeight.bold,
                                                       color: Colors.white)),
                                               TextSpan(
                                                   text: ' aktive Minuten',
                                                   style: TextStyle(
                                                       fontFamily:
-                                                      "PlayfairDisplay",
+                                                          "PlayfairDisplay",
                                                       fontWeight:
-                                                      FontWeight.w500,
+                                                          FontWeight.w500,
                                                       color: Colors.white)),
                                             ],
                                           ),
@@ -417,25 +395,27 @@ class _LandingScreenState extends State<LandingScreen> {
             //     showOverlay();
             //   },
             // ),
-            ListTile(
-              title: Text('Status Zurücksetzen',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setString("recordStopedAt", DateTime.now().toString());
-                prefs.setBool("isRecording", false);
-                prefs.remove("recordStartedAt");
-                prefs.setBool("isRecording", false);
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
-                );
-              },
-            ),
+            // ListTile(
+            //   title: Text('Status Zurücksetzen',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     SharedPreferences prefs = await SharedPreferences.getInstance();
+            //     prefs.setString("recordStopedAt", DateTime.now().toString());
+            //     prefs.setBool("isRecording", false);
+            //     prefs.remove("recordStartedAt");
+            //     prefs.setBool("isRecording", false);
+            //     Navigator.pop(context);
+            //     Navigator.push(
+            //       context,
+            //       MaterialPageRoute(
+            //           builder: (context) =>
+            //               Stack(children: [LandingScreen(), OverlayView()])),
+            //     );
+            //   },
+            // ),
             ListTile(
               title: Text('Kontakt',
                   style: TextStyle(
@@ -488,11 +468,10 @@ class _LandingScreenState extends State<LandingScreen> {
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
-    showOverlay('Ihre Daten werden hochgeladen.'
-        '\nDies dauert etwa 40 Minuten.', SpinKitFadingCircle(
-      color: Colors.black,
-      size: 50.0,
-    ));
+    showOverlay(
+        'Ihre Daten werden hochgeladen.'
+        '\nDies kann bis zu einer Stunde dauern.',
+        SpinKitFadingCircle(color: Colors.orange, size:50.0,));
     await BLE.doUpload().then((value) {
       if (value == true) {
         upload.uploadFiles();
@@ -503,14 +482,16 @@ class _LandingScreenState extends State<LandingScreen> {
         Navigator.of(context).pop();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
+          MaterialPageRoute(
+              builder: (context) =>
+                  Stack(children: [LandingScreen(), OverlayView()])),
         );
       }
     });
   }
 
-  void _startRecording(BuildContext context,
-      GlobalKey<ScaffoldState> _scaffoldKey) async {
+  void _startRecording(
+      BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
     // _scaffoldKey.currentState.showSnackBar(new SnackBar(
     //   duration: const Duration(minutes: 5),
     //   content: new Row(
@@ -521,16 +502,15 @@ class _LandingScreenState extends State<LandingScreen> {
     //   ),
     // ));
     _isButtonDisabled = true;
-    showOverlay("Ihre Bangle wird verbunden.", SpinKitFadingCircle(
-      color: Colors.black,
-      size: 50.0,
-    ),);
+    showOverlay(
+        "Ihre Bangle wird verbunden.",
+        SpinKitFadingCircle(color: Colors.green, size:50.0,));
+
     BLE.startRecording().whenComplete(() async {
       await Future.delayed(Duration(seconds: 5));
 
       _reloadPage(context, _scaffoldKey);
     });
-
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size,
@@ -567,7 +547,9 @@ void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
   Navigator.of(context).pop();
   Navigator.push(
     context,
-    MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
+    MaterialPageRoute(
+        builder: (context) =>
+            Stack(children: [LandingScreen(), OverlayView()])),
   );
 }
 
@@ -585,7 +567,6 @@ Future<String> getActiveMinutes() async {
     // return await BLE.getStepsAndMinutes().then((completer) {
     return value.getInt('current_active_minutes').toString();
     // });
-
   });
 }
 
@@ -594,7 +575,6 @@ Future<String> getSteps() async {
     // return await BLE.getStepsAndMinutes().then((completer) {
     return value.getInt('current_steps').toString();
     // });
-
   });
 }
 
@@ -615,7 +595,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-  now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(hours: 14))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
@@ -632,4 +612,3 @@ Future<int> isRecording() async {
   }
   // return isRecording;
 }
-
