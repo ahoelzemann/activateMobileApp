@@ -13,7 +13,7 @@ class OverlayView extends StatelessWidget {
       valueListenable: Loader.appLoader.loaderShowingNotifier,
       builder: (context, value, child) {
         if (value) {
-          return yourOverLayWidget();
+          return overLayWidget();
         } else {
           return Container();
         }
@@ -21,7 +21,7 @@ class OverlayView extends StatelessWidget {
     );
   }
 
-  Container yourOverLayWidget() {
+  Container overLayWidget() {
     return Container(
       color: Colors.black.withOpacity(0.5),
       child: Padding(
@@ -45,10 +45,7 @@ class OverlayView extends StatelessWidget {
                           ),
                         ],
                       ),
-                      SpinKitFadingCircle(
-                        color: Colors.black,
-                        size: 50.0,
-                      ),
+                      Loader.appLoader.loaderIconNotifier.value,
                       SizedBox(
                         height: 16,
                       ),
@@ -59,7 +56,7 @@ class OverlayView extends StatelessWidget {
                               return Text(value);
                             },
                             valueListenable:
-                            Loader.appLoader.loaderTextNotifier,
+                                Loader.appLoader.loaderTextNotifier,
                           ),
                           SizedBox(
                             height: 8,
@@ -76,4 +73,25 @@ class OverlayView extends StatelessWidget {
       ),
     );
   }
+}
+
+void showOverlay(message, icon) async {
+  Loader.appLoader.showLoader();
+  Loader.appLoader.setText(errorMessage: message);
+  Loader.appLoader.setImage(icon);
+  // SpinKitFadingCircle(
+  //   color: Colors.black,
+  //   size: 50.0,
+  // ),
+  // await Future.delayed(Duration(seconds: 10));
+  // Loader.appLoader.hideLoader();
+}
+
+void hideOverlay() async {
+  Loader.appLoader.hideLoader();
+  // await Future.delayed(Duration(seconds: 5));
+}
+
+void updateOverlayText(text) {
+  Loader.appLoader.setText(errorMessage: text);
 }

@@ -6,11 +6,23 @@ import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
+import 'package:trac2move/screens/Overlay.dart';
 
 Future<bool> createPermission() async {
   BLE_Client bleClient = new BLE_Client();
   await Future.delayed(Duration(milliseconds: 500));
   bleClient.closeBLE();
+}
+
+Future<BluetoothState> getBLEStatus() async{
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(milliseconds: 500));
+  BluetoothState btState = await bleClient.checkBLEstate();
+  bleClient.closeBLE();
+  return btState;
+
+
 }
 
 Future<bool> nearestDevice() async {
@@ -114,8 +126,15 @@ Future<bool> startRecording() async {
         await Future.delayed(Duration(milliseconds: 750));
         await bleClient.start_ble_scan();
         await bleClient.ble_connect();
+        updateOverlayText("Ihre Bangle wurde gefunden.\n"
+            "Wir starten nun die tägliche Aufnahme.");
+        await Future.delayed(Duration(seconds: 5));
         await bleClient.bleStartRecord(12.5, 8, 25);
         bleClient.closeBLE();
+        updateOverlayText("Die Aufnahme wurde gestartet.\n"
+            "Bitte überprüfen Sie das Display Ihrer Smartwatch.");
+        await Future.delayed(Duration(seconds: 5));
+        hideOverlay();
         return true;
       } else {
         print("Bluetooth State: "+ value.toString());
@@ -211,7 +230,7 @@ class BLE_Client {
   Future<bool> createClient() async {
     await _activateBleManager.createClient(
         restoreStateIdentifier: "BLE Manager");
-    _activateBleManager.setLogLevel(LogLevel.verbose);
+    // _activateBleManager.setLogLevel(LogLevel.verbose);
 
     return true;
   }
@@ -219,44 +238,50 @@ class BLE_Client {
   Future<dynamic> checkBLEstate() async {
     Completer completer = new Completer();
     // await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
-    _bleonSubscription =
-        await _activateBleManager.observeBluetoothState().listen((btState) async {
-      await _bleonSubscription.cancel();
-      switch (btState) {
-        case BluetoothState.POWERED_ON:
-          {
-            print("Satus:" + btState.toString());
-            completer.complete(btState);
-            break;
-          }
-        case BluetoothState.UNKNOWN:
-          {
-            completer.complete(btState);
-            break;
-          }
-        case BluetoothState.UNSUPPORTED:
-          {
-            completer.complete(btState);
-            break;
-          }
+    try {
+      _bleonSubscription =
+      await _activateBleManager.observeBluetoothState().listen((btState) async {
+        await _bleonSubscription.cancel();
+        switch (btState) {
+          case BluetoothState.POWERED_ON:
+            {
+              print("Satus:" + btState.toString());
+              completer.complete(btState);
+              break;
+            }
+          case BluetoothState.UNKNOWN:
+            {
+              completer.complete(btState);
+              break;
+            }
+          case BluetoothState.UNSUPPORTED:
+            {
+              completer.complete(btState);
+              break;
+            }
 
-        case BluetoothState.UNAUTHORIZED:
-          {
-            completer.complete(btState);
-            break;
-          }
-        case BluetoothState.POWERED_OFF:
-          {
-            completer.complete(btState);
-            break;
-          }
-        case BluetoothState.RESETTING:
-          {
-            completer.complete(btState);
-            break;
-          }
-      }
-    });
+          case BluetoothState.UNAUTHORIZED:
+            {
+              completer.complete(btState);
+              break;
+            }
+          case BluetoothState.POWERED_OFF:
+            {
+              completer.complete(btState);
+              break;
+            }
+          case BluetoothState.RESETTING:
+            {
+              completer.complete(btState);
+              break;
+            }
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
+
+
 
     return completer.future;
   }
@@ -596,8 +621,7 @@ class BLE_Client {
 
             print("Sending  start command...");
             DateTime date = DateTime.now();
-            int currentTimeZoneOffset =  date.timeZoneOffset.inHours; // convert to double
-             // if (E.setTimeZone) E.setTimeZone(" + currentTimeZoneOffset / -60 + ");\n
+            int currentTimeZoneOffset =  date.timeZoneOffset.inHours;
             print('setting time');
             String timeCmd = "\u0010setTime(";
             characteristic.write(Uint8List.fromList(timeCmd.codeUnits), false,
@@ -799,7 +823,8 @@ class BLE_Client {
               await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
               _idx = 0;
-
+              updateOverlayText("Datei " + (fileCount+1).toString() + "/" + (_numofFiles+1).toString() + ".\n"
+                  "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
 
               await blerxData(

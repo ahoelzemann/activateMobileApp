@@ -14,6 +14,7 @@ import 'package:trac2move/util/Upload.dart' as upload;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Loader.dart';
 import 'package:trac2move/screens/Overlay.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 bool _isButtonDisabled;
 class LandingScreen extends StatefulWidget {
@@ -405,17 +406,17 @@ class _LandingScreenState extends State<LandingScreen> {
                 color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
             ),
-            ListTile(
-              title: Text('Overlay Test',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                Navigator.pop(context);
-                showOverlay();
-              },
-            ),
+            // ListTile(
+            //   title: Text('Overlay Test',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     Navigator.pop(context);
+            //     showOverlay();
+            //   },
+            // ),
             ListTile(
               title: Text('Status Zurücksetzen',
                   style: TextStyle(
@@ -487,9 +488,14 @@ class _LandingScreenState extends State<LandingScreen> {
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
-    showOverlay();
+    showOverlay('Ihre Daten werden hochgeladen.'
+        '\nDies dauert etwa 40 Minuten.', SpinKitFadingCircle(
+      color: Colors.black,
+      size: 50.0,
+    ));
     await BLE.doUpload().then((value) {
       if (value == true) {
+        upload.uploadFiles();
         upload.uploadFiles();
         prefs.setString("recordStopedAt", DateTime.now().toString());
         prefs.setBool("isRecording", false);
@@ -515,9 +521,13 @@ class _LandingScreenState extends State<LandingScreen> {
     //   ),
     // ));
     _isButtonDisabled = true;
-    showOverlay();
+    showOverlay("Ihre Bangle wird verbunden.", SpinKitFadingCircle(
+      color: Colors.black,
+      size: 50.0,
+    ),);
     BLE.startRecording().whenComplete(() async {
-      await Future.delayed(Duration(seconds: 2));
+      await Future.delayed(Duration(seconds: 5));
+
       _reloadPage(context, _scaffoldKey);
     });
 
@@ -553,7 +563,6 @@ void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString("recordStartedAt", DateTime.now().toString());
   prefs.setBool("isRecording", true);
-  await Future.delayed(Duration(seconds: 3));
   hideOverlay();
   Navigator.of(context).pop();
   Navigator.push(
@@ -561,7 +570,6 @@ void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
     MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
   );
 }
-
 
 Future<List> getGoals() async {
   List<int> result = [];
@@ -616,7 +624,7 @@ Future<int> isRecording() async {
     // Time to upload Data
     return 1;
   } else if (isRecording && !timeToUpload) {
-    // Time while recording is running
+    // Time while recording
     return 2;
   } else {
     // exception
@@ -625,15 +633,3 @@ Future<int> isRecording() async {
   // return isRecording;
 }
 
-void showOverlay() async {
-
-  Loader.appLoader.showLoader();
-  Loader.appLoader.setText(errorMessage: 'Die Aufnahme wird gestartet.');
-  await Future.delayed(Duration(seconds: 10));
-  Loader.appLoader.hideLoader();
-}
-
-void hideOverlay() async {
-  Loader.appLoader.hideLoader();
-  // await Future.delayed(Duration(seconds: 5));
-}

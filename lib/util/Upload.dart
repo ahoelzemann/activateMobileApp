@@ -93,7 +93,12 @@ Future<void> uploadFiles() async {
                   print(progress); // read upload progress
                 },
               ));
-              File(localFilePath).delete();
+              try {
+                File(localFilePath).delete();
+              }
+              catch (e) {
+
+              }
             } catch (e) {
               print(e);
               await Future.delayed(Duration(seconds: 10));

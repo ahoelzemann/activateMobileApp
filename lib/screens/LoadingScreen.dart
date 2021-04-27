@@ -1,4 +1,3 @@
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:flutter/material.dart';
 
 class LoadingScreen extends StatelessWidget {
@@ -8,10 +7,6 @@ class LoadingScreen extends StatelessWidget {
     final Size size = MediaQuery
         .of(context)
         .size;
-    const spinkit = SpinKitRotatingCircle(
-      color: Colors.white,
-      size: 50.0,
-    );
     return Scaffold(
       body: Container(
           width: size.width,
