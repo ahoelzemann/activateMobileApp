@@ -100,7 +100,8 @@ SetFirstPage() {
               return LoadingScreen();
             }
           } else {
-            return ProfilePage(createUser: true);
+            return Stack(
+                children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
           // return ProfilePage();

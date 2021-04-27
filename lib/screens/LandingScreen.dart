@@ -595,7 +595,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(hours: 14))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording

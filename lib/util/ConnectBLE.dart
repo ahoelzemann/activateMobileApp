@@ -7,6 +7,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart' as upload;
 import 'package:trac2move/screens/Overlay.dart';
+import 'package:flutter/material.dart';
 
 Future<bool> createPermission() async {
   BLE_Client bleClient = new BLE_Client();
@@ -306,7 +307,8 @@ class BLE_Client {
           macNum +
           " mac number//////////  " +
           RSSI.toString());
-
+      List<String> bangles = [];
+      await Future.delayed(Duration(seconds: 2));
       if (devicename != null) {
         if (devicename.contains('Bangle.js') && (RSSI >= -100)) {
           await _activateBleManager.stopPeripheralScan();
@@ -317,6 +319,11 @@ class BLE_Client {
               macNum +
               " " +
               RSSI.toString());
+          updateOverlayText("Wir haben folgende Bangle.js gefunden: " + devicename +".\nDiese wird nun als Standardgerät in der App hinterlegt.");
+          await Future.delayed(Duration(seconds: 3));
+          updateOverlayIcon(Icon(Icons.cloud_upload, color: Colors.blue, size:50.0));
+          updateOverlayText("Wir speichern nun Ihre Daten am Server und lokal auf Ihrem Gerät.");
+          await Future.delayed(Duration(seconds: 3));
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setString("macnum", macNum);
           prefs.setString("Devicename", devicename);
@@ -827,7 +834,7 @@ class BLE_Client {
               await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
               _idx = 0;
-              updateOverlayText("Datei " + (fileCount+1).toString() + "/" + (_numofFiles+1).toString() + ".\n"
+              updateOverlayText("Datei " + (fileCount+1).toString() + "/" + (_numofFiles).toString() + ".\n"
                   "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
 

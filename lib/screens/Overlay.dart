@@ -95,3 +95,7 @@ void hideOverlay() async {
 void updateOverlayText(text) {
   Loader.appLoader.setText(errorMessage: text);
 }
+
+void updateOverlayIcon(icon) {
+  Loader.appLoader.setImage(icon);
+}
