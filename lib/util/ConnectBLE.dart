@@ -91,6 +91,7 @@ Future<bool> doUpload() async {
   try {
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
+    await bleClient.bleSyncTime();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
@@ -106,6 +107,7 @@ Future<bool> doUpload() async {
     // await Future.delayed(Duration(seconds: 3));
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
+    await bleClient.bleSyncTime();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
@@ -341,25 +343,26 @@ class BLE_Client {
     bool firstTry = true;
     try {
       // await _activateBleManager.observeBluetoothState().firstWhere((element) => element == BluetoothState.POWERED_ON);
+      if (_mydevice != null) {
+        bool connected = await _mydevice.isConnected();
+        print("DeviceState: " + connected.toString());
+        if (connected) {
+          try {
+            await _responseSubscription?.cancel();
+            await _characSubscription?.cancel();
+            await _condeviceStateSubscription?.cancel();
+            await _mydevice.disconnectOrCancelConnection();
+            _mydevice = null;
+            _currentDeviceConnected = false;
+          } catch (e) {
+            print("Disconnecting device before new scan process");
+          }
+        }
+      }
       _scanSubscription = await _activateBleManager
           .startPeripheralScan()
           .listen((ScanResult scanResult) async {
-        if (_mydevice != null) {
-          bool connected = await _mydevice.isConnected();
-          print("DeviceState: " + connected.toString());
-          if (connected) {
-            try {
-              await _responseSubscription?.cancel();
-              await _characSubscription?.cancel();
-              await _condeviceStateSubscription?.cancel();
-              await _mydevice.disconnectOrCancelConnection();
-              _mydevice = null;
-              _currentDeviceConnected = false;
-            } catch (e) {
-              print("Disconnecting device before new scan process");
-            }
-          }
-        }
+
 
         String devicename = scanResult.advertisementData.localName.toString();
 
@@ -378,8 +381,8 @@ class BLE_Client {
         if (((devicename == name) || (macNum == mac)) && firstTry) {
           firstTry = false;
           await _activateBleManager.stopPeripheralScan().then((value) async {
-            _mydevice = scanResult.peripheral;
             await _scanSubscription.cancel();
+            _mydevice = scanResult.peripheral;
             print("stop_ble_scan Our Device is found id:" + macNum + " devicename: " + devicename);
             completer.complete(true);
           });
@@ -617,7 +620,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
+  Future<dynamic> bleSyncTime() async {
     await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
@@ -630,7 +633,8 @@ class BLE_Client {
             print(
                 "Status:" + _mydevice.name.toString() + " RX UUID discovered");
 
-            print("Sending  start command...");
+            print("Sending  Time Sync command...");
+
             DateTime date = DateTime.now();
             int currentTimeZoneOffset =  date.timeZoneOffset.inHours;
             print('setting time');
@@ -648,6 +652,32 @@ class BLE_Client {
                 transactionId: "setTime3"); //returns void
             print(Uint8List.fromList(timeCmd.codeUnits).toString());
             print("time set");
+
+
+            completer.complete(true);
+          }
+        });
+      }
+    });
+
+    return completer.future;
+  }
+  Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
+    await Future.delayed(Duration(milliseconds: 1000));
+    Completer completer = new Completer();
+
+    _services.forEach((service) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        print("Status:" + _mydevice.name.toString() + " service discovered");
+
+        _decviceCharacteristics.forEach((characteristic) async {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print(
+                "Status:" + _mydevice.name.toString() + " RX UUID discovered");
+
+            print("Sending  start command...");
+
+            await bleSyncTime();
 
             String s = "recStrt(" +
                 Hz.toString() +

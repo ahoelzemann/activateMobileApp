@@ -384,6 +384,21 @@ class _LandingScreenState extends State<LandingScreen> {
                 color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
             ),
+            ListTile(
+              title: Text('Upload',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                showOverlay(
+                    'Ihre Daten werden hochgeladen.'
+                        '\nDies kann bis zu einer Stunde dauern.',
+                    SpinKitFadingCircle(color: Colors.orange, size:50.0,));
+                await BLE.doUpload();
+                hideOverlay();
+              },
+            ),
             // ListTile(
             //   title: Text('Overlay Test',
             //       style: TextStyle(
