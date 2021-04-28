@@ -37,6 +37,7 @@ dependencies:
   system_shortcuts: ^1.0.0
   auto_size_text: ^2.1.0
   permission_handler: ^7.0.0
+  location: ^4.1.1
 
   flutter:
     sdk: flutter

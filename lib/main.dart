@@ -14,22 +14,25 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
+import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  Map<Permission, PermissionStatus> statuses;
-  var statusLocation;
-  var statusBLE;
-  var statusStorage;
+
   if (Platform.isAndroid) {
-    statusStorage = await Permission.storage.request();
-    statusBLE = await Permission.bluetooth.request();
-    statusLocation = await Permission.locationAlways.request();
+    Location location = new Location();
+    if (!await location.serviceEnabled()) {
+      await location.requestService();
+    }
+    await Permission.storage.request();
+    await Permission.bluetooth.request();
+    await Permission.locationAlways.request();
+
   } else if (Platform.isIOS) {
-    statusStorage = await Permission.storage.request();
+    await Permission.storage.request();
     if (await Permission.bluetooth.isDenied) {
       BLE.createPermission();
     }

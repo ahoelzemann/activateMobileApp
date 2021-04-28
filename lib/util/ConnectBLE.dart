@@ -320,10 +320,10 @@ class BLE_Client {
               " " +
               RSSI.toString());
           updateOverlayText("Wir haben folgende Bangle.js gefunden: " + devicename +".\nDiese wird nun als Standardgerät in der App hinterlegt.");
-          await Future.delayed(Duration(seconds: 3));
+          await Future.delayed(Duration(seconds: 10));
           updateOverlayIcon(Icon(Icons.cloud_upload, color: Colors.blue, size:50.0));
           updateOverlayText("Wir speichern nun Ihre Daten am Server und lokal auf Ihrem Gerät.");
-          await Future.delayed(Duration(seconds: 3));
+          await Future.delayed(Duration(seconds: 10));
           SharedPreferences prefs = await SharedPreferences.getInstance();
           prefs.setString("macnum", macNum);
           prefs.setString("Devicename", devicename);
