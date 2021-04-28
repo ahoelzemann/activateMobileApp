@@ -16,15 +16,6 @@ Future<bool> createPermission() async {
   bleClient.closeBLE();
 }
 
-// Future<bool> getBLEStatus() async {
-//   BLE_Client bleClient = new BLE_Client();
-//
-//   await Future.delayed(Duration(milliseconds: 500));
-//   await bleClient.checkBLEstate();
-//   bleClient.closeBLE();
-//   return true;
-// }
-
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
 
@@ -93,6 +84,7 @@ Future<bool> doUpload() async {
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
+    await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleSyncTime();
@@ -108,7 +100,8 @@ Future<bool> doUpload() async {
   } catch (e) {
     print('Connection failed:');
     print('connecting again.....');
-    // await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 3));
+    await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleSyncTime();
@@ -265,11 +258,9 @@ class BLE_Client {
     updateOverlayText(
         "Wir suchen nun nach Ihrer Bangle, bitte stellen Sie sicher, \n"
         "dass sie sich möglichst nah am Smartphone befindet. ");
-    _activateBleManager.startPeripheralScan(scanMode: ScanMode.balanced)
-        // .startPeripheralScan()
+    _bleonSubscription = _activateBleManager.startPeripheralScan(scanMode: ScanMode.balanced)
         .timeout(Duration(milliseconds: 300), onTimeout: (timeout) async {
       await _activateBleManager.stopPeripheralScan();
-      // await _scanSubscription.cancel();
     }).listen(
       (data) async {
         if (data.peripheral != null) {
@@ -287,6 +278,7 @@ class BLE_Client {
       },
       cancelOnError: true,
       onDone: () async {
+        _bleonSubscription?.cancel();
         await Future.delayed(Duration(seconds: 10));
         try {
           var sortedEntries = bangles.entries.toList()
@@ -344,19 +336,26 @@ class BLE_Client {
     String savedIdentifier = prefs.getString("macnum");
     bool alreadyStoppedScanning = false;
 
-    _activateBleManager
+    _bleonSubscription = _activateBleManager
         .startPeripheralScan()
-        .timeout(Duration(milliseconds: 1000), onTimeout: (timeout) async {
+        .timeout(Duration(seconds: 10), onTimeout: (timeout) async {
       if (!alreadyStoppedScanning) {
+        var value = timeout;
+        print(value);
         await _activateBleManager.stopPeripheralScan();
       }
     }).listen(
       (data) async {
         if ((data.peripheral.name == savedDevice) ||
             (data.peripheral.identifier == savedIdentifier)) {
-          await _activateBleManager.stopPeripheralScan();
-          _mydevice = data.peripheral;
-          alreadyStoppedScanning = true;
+          if (!alreadyStoppedScanning) {
+            await _activateBleManager.stopPeripheralScan();
+            alreadyStoppedScanning = true;
+            _mydevice = data.peripheral;
+            _bleonSubscription?.cancel();
+          } else {
+          }
+
         }
       },
       onError: (err) {

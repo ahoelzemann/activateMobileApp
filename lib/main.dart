@@ -32,6 +32,7 @@ void main() async {
     await Permission.locationAlways.request();
 
   } else if (Platform.isIOS) {
+    // await Permission.
     await Permission.storage.request();
     if (await Permission.bluetooth.isDenied) {
       BLE.createPermission();
