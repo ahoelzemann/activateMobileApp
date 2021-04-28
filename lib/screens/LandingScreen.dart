@@ -410,27 +410,27 @@ class _LandingScreenState extends State<LandingScreen> {
             //     showOverlay();
             //   },
             // ),
-            // ListTile(
-            //   title: Text('Status Zurücksetzen',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     SharedPreferences prefs = await SharedPreferences.getInstance();
-            //     prefs.setString("recordStopedAt", DateTime.now().toString());
-            //     prefs.setBool("isRecording", false);
-            //     prefs.remove("recordStartedAt");
-            //     prefs.setBool("isRecording", false);
-            //     Navigator.pop(context);
-            //     Navigator.push(
-            //       context,
-            //       MaterialPageRoute(
-            //           builder: (context) =>
-            //               Stack(children: [LandingScreen(), OverlayView()])),
-            //     );
-            //   },
-            // ),
+            ListTile(
+              title: Text('Status Zurücksetzen',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("recordStopedAt", DateTime.now().toString());
+                prefs.setBool("isRecording", false);
+                prefs.remove("recordStartedAt");
+                prefs.setBool("isRecording", false);
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          Stack(children: [LandingScreen(), OverlayView()])),
+                );
+              },
+            ),
             ListTile(
               title: Text('Kontakt',
                   style: TextStyle(

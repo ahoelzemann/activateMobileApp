@@ -457,7 +457,9 @@ class MapScreenState extends State<ProfilePage> {
         // Navigator.of(context).pop();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => LandingScreen()),
+          MaterialPageRoute(builder: (context) => Stack(
+              children: [LandingScreen(), OverlayView()],
+        )),
         );
       },
     );
