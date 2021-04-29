@@ -38,6 +38,9 @@ dependencies:
   auto_size_text: ^2.1.0
   permission_handler: ^7.0.0
   location: ^4.1.1
+  workmanager: ^0.4.0
+  flutter_foreground_task: ^1.0.7
+  android_long_task: ^0.3.3
 
   flutter:
     sdk: flutter

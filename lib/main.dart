@@ -1,3 +1,4 @@
+import 'package:android_long_task/android_long_task.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_ble_lib/flutter_ble_lib.dart';
@@ -7,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
@@ -17,7 +19,31 @@ import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 
+//this entire function runs in your ForegroundService
+@pragma('vm:entry-point')
+serviceMain() async {
+  //make sure you add this
+  WidgetsFlutterBinding.ensureInitialized();
+  //if your use dependency injection you initialize them here
+  //what ever objects you created in your app main function is not accessible here
+
+  //set a callback and define the code you want to execute when your ForegroundService runs
+  ServiceClient.setExecutionCallback((initialData) async {
+    //you set initialData when you are calling AppClient.execute()
+    //from your flutter application code and receive it here
+    var serviceData = AppServiceData.fromJson(initialData);
+    //runs your code here
+    print("first");
+    serviceData.progress = 20;
+    await ServiceClient.update(serviceData);
+    await BLE.doUpload();
+    serviceData.progress = 100;
+    await ServiceClient.endExecution(serviceData);
+    await ServiceClient.stopService();
+  });
+}
 void main() async {
+  bool useSecureStorage = false;
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
@@ -30,7 +56,6 @@ void main() async {
     await Permission.storage.request();
     await Permission.bluetooth.request();
     await Permission.locationAlways.request();
-
   } else if (Platform.isIOS) {
     // await Permission.
     await Permission.storage.request();
@@ -41,40 +66,38 @@ void main() async {
 
   SharedPreferences prefs = await SharedPreferences.getInstance();
   bool firstRun = prefs.getBool('firstRun');
+  prefs.setBool('useSecureStorage', useSecureStorage);
 
   if (firstRun == null) {
     prefs.setInt("current_steps", 0);
     prefs.setInt("current_active_minutes", 0);
-    final storage = new FlutterSecureStorage();
-    await storage.write(
-        key: 'serverAddress',
-        value: base64.encode(utf8.encode("131.173.80.175")));
-    await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
-    await storage.write(
-        key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
-    await storage.write(
-        key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
+    if (useSecureStorage) {
+      final storage = new FlutterSecureStorage();
+      await storage.write(
+          key: 'serverAddress',
+          value: base64.encode(utf8.encode("131.173.80.175")));
+      await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
+      await storage.write(
+          key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
+      await storage.write(
+          key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
+    } else {
+      await prefs.setString('serverAddress', "131.173.80.175");
+      await prefs.setString('port', "22");
+      await prefs.setString('login', "trac2move_upload");
+      await prefs.setString('password', "5aU=txXKoU!");
+    }
     prefs.setBool('firstRun', false);
   }
 
-  // final cron = Cron();
-  // cron.schedule(Schedule.parse('*/2 20 * * *'), () async {
-  //   print("cronjob");
-  // });
-  runApp(RootRestorationScope(
-      // Register a restoration scope for the entire app!
-      restorationId: 'root',
-      child: Trac2Move()));
+
+  runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
 }
 
 Future<int> _readActiveParticipantAndCheckBLE() async {
   List<String> participant;
   var instance = await SharedPreferences.getInstance();
   participant = instance.getStringList("participant");
-  // BluetoothState btState = await BLE.getBLEStatus();
-  // if (btState != BluetoothState.POWERED_ON) {
-  //   return 2;
-  // }
   bool btState = await SystemShortcuts.checkBluetooth;
   if (btState == false) {
     return 2;
@@ -108,7 +131,6 @@ SetFirstPage() {
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
-          // return ProfilePage();
           return LoadingScreen();
         }
       });
@@ -118,6 +140,5 @@ class Trac2Move extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(debugShowCheckedModeBanner: true, home: SetFirstPage());
-    // return MaterialApp(debugShowCheckedModeBanner: true, home: MyHomePage(title: 'asdf',));
   }
 }

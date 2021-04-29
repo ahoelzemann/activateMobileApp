@@ -5,7 +5,7 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/Upload.dart' as upload;
+import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter/material.dart';
 import 'dart:collection';
@@ -82,17 +82,18 @@ Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(milliseconds: 500));
-
+  Upload uploader = new Upload();
+  await uploader.init();
   try {
+
     await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
-    await bleClient.bleSyncTime();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
     bleClient.closeBLE();
-    upload.uploadFiles();
+    uploader.uploadFiles();
 
     // bleClient = null;
 
@@ -104,12 +105,11 @@ Future<bool> doUpload() async {
     await bleClient.checkBLEstate();
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
-    await bleClient.bleSyncTime();
     await bleClient.bleStopRecord();
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
     bleClient.closeBLE();
-    upload.uploadFiles();
+    uploader.uploadFiles();
 
     return false;
   }

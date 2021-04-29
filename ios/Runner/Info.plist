@@ -33,16 +33,17 @@
 	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Play with BLE Compatible devices</string>
-	<key>NSLocalNetworkUsageDescription</key>
-	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_dartobservatory._tcp</string>
 		<string>_trac2move._tcp</string>
 	</array>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
+		<string>fetch</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
