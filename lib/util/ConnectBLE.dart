@@ -384,8 +384,10 @@ class BLE_Client {
       if (connected) {
         await _mydevice.disconnectOrCancelConnection();
       }
+      if (_condeviceStateSubscription != null) {
+        await _condeviceStateSubscription.cancel();
+      }
         await _mydevice.connect();
-        await _condeviceStateSubscription?.cancel();
 
         int dummyCheck = 1;
         _condeviceStateSubscription = _mydevice
@@ -418,7 +420,7 @@ class BLE_Client {
         });
 
     } else {
-      print("device is null " + _mydevice.name.toString());
+      print("Unknown or null:  device name " + _mydevice.name.toString() + "  and id "+ _mydevice.identifier.toString());
       completer.complete(false);
     }
     return completer.future;
