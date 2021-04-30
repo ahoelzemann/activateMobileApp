@@ -492,6 +492,16 @@ class _LandingScreenState extends State<LandingScreen> {
                   }
                 },
               ),
+              ListTile(
+                title: Text('My Upload',
+                    style: TextStyle(
+                        fontFamily: "PlayfairDisplay",
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black)),
+                onTap: () async {
+                 await BLE.doUpload();
+                },
+              ),
               // ListTile(
               //   title: Text('Overlay Test',
               //       style: TextStyle(

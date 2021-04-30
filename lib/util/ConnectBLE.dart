@@ -338,7 +338,7 @@ class BLE_Client {
 
     _bleonSubscription = _activateBleManager
         .startPeripheralScan()
-        .timeout(Duration(seconds: 10), onTimeout: (timeout) async {
+        .timeout(Duration(seconds: 30), onTimeout: (timeout) async {
       if (!alreadyStoppedScanning) {
         var value = timeout;
         print(value);
@@ -349,9 +349,10 @@ class BLE_Client {
         if ((data.peripheral.name == savedDevice) ||
             (data.peripheral.identifier == savedIdentifier)) {
           if (!alreadyStoppedScanning) {
-            await _activateBleManager.stopPeripheralScan();
             alreadyStoppedScanning = true;
             _mydevice = data.peripheral;
+            print("Device found: " + _mydevice.toString());
+            await _activateBleManager.stopPeripheralScan();
             _bleonSubscription?.cancel();
           } else {
           }
@@ -363,6 +364,7 @@ class BLE_Client {
       },
       cancelOnError: true,
       onDone: () async {
+        print("Device found: " + _mydevice.toString() + " before completer");
         completer.complete(true);
       },
     );
@@ -372,79 +374,51 @@ class BLE_Client {
   Future<dynamic> ble_connect() async {
     await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
-    if (_mydevice != null) {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String savedDevice = prefs.getString("Devicename");
+    String savedIdentifier = prefs.getString("macnum");
+
+    if ((_mydevice.name == savedDevice) ||
+        (_mydevice.identifier == savedIdentifier)) {
       bool connected = await _mydevice.isConnected();
       if (connected) {
         await _mydevice.disconnectOrCancelConnection();
-        await _mydevice.connect();
-
-        await _condeviceStateSubscription?.cancel();
-
-        int dummyCheck = 1;
-        _condeviceStateSubscription = _mydevice
-            .observeConnectionState(
-                emitCurrentValue: true, completeOnDisconnect: true)
-            .listen((connectionState) async {
-          if (connectionState == PeripheralConnectionState.connected) {
-            _currentDeviceConnected = true;
-
-            if (dummyCheck == 1) {
-              await _mydevice.discoverAllServicesAndCharacteristics();
-              _services = await _mydevice.services(); //getting all services
-              _decviceCharacteristics = await _mydevice
-                  .characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
-
-              print("Status: Connected to " + _mydevice.name.toString());
-              dummyCheck = 0;
-              completer.complete(true);
-            }
-          } else if (connectionState ==
-              PeripheralConnectionState.disconnected) {
-            print(
-                "Bluetooth Disconnected, ///////////////////////////////////");
-            _currentDeviceConnected = false;
-            if (dummyCheck == 1) {
-              dummyCheck = 0;
-              completer.complete(false);
-            }
-          }
-        });
-      } else {
-        await _mydevice.connect();
-
-        await _condeviceStateSubscription?.cancel();
-
-        int dummyCheck = 1;
-        _condeviceStateSubscription = _mydevice
-            .observeConnectionState(
-                emitCurrentValue: true, completeOnDisconnect: true)
-            .listen((connectionState) async {
-          if (connectionState == PeripheralConnectionState.connected) {
-            _currentDeviceConnected = true;
-
-            if (dummyCheck == 1) {
-              await _mydevice.discoverAllServicesAndCharacteristics();
-              _services = await _mydevice.services(); //getting all services
-              _decviceCharacteristics = await _mydevice
-                  .characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
-
-              print("Status: Connected to " + _mydevice.name.toString());
-              dummyCheck = 0;
-              completer.complete(true);
-            }
-          } else if (connectionState ==
-              PeripheralConnectionState.disconnected) {
-            print(
-                "Bluetooth Disconnected, ///////////////////////////////////");
-            _currentDeviceConnected = false;
-            if (dummyCheck == 1) {
-              dummyCheck = 0;
-              completer.complete(false);
-            }
-          }
-        });
       }
+        await _mydevice.connect();
+        await _condeviceStateSubscription?.cancel();
+
+        int dummyCheck = 1;
+        _condeviceStateSubscription = _mydevice
+            .observeConnectionState(
+                emitCurrentValue: true, completeOnDisconnect: true)
+            .listen((connectionState) async {
+          if (connectionState == PeripheralConnectionState.connected) {
+            _currentDeviceConnected = true;
+
+            if (dummyCheck == 1) {
+              await _mydevice.discoverAllServicesAndCharacteristics();
+              _services = await _mydevice.services(); //getting all services
+              _decviceCharacteristics = await _mydevice
+                  .characteristics(ISSC_PROPRIETARY_SERVICE_UUID);
+
+              print("Status: Connected to " + _mydevice.name.toString());
+              dummyCheck = 0;
+              completer.complete(true);
+            }
+          } else if (connectionState ==
+              PeripheralConnectionState.disconnected) {
+            print(
+                "Bluetooth Disconnected, ///////////////////////////////////");
+            _currentDeviceConnected = false;
+            if (dummyCheck == 1) {
+              dummyCheck = 0;
+              completer.complete(false);
+            }
+          }
+        });
+
     } else {
+      print("device is null " + _mydevice.name.toString());
       completer.complete(false);
     }
     return completer.future;
