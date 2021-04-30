@@ -19,6 +19,7 @@ import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 
+
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
 serviceMain() async {
@@ -33,7 +34,6 @@ serviceMain() async {
     //from your flutter application code and receive it here
     var serviceData = AppServiceData.fromJson(initialData);
     //runs your code here
-    print("first");
     serviceData.progress = 20;
     await ServiceClient.update(serviceData);
     await BLE.doUpload();
@@ -43,6 +43,14 @@ serviceMain() async {
   });
 }
 void main() async {
+  final inpFile = new File('inp.txt');
+  Stream<List<int>> inputStream = inpFile.openRead();
+  stdout.addStream(inputStream);
+
+  final outFile = new File('error_report.txt');
+  IOSink outStream = outFile.openWrite();
+
+  outStream.addStream(inputStream);
   bool useSecureStorage = false;
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
@@ -57,7 +65,6 @@ void main() async {
     await Permission.bluetooth.request();
     await Permission.locationAlways.request();
   } else if (Platform.isIOS) {
-    // await Permission.
     await Permission.storage.request();
     if (await Permission.bluetooth.isDenied) {
       BLE.createPermission();
@@ -138,7 +145,13 @@ SetFirstPage() {
 
 class Trac2Move extends StatelessWidget {
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(debugShowCheckedModeBanner: true, home: SetFirstPage());
+  Widget build(BuildContext context)  {
+    try {
+      return MaterialApp(debugShowCheckedModeBanner: true, home: SetFirstPage());
+    } catch(exception) {
+
+
+      print(exception);
+    }
   }
 }
