@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'dart:io';
 import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
@@ -27,53 +28,33 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
-  AppServiceData data = AppServiceData();
+
+
 
   String _result = 'result';
   String _status = 'status';
 
   @override
   void initState() {
-    AppClient.observe.listen((json) {
-      var serviceData = AppServiceData.fromJson(json);
-      setState(() {
-        _status = serviceData.notificationDescription;
+    if (Platform.isAndroid) {
+      AppClient.observe.listen((json) {
+        var serviceData = AppServiceData.fromJson(json);
+        setState(() {
+          _status = serviceData.notificationDescription;
+        });
       });
-    });
+    }
     super.initState();
   }
 
 
-  // final flutterForegroundTask = FlutterForegroundTask.instance.init(
-  //     notificationOptions: NotificationOptions(
-  //         channelId: 'notification_channel_id',
-  //         channelName: 'Foreground Notification',
-  //         channelDescription:
-  //             'This notification appears when a foreground task is running.',
-  //         channelImportance: NotificationChannelImportance.MAX,
-  //         priority: NotificationPriority.MAX),
-  //     foregroundTaskOptions: ForegroundTaskOptions(
-  //         interval: 7200000
-  //     ));
-  //
-  // void startForegroundTask() {
-  //   flutterForegroundTask.start(
-  //       notificationTitle: 'Foreground task is running',
-  //       notificationText: 'Tap to return to the app',
-  //       taskCallback: (DateTime timestamp) {
-  //         print('Foregroundtask timestamp: $timestamp');
-  //         BLE.doUpload().then((value) {
-  //           stopForegroundTask();
-  //         });
-  //       });
-  // }
-
-  // void stopForegroundTask() {
-  //   flutterForegroundTask.stop();
-  // }
 
   @override
   Widget build(BuildContext context) {
+    AppServiceData data;
+    if (Platform.isAndroid) {
+      data = AppServiceData();
+    }
     final Size size = MediaQuery.of(context).size;
     final icon_width = size.width * 0.2;
     final text_width = size.width - (size.width * 0.35);
