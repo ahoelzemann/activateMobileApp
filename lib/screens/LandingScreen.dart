@@ -480,7 +480,15 @@ class _LandingScreenState extends State<LandingScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
                 onTap: () async {
-                 await BLE.doUpload();
+
+                  showOverlay(
+                      'Ihre Daten werden hochgeladen.'
+                          '\nDies kann bis zu einer Stunde dauern.',
+                      SpinKitFadingCircle(color: Colors.orange, size:50.0,));
+
+
+                  await BLE.doUpload();
+                  hideOverlay();
                 },
               ),
               // ListTile(
