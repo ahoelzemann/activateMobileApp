@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -17,11 +19,11 @@
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
-	<string>$(FLUTTER_BUILD_NAME)</string>
+	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
 	<key>CFBundleVersion</key>
-	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -29,8 +31,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<key>NSAppleMusicUsageDescription</key>
+	<string>Die Daten werden währed des Uploadprozesses kurz auf dem Smartphone zwischengespeichert, jedoch nach Beendigung des Uploads unverzüglich gelöscht.</string>
 	<key>NSBluetoothAlwaysUsageDescription</key>
-	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
+	<string>Zur Verbindung mit der Bangle.js.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Play with BLE Compatible devices</string>
 	<key>NSBonjourServices</key>
@@ -38,20 +42,34 @@
 		<string>_dartobservatory._tcp</string>
 		<string>_trac2move._tcp</string>
 	</array>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Der Kalendar wird zur Bestimmung des Alters bei der Anmeldung benötigt</string>
+	<key>NSContactsUsageDescription</key>
+	<string>Die Kontakte werden nicht ausgelesen. Leider kann ich nicht nachvollziehen, warum die App diese Benachrichtigung verlangt.</string>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Our app needs this connection, since it needs to connect to the BangleJS BLE device.</string>
+	<string>Bluetooth wird zur Übermittlung der Daten von Bangle zur App benötigt.</string>
+	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
+	<key>NSMotionUsageDescription</key>
+	<string>Es werden täglich 14 Stunden an Bewegungen aufgezeichnet. Das ist der Teil der Studie.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Die Sprache wird nirgends aufgezeichnet. Leider weiß ich noch nicht, warum die App angeblich diese Berechtigung benötigt.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
 		<string>fetch</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UISupportedInterfaceOrientations~ipad</key>
 	<array>
@@ -60,5 +78,7 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<key>kTCCServiceMediaLibrary</key>
+	<string>Third-Party Tools die zur Entwicklung benötigt werden spielen Töne ab. Die App selbst macht davon jedoch keinen Gebrauch.</string>
 </dict>
 </plist>

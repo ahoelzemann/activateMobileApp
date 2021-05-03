@@ -1,7 +1,6 @@
 import 'package:android_long_task/android_long_task.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'package:trac2move/screens/BTAlert.dart';
 import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:flutter/services.dart';
@@ -18,6 +17,7 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
+import 'package:android_long_task/android_long_task.dart';
 
 
 //this entire function runs in your ForegroundService
