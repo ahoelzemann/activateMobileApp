@@ -10,7 +10,7 @@ class PostgresConnector {
   final String token =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicGFydGljaXBhbnRzX2FwcCJ9.yyNvCf6g0-yV2JUzTk9nFbYPpbzswCMisY4aEA7otLk";
 
-  final url = 'https://activate.uni-vechta.de:443/api/';
+  final url = 'https://activate-db.uni-vechta.de:443/api/';
 
   Future<String> postParticipant(
           String studienID, int age, String birthday, String bangleID, worn_at) =>

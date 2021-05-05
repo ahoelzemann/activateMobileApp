@@ -41,6 +41,7 @@ dependencies:
   workmanager: ^0.4.0
   flutter_foreground_task: ^1.0.7
   android_long_task: ^0.3.3
+  flutter_logs: ^2.1.3
 
   flutter:
     sdk: flutter

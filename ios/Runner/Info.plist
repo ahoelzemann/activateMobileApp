@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -49,6 +47,8 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Bluetooth wird zur Übermittlung der Daten von Bangle zur App benötigt.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
+	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
+	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
 	<key>NSMotionUsageDescription</key>
 	<string>Es werden täglich 14 Stunden an Bewegungen aufgezeichnet. Das ist der Teil der Studie.</string>

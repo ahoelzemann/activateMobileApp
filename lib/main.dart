@@ -17,7 +17,7 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
-import 'package:android_long_task/android_long_task.dart';
+
 
 
 //this entire function runs in your ForegroundService
@@ -43,14 +43,14 @@ serviceMain() async {
   });
 }
 void main() async {
-  final inpFile = new File('inp.txt');
-  Stream<List<int>> inputStream = inpFile.openRead();
-  stdout.addStream(inputStream);
-
-  final outFile = new File('error_report.txt');
-  IOSink outStream = outFile.openWrite();
-
-  outStream.addStream(inputStream);
+  // final inpFile = new File('inp.txt');
+  // Stream<List<int>> inputStream = inpFile.openRead();
+  // stdout.addStream(inputStream);
+  //
+  // final outFile = new File('error_report.txt');
+  // IOSink outStream = outFile.openWrite();
+  //
+  // outStream.addStream(inputStream);
   bool useSecureStorage = false;
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(

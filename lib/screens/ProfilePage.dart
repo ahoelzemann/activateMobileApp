@@ -454,7 +454,6 @@ class MapScreenState extends State<ProfilePage> {
       child: Text("Weiter"),
       onPressed: () {
         Navigator.of(context).pop();
-        // Navigator.of(context).pop();
         Navigator.push(
           context,
           MaterialPageRoute(builder: (context) => Stack(

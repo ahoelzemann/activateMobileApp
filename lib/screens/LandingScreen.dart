@@ -1,7 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
@@ -13,13 +12,11 @@ import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/ConnectBLE.dart' as BLE;
 import 'package:system_shortcuts/system_shortcuts.dart';
-import 'package:trac2move/screens/Loader.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:workmanager/workmanager.dart';
-import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
+import 'package:trac2move/util/Logger.dart';
 
 class LandingScreen extends StatefulWidget {
 
@@ -28,12 +25,10 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends State<LandingScreen> {
-
-
+  Logger log = new Logger();
 
   String _result = 'result';
   String _status = 'status';
-
   @override
   void initState() {
     if (Platform.isAndroid) {
@@ -428,67 +423,67 @@ class _LandingScreenState extends State<LandingScreen> {
                   color: Color.fromRGBO(57, 70, 84, 1.0),
                 ),
               ),
+              // ListTile(
+              //   title: Text('Upload',
+              //       style: TextStyle(
+              //           fontFamily: "PlayfairDisplay",
+              //           fontWeight: FontWeight.bold,
+              //           color: Colors.black)),
+              //   onTap: () async {
+              //     // showOverlay(
+              //     //     'Ihre Daten werden hochgeladen.'
+              //     //     '\nDies kann bis zu einer Stunde dauern.',
+              //     //     SpinKitFadingCircle(
+              //     //       color: Colors.orange,
+              //     //       size: 50.0,
+              //     //     ));
+              //     if (Platform.isIOS) {
+              //       await BLE.doUpload();
+              //     } else {
+              //       try {
+              //         var result = await AppClient.execute(data);
+              //         var resultData = AppServiceData.fromJson(result);
+              //         setState(() => _result = 'finished executing service process ;) -> ${resultData.progress}');
+              //       } on PlatformException catch (e, stacktrace) {
+              //         print(e);
+              //         print(stacktrace);
+              //       }
+              //     }
+              //     hideOverlay();
+              //   },
+              // ),
+              // ListTile(
+              //   title: Text('Upload abbrechen',
+              //       style: TextStyle(
+              //           fontFamily: "PlayfairDisplay",
+              //           fontWeight: FontWeight.bold,
+              //           color: Colors.black)),
+              //   onTap: () async {
+              //     try {
+              //       await AppClient.stopService();
+              //       setState(() => _result = 'stop service');
+              //     } on PlatformException catch (e, stacktrace) {
+              //       print(e);
+              //       print(stacktrace);
+              //     }
+              //   },
+              // ),
               ListTile(
-                title: Text('Upload',
+                title: Text('Upload LogFile',
                     style: TextStyle(
                         fontFamily: "PlayfairDisplay",
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
                 onTap: () async {
+                    log.exportFileLogs();
                   // showOverlay(
                   //     'Ihre Daten werden hochgeladen.'
-                  //     '\nDies kann bis zu einer Stunde dauern.',
-                  //     SpinKitFadingCircle(
-                  //       color: Colors.orange,
-                  //       size: 50.0,
-                  //     ));
-                  if (Platform.isIOS) {
-                    await BLE.doUpload();
-                  } else {
-                    try {
-                      var result = await AppClient.execute(data);
-                      var resultData = AppServiceData.fromJson(result);
-                      setState(() => _result = 'finished executing service process ;) -> ${resultData.progress}');
-                    } on PlatformException catch (e, stacktrace) {
-                      print(e);
-                      print(stacktrace);
-                    }
-                  }
-                  hideOverlay();
-                },
-              ),
-              ListTile(
-                title: Text('Upload abbrechen',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () async {
-                  try {
-                    await AppClient.stopService();
-                    setState(() => _result = 'stop service');
-                  } on PlatformException catch (e, stacktrace) {
-                    print(e);
-                    print(stacktrace);
-                  }
-                },
-              ),
-              ListTile(
-                title: Text('My Upload',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () async {
-
-                  showOverlay(
-                      'Ihre Daten werden hochgeladen.'
-                          '\nDies kann bis zu einer Stunde dauern.',
-                      SpinKitFadingCircle(color: Colors.orange, size:50.0,));
+                  //         '\nDies kann bis zu einer Stunde dauern.',
+                  //     SpinKitFadingCircle(color: Colors.orange, size:50.0,));
 
 
-                  await BLE.doUpload();
-                  hideOverlay();
+                  // await BLE.doUpload();
+                  // hideOverlay();
                 },
               ),
               // ListTile(
