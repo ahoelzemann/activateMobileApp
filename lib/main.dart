@@ -19,7 +19,8 @@ import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/util/Logger.dart';
-
+import 'package:trac2move/util/ConnectBLE.dart';
+import 'package:trac2move/util/Upload.dart';
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -35,14 +36,29 @@ serviceMain() async {
     //from your flutter application code and receive it here
     var serviceData = AppServiceData.fromJson(initialData);
     //runs your code here
-    serviceData.progress = 20;
+    // serviceData.progress = 20;
     await ServiceClient.update(serviceData);
-    await BLE.doUpload();
-    serviceData.progress = 100;
+    // await BLE.doUpload();
+    BLE_Client bleClient = new BLE_Client();
+    Logger log = Logger();
+    await Future.delayed(Duration(milliseconds: 500));
+    Upload uploader = new Upload();
+    await uploader.init();
+
+    await bleClient.checkBLEstate();
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStopRecord();
+    await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
+    await bleClient.blestopUpload();
+    bleClient.closeBLE();
+    uploader.uploadFiles();
+    // serviceData.progress = 100;
     await ServiceClient.endExecution(serviceData);
     await ServiceClient.stopService();
   });
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
@@ -51,7 +67,6 @@ void main() async {
   log.setUpLogs();
   try {
     bool useSecureStorage = false;
-
 
     if (Platform.isAndroid) {
       Location location = new Location();
@@ -80,9 +95,11 @@ void main() async {
         await storage.write(
             key: 'serverAddress',
             value: base64.encode(utf8.encode("131.173.80.175")));
-        await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
         await storage.write(
-            key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
+            key: 'port', value: base64.encode(utf8.encode("22")));
+        await storage.write(
+            key: 'login',
+            value: base64.encode(utf8.encode("trac2move_upload")));
         await storage.write(
             key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
       } else {
@@ -93,7 +110,6 @@ void main() async {
       }
       prefs.setBool('firstRun', false);
     }
-
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   } catch (e) {
@@ -122,7 +138,6 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
 
     return 3;
   }
-
 }
 
 SetFirstPage() {
@@ -140,8 +155,7 @@ SetFirstPage() {
               return BTAlert();
             } else if (snapshot.data == 3) {
               return LoadingScreen();
-            }
-            else {
+            } else {
               return LoadingScreen();
             }
           } else {
@@ -156,12 +170,11 @@ SetFirstPage() {
 
 class Trac2Move extends StatelessWidget {
   @override
-  Widget build(BuildContext context)  {
+  Widget build(BuildContext context) {
     try {
-      return MaterialApp(debugShowCheckedModeBanner: true, home: SetFirstPage());
-    } catch(exception) {
-
-
+      return MaterialApp(
+          debugShowCheckedModeBanner: true, home: SetFirstPage());
+    } catch (exception) {
       print(exception);
     }
   }

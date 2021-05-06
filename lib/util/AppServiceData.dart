@@ -4,7 +4,7 @@ import 'package:android_long_task/android_long_task.dart';
 
 
 class AppServiceData extends ServiceData {
-  int progress = -1;
+  int progress = 0;
 
   String toJson() {
     var jsonMap = {
@@ -18,8 +18,8 @@ class AppServiceData extends ServiceData {
   }
 
   @override
-  String get notificationTitle => 'long running task';
+  String get notificationTitle => 'Datenübertragung zum Server';
 
   @override
-  String get notificationDescription => 'progress -> $progress';
+  String get notificationDescription => 'Zu $progress % abgeschlossen. Bitte haben Sie noch etwas Geduld.';
 }
