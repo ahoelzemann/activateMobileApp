@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_logs/flutter_logs.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -10,12 +9,13 @@ class Logger {
   var TAG = "trac2move";
   var _my_log_file_name = "logfile";
   var toggle = false;
+  static final Logger _log = Logger._internal();
 
-  Logger() {
-    setUpLogs();
-    logToFile();
-    print("Logging started");
+  factory Logger() {
+    return _log;
   }
+
+  Logger._internal();
 
   void setUpLogs() async {
     await FlutterLogs.initLogs(
@@ -53,14 +53,25 @@ class Logger {
     });
   }
 
-  void logToFile() async {
-    FlutterLogs.logToFile(
-        logFileName: _my_log_file_name,
-        overwrite: true,
-        //If set 'true' logger will append instead of overwriting
-        logMessage:
-            "This is a log message: ${DateTime.now().millisecondsSinceEpoch}, it will be saved to my log file named: \'$_my_log_file_name\'",
-        appendTimeStamp: true); //Add time stamp at the end of log message
+  void logToFile(message) async {
+    try {
+      FlutterLogs.logToFile(
+          logFileName: _my_log_file_name,
+          overwrite: true,
+          //If set 'true' logger will append instead of overwriting
+          logMessage:
+          message.toString() + "\nStacktrace: " + message.stackTrace.toString(),
+          appendTimeStamp: true); //Add time stamp at the end of log message
+    } catch (e) {
+      FlutterLogs.logToFile(
+          logFileName: _my_log_file_name,
+          overwrite: true,
+          //If set 'true' logger will append instead of overwriting
+          logMessage:
+          message.toString(),
+          appendTimeStamp: true); //Add time stamp at the end of log message
+    }
+
   }
 
   void printAllLogs() {
@@ -83,8 +94,8 @@ class Logger {
         logFileName: _my_log_file_name, decryptBeforeExporting: true);
   }
 
-  void exportToZip() async{
-    await exportAllLogs().then((value) async {
+  Future<String> exportToZip() async{
+    return await exportAllLogs().then((value) async {
       Directory externalDirectory;
 
       if (Platform.isIOS) {
@@ -105,6 +116,8 @@ class Logger {
       } else {
         FlutterLogs.logError(TAG, "existsSync", "File not found in storage.");
       }
+      String path = file.path.toString();
+      return path;
     });
   }
 }

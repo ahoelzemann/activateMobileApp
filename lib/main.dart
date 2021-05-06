@@ -6,6 +6,7 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:flutter/services.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
+import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/ConnectBLE.dart' as BLE;
@@ -17,7 +18,7 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
-
+import 'package:trac2move/util/Logger.dart';
 
 
 //this entire function runs in your ForegroundService
@@ -43,78 +44,85 @@ serviceMain() async {
   });
 }
 void main() async {
-  // final inpFile = new File('inp.txt');
-  // Stream<List<int>> inputStream = inpFile.openRead();
-  // stdout.addStream(inputStream);
-  //
-  // final outFile = new File('error_report.txt');
-  // IOSink outStream = outFile.openWrite();
-  //
-  // outStream.addStream(inputStream);
-  bool useSecureStorage = false;
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
+  Logger log = new Logger();
+  log.setUpLogs();
+  try {
+    bool useSecureStorage = false;
 
-  if (Platform.isAndroid) {
-    Location location = new Location();
-    if (!await location.serviceEnabled()) {
-      await location.requestService();
+
+    if (Platform.isAndroid) {
+      Location location = new Location();
+      if (!await location.serviceEnabled()) {
+        await location.requestService();
+      }
+      await Permission.storage.request();
+      await Permission.bluetooth.request();
+      await Permission.locationAlways.request();
+    } else if (Platform.isIOS) {
+      await Permission.storage.request();
+      if (await Permission.bluetooth.isDenied) {
+        BLE.createPermission();
+      }
     }
-    await Permission.storage.request();
-    await Permission.bluetooth.request();
-    await Permission.locationAlways.request();
-  } else if (Platform.isIOS) {
-    await Permission.storage.request();
-    if (await Permission.bluetooth.isDenied) {
-      BLE.createPermission();
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool firstRun = prefs.getBool('firstRun');
+    prefs.setBool('useSecureStorage', useSecureStorage);
+
+    if (firstRun == null) {
+      prefs.setInt("current_steps", 0);
+      prefs.setInt("current_active_minutes", 0);
+      if (useSecureStorage) {
+        final storage = new FlutterSecureStorage();
+        await storage.write(
+            key: 'serverAddress',
+            value: base64.encode(utf8.encode("131.173.80.175")));
+        await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
+        await storage.write(
+            key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
+        await storage.write(
+            key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
+      } else {
+        await prefs.setString('serverAddress', "131.173.80.175");
+        await prefs.setString('port', "22");
+        await prefs.setString('login', "trac2move_upload");
+        await prefs.setString('password', "5aU=txXKoU!");
+      }
+      prefs.setBool('firstRun', false);
     }
+
+
+    runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
+  } catch (e) {
+    log.logToFile(e);
   }
-
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  bool firstRun = prefs.getBool('firstRun');
-  prefs.setBool('useSecureStorage', useSecureStorage);
-
-  if (firstRun == null) {
-    prefs.setInt("current_steps", 0);
-    prefs.setInt("current_active_minutes", 0);
-    if (useSecureStorage) {
-      final storage = new FlutterSecureStorage();
-      await storage.write(
-          key: 'serverAddress',
-          value: base64.encode(utf8.encode("131.173.80.175")));
-      await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
-      await storage.write(
-          key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
-      await storage.write(
-          key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
-    } else {
-      await prefs.setString('serverAddress', "131.173.80.175");
-      await prefs.setString('port', "22");
-      await prefs.setString('login', "trac2move_upload");
-      await prefs.setString('password', "5aU=txXKoU!");
-    }
-    prefs.setBool('firstRun', false);
-  }
-
-
-  runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
 }
 
 Future<int> _readActiveParticipantAndCheckBLE() async {
-  List<String> participant;
-  var instance = await SharedPreferences.getInstance();
-  participant = instance.getStringList("participant");
-  bool btState = await SystemShortcuts.checkBluetooth;
-  if (btState == false) {
-    return 2;
+  try {
+    List<String> participant;
+    var instance = await SharedPreferences.getInstance();
+    participant = instance.getStringList("participant");
+    bool btState = await SystemShortcuts.checkBluetooth;
+    if (btState == false) {
+      return 2;
+    }
+    if (participant == null) {
+      return null;
+    } else {
+      await BLE.getStepsAndMinutes();
+      return 1;
+    }
+  } catch (e) {
+    Logger log = Logger();
+    log.logToFile(e);
+
+    return 3;
   }
-  if (participant == null) {
-    return null;
-  } else {
-    await BLE.getStepsAndMinutes();
-    return 1;
-  }
+
 }
 
 SetFirstPage() {
@@ -130,7 +138,10 @@ SetFirstPage() {
             }
             if (snapshot.data == 2) {
               return BTAlert();
-            } else {
+            } else if (snapshot.data == 3) {
+              return LoadingScreen();
+            }
+            else {
               return LoadingScreen();
             }
           } else {
@@ -138,7 +149,7 @@ SetFirstPage() {
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
-          return LoadingScreen();
+          return LoadingScreenFeedback();
         }
       });
 }

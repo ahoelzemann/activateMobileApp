@@ -17,6 +17,7 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
+import 'package:trac2move/util/Upload.dart';
 
 class LandingScreen extends StatefulWidget {
 
@@ -40,6 +41,23 @@ class _LandingScreenState extends State<LandingScreen> {
       });
     }
     super.initState();
+  }
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        print("app in resumed");
+        break;
+      case AppLifecycleState.inactive:
+        print("app in inactive");
+        break;
+      case AppLifecycleState.paused:
+        print("app in paused");
+        break;
+      case AppLifecycleState.detached:
+        print("app in detached");
+        break;
+    }
   }
 
 
@@ -475,11 +493,25 @@ class _LandingScreenState extends State<LandingScreen> {
                         fontWeight: FontWeight.bold,
                         color: Colors.black)),
                 onTap: () async {
-                    log.exportFileLogs();
-                  // showOverlay(
-                  //     'Ihre Daten werden hochgeladen.'
-                  //         '\nDies kann bis zu einer Stunde dauern.',
-                  //     SpinKitFadingCircle(color: Colors.orange, size:50.0,));
+                  try {
+                    var y = null;
+                    var x = y * 1;
+                  } catch (e) {
+                    log.logToFile(e);
+                  }
+                  String path = await log.exportToZip();
+
+                  showOverlay(
+                      'Die Logdatei wird zum Server übertragen.',
+                      SpinKitFadingCircle(color: Colors.orange, size:50.0,));
+                  Upload uploader = new Upload();
+                  await uploader.init();
+                  uploader.uploadLogFile(path);
+                  await Future.delayed(Duration(seconds: 2));
+                  updateOverlayText("Datei erfolgreich gesendet."
+                      "Vielen Dank");
+                  await Future.delayed(Duration(seconds: 2));
+                  hideOverlay();
 
 
                   // await BLE.doUpload();
@@ -718,3 +750,5 @@ Future<int> isRecording() async {
   }
   // return isRecording;
 }
+
+

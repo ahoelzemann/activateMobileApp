@@ -1,8 +1,6 @@
 import 'dart:convert';
 
-import 'package:convert/convert.dart';
-import 'package:trac2move/util/DataLoader.dart';
-import 'package:system_shortcuts/system_shortcuts.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData, rootBundle;
 import 'package:ssh/ssh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -13,6 +11,7 @@ import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:io' as io;
+import 'package:trac2move/util/Logger.dart';
 
 class Upload {
   SharedPreferences prefs;
@@ -25,54 +24,49 @@ class Upload {
   var client;
   String studienID;
   String serverFilePath;
+
   //List<String> testfiles = getTestFilesPaths();
   String localFilePath;
   String serverFileName;
   Directory tempDir;
   String localFilesDirectory;
   String serverPath;
+  Logger log = Logger();
 
-  Future <bool> init() async {
-    prefs = await SharedPreferences.getInstance();
-    studienID = prefs.getStringList('participant')[1];
-    serverFilePath = "activity_data/" + studienID;
-    tempDir = await getTemporaryDirectory();
-    localFilesDirectory = tempDir.path + "/daily_data/";
-    if (prefs.getBool("useSecureStorage")) {
-      final storage = new FlutterSecureStorage();
-      host =
-          utf8.decode(base64.decode(await storage.read(key: 'serverAddress')));
-      port = int.parse(
-          utf8.decode(base64.decode(await storage.read(key: 'port'))));
-      login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-      pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
-    } else {
-      host = prefs.getString('serverAddress');
-      port = int.parse(prefs.getString("port"));
-      login = prefs.getString("login");
-      pw = prefs.getString("password");
+  Future<bool> init() async {
+    try {
+      prefs = await SharedPreferences.getInstance();
+      studienID = prefs.getStringList('participant')[1];
+      serverFilePath = "activity_data/" + studienID;
+      tempDir = await getTemporaryDirectory();
+      localFilesDirectory = tempDir.path + "/daily_data/";
+      if (prefs.getBool("useSecureStorage")) {
+        final storage = new FlutterSecureStorage();
+        host = utf8
+            .decode(base64.decode(await storage.read(key: 'serverAddress')));
+        port = int.parse(
+            utf8.decode(base64.decode(await storage.read(key: 'port'))));
+        login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+        pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+      } else {
+        host = prefs.getString('serverAddress');
+        port = int.parse(prefs.getString("port"));
+        login = prefs.getString("login");
+        pw = prefs.getString("password");
+      }
+
+      client = new SSHClient(
+        host: host,
+        port: port,
+        username: login,
+        passwordOrKey: pw,
+      );
+
+      return true;
+    } catch (e) {
+      log.logToFile(e);
     }
-
-    client = new SSHClient(
-      host: host,
-      port: port,
-      username: login,
-      passwordOrKey: pw,
-      // host: "131.173.80.175",
-      // port : int.parse("22"),
-      // username: "trac2move_upload",
-      // passwordOrKey: "5aU=txXKoU!",
-    );
-
-    return true;
   }
-
-  // ble_status = await SystemShortcuts.checkBluetooth;
-  // if (!ble_status) {
-  //   await SystemShortcuts.bluetooth();
-  //   ble_status = await SystemShortcuts.checkBluetooth;
-  //   print(ble_status.toString());
-  // }
 
   Future<void> writeToFile(ByteData data, String path) {
     final buffer = data.buffer;
@@ -81,7 +75,6 @@ class Upload {
   }
 
   Future<void> uploadFiles() async {
-
     try {
       filePaths = io.Directory(localFilesDirectory).listSync();
       String result = await client.connect();
@@ -101,9 +94,6 @@ class Upload {
               serverPath = serverFilePath;
               String tempPath = tempDir.path;
               tempPath = tempPath + "/" + serverFileName;
-              // await rootBundle.load(localFilePath).then((value) {
-              //   writeToFile(value, tempPath);
-              // });
               try {
                 print("Upload file: " + serverPath);
                 print(await client.sftpUpload(
@@ -115,8 +105,11 @@ class Upload {
                 ));
                 try {
                   File(localFilePath).delete();
-                } catch (e) {}
+                } catch (e) {
+                  log.logToFile(e);
+                }
               } catch (e) {
+                log.logToFile(e);
                 print(e);
                 await Future.delayed(Duration(seconds: 10));
                 await client.sftpUpload(
@@ -131,6 +124,7 @@ class Upload {
             // print(filePaths);
           } catch (e) {
             print(e.toString());
+            log.logToFile(e);
           }
 
           print(await client.disconnectSFTP());
@@ -138,6 +132,57 @@ class Upload {
         }
       }
     } on PlatformException catch (e) {
+      log.logToFile(e);
+      print('Error: ${e.code}\nError Message: ${e.message}');
+    }
+  }
+
+  Future<void> uploadLogFile(path) async {
+    // String logfile = path.split("/").last;
+    String serverlogfolder = this.serverFilePath + "/logfiles/";
+    // Directory externalDirectory;
+    // Directory tempdirectory = await getTemporaryDirectory();
+    // if (Platform.isIOS) {
+    //   externalDirectory = await getApplicationDocumentsDirectory();
+    // } else {
+    //   externalDirectory = await getExternalStorageDirectory();
+    // }
+    try {
+      // Uint8List filecontent = await io.File(path).readAsBytes();
+      // List<String> tmpList = logfile.split("_");
+      // logfile = tmpList[0] + tmpList[1] + ".zip";
+      // File saveFile = File(tempdirectory.path + "/" + logfile);
+      // // saveFile.createSync();
+      // saveFile.writeAsBytesSync(filecontent);
+      String result = await client.connect();
+      if (result == "session_connected") {
+        result = await client.connectSFTP();
+        if (result == "sftp_connected") {
+          try {
+            try {
+              print(await client.sftpMkdir(serverlogfolder));
+            } catch (e) {
+              print('Folder already exists');
+            }
+            // print("File exists: " + saveFile.existsSync().toString());
+            await client.sftpUpload(
+              path: path,
+              toPath: serverlogfolder,
+              callback: (progress) {
+                print(progress); // read upload progress
+              },
+            );
+          } catch (e) {
+            print(e.toString());
+            log.logToFile(e);
+          }
+
+          print(await client.disconnectSFTP());
+          client.disconnect();
+        }
+      }
+    } on PlatformException catch (e) {
+      log.logToFile(e);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }

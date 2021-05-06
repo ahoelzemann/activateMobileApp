@@ -49,7 +49,6 @@ class MapScreenState extends State<ProfilePage> {
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave;
 
-  // Map initialValues = new Map();
   final FocusNode myFocusNode = FocusNode();
 
   String radioButtonItem = "Links";

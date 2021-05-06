@@ -7,8 +7,7 @@ import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/screens/Overlay.dart';
-import 'package:flutter/material.dart';
-import 'dart:collection';
+import 'package:trac2move/util/Logger.dart';
 
 Future<bool> createPermission() async {
   BLE_Client bleClient = new BLE_Client();
@@ -18,7 +17,7 @@ Future<bool> createPermission() async {
 
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
-
+  Logger log;
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
@@ -31,6 +30,7 @@ Future<bool> nearestDevice() async {
 
     return true;
   } catch (e) {
+    log.logToFile(e);
     try {
       print('Connection failed:');
       print('connecting again in 3 seconds.....');
@@ -40,6 +40,7 @@ Future<bool> nearestDevice() async {
 
       return true;
     } catch (e) {
+      log.logToFile(e);
       return false;
     }
   }
@@ -47,7 +48,7 @@ Future<bool> nearestDevice() async {
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
-
+  Logger log;
   await Future.delayed(Duration(milliseconds: 500));
 
   try {
@@ -60,6 +61,7 @@ Future<bool> getStepsAndMinutes() async {
 
     return true;
   } catch (e) {
+    log.logToFile(e);
     try {
       print(e);
       print('Connection failed:');
@@ -73,6 +75,7 @@ Future<bool> getStepsAndMinutes() async {
 
       return true;
     } catch (e) {
+      log.logToFile(e);
       return false;
     }
   }
@@ -80,7 +83,7 @@ Future<bool> getStepsAndMinutes() async {
 
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
-
+  Logger log;
   await Future.delayed(Duration(milliseconds: 500));
   Upload uploader = new Upload();
   await uploader.init();
@@ -99,6 +102,7 @@ Future<bool> doUpload() async {
 
     return true;
   } catch (e) {
+    log.logToFile(e);
     print('Connection failed:');
     print('connecting again.....');
     await Future.delayed(Duration(seconds: 3));
@@ -118,7 +122,7 @@ Future<bool> doUpload() async {
 Future<bool> startRecording() async {
   await Future.delayed(Duration(milliseconds: 750));
   BLE_Client bleClient = new BLE_Client();
-
+  Logger log;
   try {
     await bleClient.checkBLEstate();
     await Future.delayed(Duration(milliseconds: 750));
@@ -135,6 +139,7 @@ Future<bool> startRecording() async {
     hideOverlay();
     return true;
   } catch (e) {
+    log.logToFile(e);
     print('Connection failed:');
     print('connecting again.....');
     await bleClient.checkBLEstate();
