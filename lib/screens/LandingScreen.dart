@@ -19,17 +19,27 @@ import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
 
-class LandingScreen extends StatefulWidget {
+AppServiceData _data = AppServiceData();
 
+get data => _data;
+
+set data(value) {
+  _data = value;
+}
+
+class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
 }
 
-class _LandingScreenState extends State<LandingScreen> {
+class _LandingScreenState extends State<LandingScreen>
+    with WidgetsBindingObserver {
   Logger log = new Logger();
 
   String _result = 'result';
   String _status = 'status';
+  Widget saveButton;
+
   @override
   void initState() {
     if (Platform.isAndroid) {
@@ -41,33 +51,46 @@ class _LandingScreenState extends State<LandingScreen> {
       });
     }
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
   }
+
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
+  void didChangeAppLifecycleState(AppLifecycleState state) async {
     switch (state) {
       case AppLifecycleState.resumed:
-        print("app in resumed");
+        // int result = await isRecording();
+        showOverlay("Synchronisiere Schritte und aktive Minuten.",
+            SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+        BLE.getStepsAndMinutes();
+        await Future.delayed(Duration(seconds: 1));
+        hideOverlay();
+
+        Navigator.pop(context);
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  Stack(children: [LandingScreen(), OverlayView()])),
+        );
+
         break;
       case AppLifecycleState.inactive:
-        print("app in inactive");
+        // print("app in inactive");
         break;
       case AppLifecycleState.paused:
-        print("app in paused");
         break;
       case AppLifecycleState.detached:
-        print("app in detached");
+        try {
+          BLE.closeConnection();
+        } catch (e) {
+          log.logToFile(e);
+        }
         break;
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
-    AppServiceData data;
-    if (Platform.isAndroid) {
-      data = AppServiceData();
-    }
     final Size size = MediaQuery.of(context).size;
     final icon_width = size.width * 0.2;
     final text_width = size.width - (size.width * 0.35);
@@ -76,308 +99,103 @@ class _LandingScreenState extends State<LandingScreen> {
     final GlobalKey<ScaffoldState> _scaffoldKey =
         new GlobalKey<ScaffoldState>();
     return Scaffold(
-        key: _scaffoldKey,
-        appBar: AppBar(
-            title: Text(
-              'Trac2Move',
-              style: TextStyle(
-                  fontFamily: "PlayfairDisplay",
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
-            ),
-            backgroundColor: Color.fromRGBO(195, 130, 89, 1)),
-        body: Container(
-          width: size.width,
-          height: size.height,
-          color: Color.fromRGBO(57, 70, 84, 1.0),
-          child: Column(
-            children: [
-              Row(children: [
-                Container(
-                    width: size.width,
-                    height: size.height * 0.3,
-                    child: FutureBuilder(
-                        future: isRecording(),
-                        builder: (BuildContext context,
-                            AsyncSnapshot<int> snapshot) {
-                          if (snapshot.hasData) {
-                            if (snapshot.data == 0) {
-                              return _getSaveButton('Aufnahme beginnen',
-                                  Colors.green, 0, size, context, _scaffoldKey);
-                            } else if (snapshot.data == 1) {
-                              return _getSaveButton(
-                                  'Aufnahme speichern',
-                                  Colors.orange,
-                                  1,
-                                  size,
-                                  context,
-                                  _scaffoldKey);
-                            } else if (snapshot.data == 2) {
-                              return Image.asset(
-                                  'assets/images/lp_background.png',
-                                  fit: BoxFit.fill);
-                            } else if (snapshot.data == 3) {
-                              return _getSaveButton('Aufnahme beginnen',
-                                  Colors.green, 0, size, context, _scaffoldKey);
-                            } else {
-                              return Image.asset(
-                                  'assets/images/lp_background.png',
-                                  fit: BoxFit.fill);
-                            }
+      key: _scaffoldKey,
+      appBar: AppBar(
+          title: Text(
+            'Trac2Move',
+            style: TextStyle(
+                fontFamily: "PlayfairDisplay",
+                fontWeight: FontWeight.bold,
+                color: Colors.white),
+          ),
+          backgroundColor: Color.fromRGBO(195, 130, 89, 1)),
+      body: Container(
+        width: size.width,
+        height: size.height,
+        color: Color.fromRGBO(57, 70, 84, 1.0),
+        child: Column(
+          children: [
+            Row(children: [
+              Container(
+                  width: size.width,
+                  height: size.height * 0.3,
+                  child: FutureBuilder(
+                      future: isRecording(),
+                      builder:
+                          (BuildContext context, AsyncSnapshot<int> snapshot) {
+                        if (snapshot.hasData) {
+                          if (snapshot.data == 0) {
+                            return _getSaveButton('Aufnahme beginnen',
+                                Colors.green, 0, size, context, _scaffoldKey);
+                          } else if (snapshot.data == 1) {
+                            return _getSaveButton('Aufnahme speichern',
+                                Colors.orange, 1, size, context, _scaffoldKey);
+                          } else if (snapshot.data == 2) {
+                            return Image.asset(
+                                'assets/images/lp_background.png',
+                                fit: BoxFit.fill);
+                          } else if (snapshot.data == 3) {
+                            return _getSaveButton('Aufnahme beginnen',
+                                Colors.green, 0, size, context, _scaffoldKey);
                           } else {
                             return Image.asset(
                                 'assets/images/lp_background.png',
                                 fit: BoxFit.fill);
                           }
-                        }))
-              ]),
-              Row(children: [
-                Image.asset('assets/images/divider.png',
-                    fit: BoxFit.fill,
-                    height: MediaQuery.of(context).size.height * 0.08,
-                    width: size.width)
-              ]),
-              Expanded(
-                  child: Row(children: [
-                    Column(
-                      children: [
-                        Row(children: [
-                          Container(
-                            height: MediaQuery.of(context).size.height * 0.1,
-                            width: icon_width,
-                            margin: icon_margins,
-                            child: new LayoutBuilder(
-                                builder: (context, constraint) {
-                              return new Icon(Icons.directions_walk_rounded,
-                                  color: Colors.white,
-                                  size: constraint.biggest.height);
-                            }),
-                          ),
-                          Container(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.133,
-                              width: text_width,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20.0,
-                                horizontal: 10.0,
-                              ),
-                              child: Align(
-                                  alignment: Alignment.centerLeft,
-                                  child: FutureBuilder(
-                                      future: getSteps(),
-                                      builder: (BuildContext context,
-                                          AsyncSnapshot<String> snapshot) {
-                                        if (snapshot.hasData) {
-                                          return Align(
-                                            alignment: Alignment.centerLeft,
-                                            child: AutoSizeText.rich(
-                                              TextSpan(
-                                                text: "Bereits ",
-                                                style: TextStyle(
-                                                    fontFamily:
-                                                        "PlayfairDisplay",
-                                                    fontWeight: FontWeight.w500,
-                                                    color: Colors.white),
-                                                children: <TextSpan>[
-                                                  TextSpan(
-                                                      text: snapshot.data,
-                                                      style: TextStyle(
-                                                          fontFamily:
-                                                              "PlayfairDisplay",
-                                                          fontWeight:
-                                                              FontWeight.bold,
-                                                          color: Colors.white)),
-                                                  TextSpan(
-                                                      text:
-                                                          ' Schritte gelaufen.',
-                                                      style: TextStyle(
-                                                          fontFamily:
-                                                              "PlayfairDisplay",
-                                                          fontWeight:
-                                                              FontWeight.w500,
-                                                          color: Colors.white)),
-                                                ],
-                                              ),
-                                              textAlign: TextAlign.left,
-                                              presetFontSizes: [
-                                                20,
-                                                19,
-                                                18,
-                                                15,
-                                                12
-                                              ],
-                                              minFontSize: 12,
-                                              maxFontSize: 20,
-                                            ),
-                                          );
-                                        } else {
-                                          return Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: AutoSizeText(
-                                                  'Es konnte kein Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
-                                                  style: TextStyle(
-                                                      fontFamily:
-                                                          "PlayfairDisplay",
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white),
-                                                  textAlign: TextAlign.center,
-                                                  textScaleFactor: 1));
-                                        }
-                                      })))
-                        ]),
-                        Row(children: [
-                          Container(
-                            height: MediaQuery.of(context).size.height * 0.1,
-                            width: icon_width,
-                            margin: icon_margins,
-                            child: new LayoutBuilder(
-                                builder: (context, constraint) {
-                              return new Icon(Ionicons.fitness_outline,
-                                  color: Colors.white,
-                                  size: constraint.biggest.height);
-                            }),
-                          ),
-                          Container(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.133,
-                              width: text_width,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20.0,
-                                horizontal: 10.0,
-                              ),
-                              child: FutureBuilder(
-                                  future: getActiveMinutes(),
-                                  builder: (BuildContext context,
-                                      AsyncSnapshot<String> snapshot) {
-                                    if (snapshot.hasData) {
-                                      return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: AutoSizeText.rich(
-                                          TextSpan(
-                                            text: "Bereits ",
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.w500,
-                                                color: Colors.white),
-                                            children: <TextSpan>[
-                                              TextSpan(
-                                                  text: snapshot.data,
-                                                  style: TextStyle(
-                                                      fontFamily:
-                                                          "PlayfairDisplay",
-                                                      fontWeight:
-                                                          FontWeight.bold,
-                                                      color: Colors.white)),
-                                              TextSpan(
-                                                  text:
-                                                      ' Minuten aktiv gewesen.',
-                                                  style: TextStyle(
-                                                      fontFamily:
-                                                          "PlayfairDisplay",
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.white)),
-                                            ],
-                                          ),
-                                          textAlign: TextAlign.left,
-                                          presetFontSizes: [20, 19, 18, 15, 12],
-                                          minFontSize: 12,
-                                          maxFontSize: 20,
-                                        ),
-                                      );
-                                    } else {
-                                      return Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: AutoSizeText(
-                                              'Es konnte keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
-                                              style: TextStyle(
-                                                  fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white),
-                                              textAlign: TextAlign.center,
-                                              textScaleFactor: 1));
-                                    }
-                                  })
-
-                              // Align(
-                              //   alignment: Alignment.centerLeft,
-                              //   child: AutoSizeText.rich(
-                              //     TextSpan(
-                              //       text: "Bereits",
-                              //       style: TextStyle(
-                              //           fontFamily: "PlayfairDisplay",
-                              //           fontWeight: FontWeight.w500,
-                              //           color: Colors.white),
-                              //       children: <TextSpan>[
-                              //         TextSpan(
-                              //             text: ' 20',
-                              //             style: TextStyle(
-                              //                 fontFamily: "PlayfairDisplay",
-                              //                 fontWeight: FontWeight.bold,
-                              //                 color: Colors.white)),
-                              //         TextSpan(
-                              //             text: ' Minuten aktiv gewesen.',
-                              //             style: TextStyle(
-                              //                 fontFamily: "PlayfairDisplay",
-                              //                 fontWeight: FontWeight.w500,
-                              //                 color: Colors.white)),
-                              //       ],
-                              //     ),
-                              //     textAlign: TextAlign.left,
-                              //     presetFontSizes: [20, 19, 18, 15, 12],
-                              //     minFontSize: 8,
-                              //     maxFontSize: 20,
-                              //   ),
-                              // ),
-                              )
-                        ]),
-                        Row(children: [
-                          Container(
-                            height: MediaQuery.of(context).size.height * 0.1,
-                            width: icon_width,
-                            margin: icon_margins,
-                            child: new LayoutBuilder(
-                                builder: (context, constraint) {
-                              return new Icon(EvilIcons.trophy,
-                                  color: Colors.white,
-                                  size: constraint.biggest.height);
-                            }),
-                          ),
-                          Container(
-                              height:
-                                  MediaQuery.of(context).size.height * 0.133,
-                              width: text_width,
-                              padding: const EdgeInsets.symmetric(
-                                vertical: 20.0,
-                                horizontal: 10.0,
-                              ),
-                              child: FutureBuilder(
-                                  future: getGoals(),
-                                  builder: (BuildContext context,
-                                      AsyncSnapshot<List> snapshot) {
-                                    if (snapshot.hasData) {
-                                      return Align(
+                        } else {
+                          return Image.asset('assets/images/lp_background.png',
+                              fit: BoxFit.fill);
+                        }
+                      }))
+            ]),
+            Row(children: [
+              Image.asset('assets/images/divider.png',
+                  fit: BoxFit.fill,
+                  height: MediaQuery.of(context).size.height * 0.08,
+                  width: size.width)
+            ]),
+            Expanded(
+                child: Row(children: [
+                  Column(
+                    children: [
+                      Row(children: [
+                        Container(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                          width: icon_width,
+                          margin: icon_margins,
+                          child:
+                              new LayoutBuilder(builder: (context, constraint) {
+                            return new Icon(Icons.directions_walk_rounded,
+                                color: Colors.white,
+                                size: constraint.biggest.height);
+                          }),
+                        ),
+                        Container(
+                            height: MediaQuery.of(context).size.height * 0.133,
+                            width: text_width,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20.0,
+                              horizontal: 10.0,
+                            ),
+                            child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: FutureBuilder(
+                                    future: getSteps(),
+                                    builder: (BuildContext context,
+                                        AsyncSnapshot<String> snapshot) {
+                                      if (snapshot.hasData) {
+                                        return Align(
                                           alignment: Alignment.centerLeft,
                                           child: AutoSizeText.rich(
                                             TextSpan(
-                                              text: snapshot.data[0].toString(),
+                                              text: "Bereits ",
                                               style: TextStyle(
                                                   fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.bold,
+                                                  fontWeight: FontWeight.w500,
                                                   color: Colors.white),
                                               children: <TextSpan>[
                                                 TextSpan(
-                                                    text: ' Schritte\n',
-                                                    style: TextStyle(
-                                                        fontFamily:
-                                                            "PlayfairDisplay",
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.white)),
-                                                TextSpan(
-                                                    text: snapshot.data[1]
-                                                        .toString(),
+                                                    text: snapshot.data,
                                                     style: TextStyle(
                                                         fontFamily:
                                                             "PlayfairDisplay",
@@ -385,7 +203,7 @@ class _LandingScreenState extends State<LandingScreen> {
                                                             FontWeight.bold,
                                                         color: Colors.white)),
                                                 TextSpan(
-                                                    text: ' aktive Minuten',
+                                                    text: ' Schritte gelaufen.',
                                                     style: TextStyle(
                                                         fontFamily:
                                                             "PlayfairDisplay",
@@ -402,198 +220,373 @@ class _LandingScreenState extends State<LandingScreen> {
                                               15,
                                               12
                                             ],
-                                            minFontSize: 8,
+                                            minFontSize: 12,
                                             maxFontSize: 20,
-                                          ));
-                                    } else {
-                                      return Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: AutoSizeText(
-                                              'Es konnte keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
-                                              style: TextStyle(
-                                                  fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Colors.white),
-                                              textAlign: TextAlign.center,
-                                              textScaleFactor: 1));
-                                    }
-                                  }))
-                        ])
-                      ],
-                    )
-                  ]),
-                  flex: 2),
-            ],
-          ),
+                                          ),
+                                        );
+                                      } else {
+                                        return Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: AutoSizeText(
+                                                'Es konnte kein Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white),
+                                                textAlign: TextAlign.center,
+                                                textScaleFactor: 1));
+                                      }
+                                    })))
+                      ]),
+                      Row(children: [
+                        Container(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                          width: icon_width,
+                          margin: icon_margins,
+                          child:
+                              new LayoutBuilder(builder: (context, constraint) {
+                            return new Icon(Ionicons.fitness_outline,
+                                color: Colors.white,
+                                size: constraint.biggest.height);
+                          }),
+                        ),
+                        Container(
+                            height: MediaQuery.of(context).size.height * 0.133,
+                            width: text_width,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20.0,
+                              horizontal: 10.0,
+                            ),
+                            child: FutureBuilder(
+                                future: getActiveMinutes(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<String> snapshot) {
+                                  if (snapshot.hasData) {
+                                    return Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: AutoSizeText.rich(
+                                        TextSpan(
+                                          text: "Bereits ",
+                                          style: TextStyle(
+                                              fontFamily: "PlayfairDisplay",
+                                              fontWeight: FontWeight.w500,
+                                              color: Colors.white),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                                text: snapshot.data,
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Colors.white)),
+                                            TextSpan(
+                                                text: ' Minuten aktiv gewesen.',
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.white)),
+                                          ],
+                                        ),
+                                        textAlign: TextAlign.left,
+                                        presetFontSizes: [20, 19, 18, 15, 12],
+                                        minFontSize: 12,
+                                        maxFontSize: 20,
+                                      ),
+                                    );
+                                  } else {
+                                    return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText(
+                                            'Es konnte keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            textScaleFactor: 1));
+                                  }
+                                })
+
+                            // Align(
+                            //   alignment: Alignment.centerLeft,
+                            //   child: AutoSizeText.rich(
+                            //     TextSpan(
+                            //       text: "Bereits",
+                            //       style: TextStyle(
+                            //           fontFamily: "PlayfairDisplay",
+                            //           fontWeight: FontWeight.w500,
+                            //           color: Colors.white),
+                            //       children: <TextSpan>[
+                            //         TextSpan(
+                            //             text: ' 20',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.bold,
+                            //                 color: Colors.white)),
+                            //         TextSpan(
+                            //             text: ' Minuten aktiv gewesen.',
+                            //             style: TextStyle(
+                            //                 fontFamily: "PlayfairDisplay",
+                            //                 fontWeight: FontWeight.w500,
+                            //                 color: Colors.white)),
+                            //       ],
+                            //     ),
+                            //     textAlign: TextAlign.left,
+                            //     presetFontSizes: [20, 19, 18, 15, 12],
+                            //     minFontSize: 8,
+                            //     maxFontSize: 20,
+                            //   ),
+                            // ),
+                            )
+                      ]),
+                      Row(children: [
+                        Container(
+                          height: MediaQuery.of(context).size.height * 0.1,
+                          width: icon_width,
+                          margin: icon_margins,
+                          child:
+                              new LayoutBuilder(builder: (context, constraint) {
+                            return new Icon(EvilIcons.trophy,
+                                color: Colors.white,
+                                size: constraint.biggest.height);
+                          }),
+                        ),
+                        Container(
+                            height: MediaQuery.of(context).size.height * 0.133,
+                            width: text_width,
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 20.0,
+                              horizontal: 10.0,
+                            ),
+                            child: FutureBuilder(
+                                future: getGoals(),
+                                builder: (BuildContext context,
+                                    AsyncSnapshot<List> snapshot) {
+                                  if (snapshot.hasData) {
+                                    return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: snapshot.data[0].toString(),
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white),
+                                            children: <TextSpan>[
+                                              TextSpan(
+                                                  text: ' Schritte\n',
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.white)),
+                                              TextSpan(
+                                                  text: snapshot.data[1]
+                                                      .toString(),
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.bold,
+                                                      color: Colors.white)),
+                                              TextSpan(
+                                                  text: ' aktive Minuten',
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                      color: Colors.white)),
+                                            ],
+                                          ),
+                                          textAlign: TextAlign.left,
+                                          presetFontSizes: [20, 19, 18, 15, 12],
+                                          minFontSize: 8,
+                                          maxFontSize: 20,
+                                        ));
+                                  } else {
+                                    return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText(
+                                            'Es konnte keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.bold,
+                                                color: Colors.white),
+                                            textAlign: TextAlign.center,
+                                            textScaleFactor: 1));
+                                  }
+                                }))
+                      ])
+                    ],
+                  )
+                ]),
+                flex: 2),
+          ],
         ),
-        drawer: Drawer(
-          child: ListView(
-            padding: EdgeInsets.zero,
-            children: <Widget>[
-              DrawerHeader(
-                child: Text('Trac2Move',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        fontSize: 20,
-                        color: Colors.white)),
-                decoration: BoxDecoration(
-                  color: Color.fromRGBO(57, 70, 84, 1.0),
-                ),
+      ),
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            DrawerHeader(
+              child: Text('Trac2Move',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                      color: Colors.white)),
+              decoration: BoxDecoration(
+                color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
-              // ListTile(
-              //   title: Text('Upload',
-              //       style: TextStyle(
-              //           fontFamily: "PlayfairDisplay",
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.black)),
-              //   onTap: () async {
-              //     // showOverlay(
-              //     //     'Ihre Daten werden hochgeladen.'
-              //     //     '\nDies kann bis zu einer Stunde dauern.',
-              //     //     SpinKitFadingCircle(
-              //     //       color: Colors.orange,
-              //     //       size: 50.0,
-              //     //     ));
-              //     if (Platform.isIOS) {
-              //       await BLE.doUpload();
-              //     } else {
-              //       try {
-              //         var result = await AppClient.execute(data);
-              //         var resultData = AppServiceData.fromJson(result);
-              //         setState(() => _result = 'finished executing service process ;) -> ${resultData.progress}');
-              //       } on PlatformException catch (e, stacktrace) {
-              //         print(e);
-              //         print(stacktrace);
-              //       }
-              //     }
-              //     hideOverlay();
-              //   },
-              // ),
-              // ListTile(
-              //   title: Text('Upload abbrechen',
-              //       style: TextStyle(
-              //           fontFamily: "PlayfairDisplay",
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.black)),
-              //   onTap: () async {
-              //     try {
-              //       await AppClient.stopService();
-              //       setState(() => _result = 'stop service');
-              //     } on PlatformException catch (e, stacktrace) {
-              //       print(e);
-              //       print(stacktrace);
-              //     }
-              //   },
-              // ),
-              ListTile(
-                title: Text('Upload LogFile',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () async {
+            ),
+            ListTile(
+              title: Text('Upload',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                // showOverlay(
+                //     'Ihre Daten werden hochgeladen.'
+                //     '\nDies kann bis zu einer Stunde dauern.',
+                //     SpinKitFadingCircle(
+                //       color: Colors.orange,
+                //       size: 50.0,
+                //     ));
+                if (Platform.isIOS) {
+                  await BLE.doUpload();
+                } else {
+                  AppServiceData data = AppServiceData();
                   try {
-                    var y = null;
-                    var x = y * 1;
-                  } catch (e) {
-                    log.logToFile(e);
+                    var result = await AppClient.execute(data);
+                    var resultData = AppServiceData.fromJson(result);
+                    setState(() => _result = 'finished executing service process ;) -> ${resultData.progress}');
+                  } catch (e, stacktrace) {
+                    print(e);
+                    print(stacktrace);
                   }
-                  String path = await log.exportToZip();
+                }
+                hideOverlay();
+              },
+            ),
+            // ListTile(
+            //   title: Text('Upload abbrechen',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     try {
+            //       await AppClient.stopService();
+            //       setState(() => _result = 'stop service');
+            //     } on PlatformException catch (e, stacktrace) {
+            //       print(e);
+            //       print(stacktrace);
+            //     }
+            //   },
+            // ),
+            ListTile(
+              title: Text('Fehlerbericht hochladen',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                try {
+                  var y = null;
+                  var x = y * 1;
+                } catch (e) {
+                  log.logToFile(e);
+                }
+                String path = await log.exportToZip();
 
-                  showOverlay(
-                      'Die Logdatei wird zum Server übertragen.',
-                      SpinKitFadingCircle(color: Colors.orange, size:50.0,));
-                  Upload uploader = new Upload();
-                  await uploader.init();
-                  uploader.uploadLogFile(path);
-                  await Future.delayed(Duration(seconds: 2));
-                  updateOverlayText("Datei erfolgreich gesendet."
-                      "Vielen Dank");
-                  await Future.delayed(Duration(seconds: 2));
-                  hideOverlay();
+                showOverlay(
+                    'Die Logdatei wird zum Server übertragen.',
+                    SpinKitFadingCircle(
+                      color: Colors.orange,
+                      size: 50.0,
+                    ));
+                Upload uploader = new Upload();
+                await uploader.init();
+                uploader.uploadLogFile(path);
+                await Future.delayed(Duration(seconds: 2));
+                updateOverlayText("Datei erfolgreich gesendet."
+                    "Vielen Dank");
+                await Future.delayed(Duration(seconds: 2));
+                hideOverlay();
 
-
-                  // await BLE.doUpload();
-                  // hideOverlay();
-                },
-              ),
-              // ListTile(
-              //   title: Text('Overlay Test',
-              //       style: TextStyle(
-              //           fontFamily: "PlayfairDisplay",
-              //           fontWeight: FontWeight.bold,
-              //           color: Colors.black)),
-              //   onTap: () async {
-              //     Navigator.pop(context);
-              //     showOverlay();
-              //   },
-              // ),
-              ListTile(
-                title: Text('Status Zurücksetzen',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () async {
-                  SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                  prefs.setString("recordStopedAt", DateTime.now().toString());
-                  prefs.setBool("isRecording", false);
-                  prefs.remove("recordStartedAt");
-                  prefs.setBool("isRecording", false);
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) =>
-                            Stack(children: [LandingScreen(), OverlayView()])),
-                  );
-                },
-              ),
-              ListTile(
-                title: Text('Kontakt',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Contact()),
-                  );
-                },
-              ),
-              ListTile(
-                title: Text('Tagesziele Bearbeiten',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => Configuration()),
-                  );
-                  //Navigator.pop(context);
-                },
-              ),
-              ListTile(
-                title: Text('App beenden',
-                    style: TextStyle(
-                        fontFamily: "PlayfairDisplay",
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black)),
-                onTap: () {
-                  exit(0);
-                  //Navigator.pop(context);
-                },
-              ),
-            ],
-          ),
+                // await BLE.doUpload();
+                // hideOverlay();
+              },
+            ),
+            ListTile(
+              title: Text('Status Zurücksetzen',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                SharedPreferences prefs = await SharedPreferences.getInstance();
+                prefs.setString("recordStopedAt", DateTime.now().toString());
+                prefs.setBool("isRecording", false);
+                prefs.remove("recordStartedAt");
+                prefs.setBool("isRecording", false);
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          Stack(children: [LandingScreen(), OverlayView()])),
+                );
+              },
+            ),
+            ListTile(
+              title: Text('Kontakt',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Contact()),
+                );
+              },
+            ),
+            ListTile(
+              title: Text('Tagesziele Bearbeiten',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Configuration()),
+                );
+                //Navigator.pop(context);
+              },
+            ),
+            ListTile(
+              title: Text('App beenden',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () {
+                exit(0);
+                //Navigator.pop(context);
+              },
+            ),
+          ],
         ),
+      ),
     );
   }
 
@@ -603,40 +596,55 @@ class _LandingScreenState extends State<LandingScreen> {
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
+    // showOverlay(
+    //     'Ihre Daten werden hochgeladen.'
+    //     '\nDies kann bis zu einer Stunde dauern.',
+    //     SpinKitFadingCircle(
+    //       color: Colors.orange,
+    //       size: 50.0,
+    //     ));
+    // await BLE.doUpload().then((value) {
+    //   if (value == true) {
+    //     prefs.setString("recordStopedAt", DateTime.now().toString());
+    //     prefs.setBool("isRecording", false);
+    //     hideOverlay();
+    //     Navigator.of(context).pop();
+    //     Navigator.push(
+    //       context,
+    //       MaterialPageRoute(
+    //           builder: (context) =>
+    //               Stack(children: [LandingScreen(), OverlayView()])),
+    //     );
+    //   }
+    // });
     showOverlay(
         'Ihre Daten werden hochgeladen.'
-        '\nDies kann bis zu einer Stunde dauern.',
+            '\nDies kann bis zu einer Stunde dauern.',
         SpinKitFadingCircle(
           color: Colors.orange,
           size: 50.0,
         ));
-    await BLE.doUpload().then((value) {
-      if (value == true) {
-        prefs.setString("recordStopedAt", DateTime.now().toString());
-        prefs.setBool("isRecording", false);
-        hideOverlay();
-        Navigator.of(context).pop();
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  Stack(children: [LandingScreen(), OverlayView()])),
-        );
+    if (Platform.isAndroid) {
+      data = _data;
+      try {
+        var result = await AppClient.execute(_data);
+        var resultData = AppServiceData.fromJson(result);
+        setState(() => _result =
+        'finished executing service process ;) -> ${resultData.progress}');
+      } catch (e, stacktrace) {
+        print(e);
+        print(stacktrace);
       }
-    });
+    } else {
+      await BLE.doUpload();
+    }
+
+
+    hideOverlay();
   }
 
   void _startRecording(
       BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
-    // _scaffoldKey.currentState.showSnackBar(new SnackBar(
-    //   duration: const Duration(minutes: 5),
-    //   content: new Row(
-    //     children: <Widget>[
-    //       new CircularProgressIndicator(),
-    //       new Text("  Starte Bangle...")
-    //     ],
-    //   ),
-    // ));
     showOverlay(
         "Ihre Bangle wird verbunden.",
         SpinKitFadingCircle(
@@ -750,5 +758,4 @@ Future<int> isRecording() async {
   }
   // return isRecording;
 }
-
 

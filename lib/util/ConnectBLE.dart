@@ -5,6 +5,7 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:trac2move/main.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/util/Logger.dart';
@@ -17,7 +18,7 @@ Future<bool> createPermission() async {
 
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log;
+  Logger log = Logger();
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
@@ -48,8 +49,8 @@ Future<bool> nearestDevice() async {
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log;
-  await Future.delayed(Duration(milliseconds: 500));
+  Logger log = Logger();
+  // await Future.delayed(Duration(milliseconds: 500));
 
   try {
     await bleClient.checkBLEstate();
@@ -81,9 +82,9 @@ Future<bool> getStepsAndMinutes() async {
   }
 }
 
-Future<bool> doUpload() async {
+Future<bool> doUpload({Progress progress}) async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log;
+  Logger log = Logger();
   await Future.delayed(Duration(milliseconds: 500));
   Upload uploader = new Upload();
   await uploader.init();
@@ -93,7 +94,7 @@ Future<bool> doUpload() async {
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStopRecord();
-    await bleClient.bleStartUpload();
+    await bleClient.bleStartUpload(progress: progress);
     await bleClient.blestopUpload();
     bleClient.closeBLE();
     uploader.uploadFiles();
@@ -110,7 +111,7 @@ Future<bool> doUpload() async {
     await bleClient.start_ble_scan();
     await bleClient.ble_connect();
     await bleClient.bleStopRecord();
-    await bleClient.bleStartUpload();
+    await bleClient.bleStartUpload(progress: progress);
     await bleClient.blestopUpload();
     bleClient.closeBLE();
     uploader.uploadFiles();
@@ -122,7 +123,7 @@ Future<bool> doUpload() async {
 Future<bool> startRecording() async {
   await Future.delayed(Duration(milliseconds: 750));
   BLE_Client bleClient = new BLE_Client();
-  Logger log;
+  Logger log = Logger();
   try {
     await bleClient.checkBLEstate();
     await Future.delayed(Duration(milliseconds: 750));
@@ -148,6 +149,20 @@ Future<bool> startRecording() async {
     await bleClient.bleStartRecord(12.5, 8, 25);
     bleClient.closeBLE();
 
+    return false;
+  }
+}
+
+
+Future<bool> closeConnection() async {
+  await Future.delayed(Duration(milliseconds: 750));
+  BLE_Client bleClient = new BLE_Client();
+  Logger log = Logger();
+  try {
+    bleClient.closeBLE();
+    return true;
+  } catch (e) {
+    log.logToFile(e);
     return false;
   }
 }
@@ -194,7 +209,7 @@ class BLE_Client {
   }
 
   void closeBLE() async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 100));
     try {
       if (_currentDeviceConnected == true) {
         await _mydevice.disconnectOrCancelConnection();
@@ -377,7 +392,7 @@ class BLE_Client {
   }
 
   Future<dynamic> ble_connect() async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     String savedDevice = prefs.getString("Devicename");
@@ -775,9 +790,10 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> bleStartUpload() async {
+  Future<dynamic> bleStartUpload({Progress progress}) async {
     await Future.delayed(Duration(milliseconds: 500));
     _numofFiles = await bleStartUploadCommand();
+    int progressIterator = 100 ~/_numofFiles;
     print("ble start upload command done /////////////");
     int fileCount = 0;
     _resultLen = _result.length;
@@ -798,6 +814,7 @@ class BLE_Client {
               await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
               _idx = 0;
+              progress.serviceData.progress = progress.serviceData.progress + progressIterator;
               updateOverlayText("Datei " +
                   (fileCount + 1).toString() +
                   "/" +

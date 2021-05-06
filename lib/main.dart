@@ -20,6 +20,34 @@ import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/util/Logger.dart';
 
+class Progress {
+  var _serviceData;
+  // int _progressPercentage = 0;
+
+  static final _progress = Progress._internal();
+
+  factory Progress() {
+    return _progress;
+  }
+
+  init(initialData) {
+    _serviceData = AppServiceData.fromJson(initialData);
+  }
+
+  Progress._internal();
+
+  get serviceData => _serviceData;
+
+  set serviceData(value) {
+    _serviceData = value;
+  }
+
+  // int get progressPercentage => _progressPercentage;
+  //
+  // set progressPercentage(int value) {
+  //   _progressPercentage = value;
+  // }
+}
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -33,16 +61,21 @@ serviceMain() async {
   ServiceClient.setExecutionCallback((initialData) async {
     //you set initialData when you are calling AppClient.execute()
     //from your flutter application code and receive it here
-    var serviceData = AppServiceData.fromJson(initialData);
+
+    Progress currentUploadProgress = new Progress();
+    currentUploadProgress.init(initialData);
+    // var serviceData = AppServiceData.fromJson(initialData);
     //runs your code here
-    serviceData.progress = 20;
-    await ServiceClient.update(serviceData);
-    await BLE.doUpload();
-    serviceData.progress = 100;
-    await ServiceClient.endExecution(serviceData);
+    // currentUploadProgress._progressPercentage = 20;
+    currentUploadProgress._serviceData.progress = 0;
+    await ServiceClient.update(currentUploadProgress._serviceData);
+    await BLE.doUpload(progress: currentUploadProgress);
+    currentUploadProgress._serviceData.progress = 100;
+    await ServiceClient.endExecution(currentUploadProgress._serviceData);
     await ServiceClient.stopService();
   });
 }
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
@@ -51,7 +84,6 @@ void main() async {
   log.setUpLogs();
   try {
     bool useSecureStorage = false;
-
 
     if (Platform.isAndroid) {
       Location location = new Location();
@@ -80,9 +112,11 @@ void main() async {
         await storage.write(
             key: 'serverAddress',
             value: base64.encode(utf8.encode("131.173.80.175")));
-        await storage.write(key: 'port', value: base64.encode(utf8.encode("22")));
         await storage.write(
-            key: 'login', value: base64.encode(utf8.encode("trac2move_upload")));
+            key: 'port', value: base64.encode(utf8.encode("22")));
+        await storage.write(
+            key: 'login',
+            value: base64.encode(utf8.encode("trac2move_upload")));
         await storage.write(
             key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
       } else {
@@ -93,7 +127,6 @@ void main() async {
       }
       prefs.setBool('firstRun', false);
     }
-
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   } catch (e) {
@@ -122,7 +155,6 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
 
     return 3;
   }
-
 }
 
 SetFirstPage() {
@@ -140,8 +172,7 @@ SetFirstPage() {
               return BTAlert();
             } else if (snapshot.data == 3) {
               return LoadingScreen();
-            }
-            else {
+            } else {
               return LoadingScreen();
             }
           } else {
@@ -156,12 +187,11 @@ SetFirstPage() {
 
 class Trac2Move extends StatelessWidget {
   @override
-  Widget build(BuildContext context)  {
+  Widget build(BuildContext context) {
     try {
-      return MaterialApp(debugShowCheckedModeBanner: true, home: SetFirstPage());
-    } catch(exception) {
-
-
+      return MaterialApp(
+          debugShowCheckedModeBanner: true, home: SetFirstPage());
+    } catch (exception) {
       print(exception);
     }
   }

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:auto_size_text/auto_size_text.dart';
+import 'package:trac2move/screens/Overlay.dart';
 
 int steps;
 int active_minutes;
@@ -45,6 +46,11 @@ class Contact extends StatelessWidget {
               icon: new Icon(Icons.arrow_back),
               onPressed: () {
                 Navigator.pop(context);
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
+                );
               }),
         ),
         body: Container(
@@ -131,7 +137,7 @@ _displayDialog(BuildContext context) async {
               child: new Text('Senden'),
               onPressed: () {
                 var password = Text(_textFieldController.text);
-                if (password.data == '1234') {
+                if (password.data == 'activate#prevention2021%') {
                   Navigator.pop(context);
                   Navigator.pop(context);
                   Navigator.push(
