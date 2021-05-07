@@ -49,21 +49,29 @@ class _LandingScreenState extends State<LandingScreen>
   void didChangeAppLifecycleState(AppLifecycleState state) async {
     switch (state) {
       case AppLifecycleState.resumed:
-        // int result = await isRecording();
-        // showOverlay("Synchronisiere Schritte und aktive Minuten.",
-        //     SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-        await BLE.getStepsAndMinutes();
-        // await Future.delayed(Duration(seconds: 1));
-        // hideOverlay();
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        var isUploading = prefs.getBool("uploadInProgress");
+        if (isUploading ==null || !isUploading) {
+          try {
+            BLE.closeConnection();
+          } catch (e) {
+            log.logToFile(e);
+          }
+          showOverlay("Synchronisiere Schritte und aktive Minuten.",
+              SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+          if (Platform.isAndroid) {
+            await BLE.getStepsAndMinutes();
+          }
 
-        Navigator.pop(context);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  Stack(children: [LandingScreen(), OverlayView()])),
-        );
-
+          // Navigator.pop(context);
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+                builder: (context) =>
+                    Stack(children: [LandingScreen(), OverlayView()])),
+          );
+          hideOverlay();
+        }
         break;
       case AppLifecycleState.inactive:
         // print("app in inactive");

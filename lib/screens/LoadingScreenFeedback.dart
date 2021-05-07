@@ -24,18 +24,17 @@ class LoadingScreenFeedback extends StatelessWidget {
               child: Row(
                 children: [
                   Icon(
-                    Icons.track_changes_rounded,
+                    Icons.bluetooth,
                     color: Colors.green,
                     size: 50.0,
                   ),
-                  Text("   Datenübertragung"),
+                  Text("Bluetooth"),
                 ],
               ),
             ),
           ),
           content: Text(
-              "Es werden nun Ihre Schritte und aktiven Minuten übertragen. Bitte achten Sie darauf, dass die Bangle sich nah am Gerät befindet."
-              "Falls die App nicht startet, deaktivieren Sie bitte die Bluetoothverbindung und aktivieren Sie diese danach wieder."),
+              "Wir testen Ihre Bluetoothverbindung. Bitte vergewissern Sie sich, dass diese aktiviert ist."),
         ),
       ),
     );

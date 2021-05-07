@@ -20,6 +20,7 @@ import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/ConnectBLE.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 import 'package:trac2move/util/Upload.dart';
 
 //this entire function runs in your ForegroundService
@@ -84,10 +85,12 @@ void main() async {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
     bool firstRun = prefs.getBool('firstRun');
     prefs.setBool('useSecureStorage', useSecureStorage);
 
     if (firstRun == null) {
+      prefs.setBool("uploadInProgress", true);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       if (useSecureStorage) {
@@ -122,7 +125,8 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
-    bool btState = await SystemShortcuts.checkBluetooth;
+    FlutterBlue flutterBlue = FlutterBlue.instance;
+    bool btState = await flutterBlue.isOn;
     if (btState == false) {
       return 2;
     }
