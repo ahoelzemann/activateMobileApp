@@ -18,8 +18,8 @@ class AppServiceData extends ServiceData {
   }
 
   @override
-  String get notificationTitle => 'Ihre Daten werden zum Server übertragen.';
+  String get notificationTitle => 'Datenübertragung zum Server';
 
   @override
-  String get notificationDescription => 'Fortschritt: -> $progress';
+  String get notificationDescription => 'Zu $progress % abgeschlossen. Bitte haben Sie noch etwas Geduld.';
 }

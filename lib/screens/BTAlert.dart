@@ -22,12 +22,12 @@ class BTAlert extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: AlertDialog(
           title: Container(
-            child: Row(
+            child: Expanded(child: Row(
               children: [
                 Icon(Icons.bluetooth_disabled_sharp, color: Colors.red, size: 50.0,),
                 Text("Achtung"),
               ],
-            ),
+            ), flex: 1,)
           ),
           content: Text(
               "Kann es sein, dass Ihre Bluetoothverbindung nicht aktiviert ist? Bitte schalten Sie diese ein und starten Sie die App erneut."),

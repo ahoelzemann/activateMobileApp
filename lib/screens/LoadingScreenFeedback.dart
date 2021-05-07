@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'dart:io';
 
 class LoadingScreenFeedback extends StatelessWidget {
-
   @override
   Widget build(BuildContext context) {
     Widget closeButton = FlatButton(
@@ -11,9 +10,7 @@ class LoadingScreenFeedback extends StatelessWidget {
         exit(0);
       },
     );
-    final Size size = MediaQuery
-        .of(context)
-        .size;
+    final Size size = MediaQuery.of(context).size;
     return Scaffold(
       body: Container(
         width: size.width,
@@ -22,16 +19,22 @@ class LoadingScreenFeedback extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: AlertDialog(
           title: Container(
-            child: Row(
-              children: [
-                Icon(Icons.track_changes_rounded, color: Colors.green, size: 50.0,),
-                Text("   Datenübertragung"),
-              ],
+            child: Expanded(
+              flex:1,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.bluetooth,
+                    color: Colors.green,
+                    size: 50.0,
+                  ),
+                  Text("Bluetooth"),
+                ],
+              ),
             ),
           ),
           content: Text(
-              "Es werden nun Ihre Schritte und aktiven Minuten übertragen. Bitte achten Sie darauf, dass die Bangle sich nah am Gerät befindet."
-                  "Falls die App nicht startet, deaktivieren Sie bitte die Bluetoothverbindung und aktivieren Sie diese danach wieder."),
+              "Wir testen Ihre Bluetoothverbindung. Bitte vergewissern Sie sich, dass diese aktiviert ist."),
         ),
       ),
     );

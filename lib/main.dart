@@ -19,35 +19,9 @@ import 'dart:io';
 import 'package:location/location.dart';
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/util/Logger.dart';
-
-class Progress {
-  var _serviceData;
-  // int _progressPercentage = 0;
-
-  static final _progress = Progress._internal();
-
-  factory Progress() {
-    return _progress;
-  }
-
-  init(initialData) {
-    _serviceData = AppServiceData.fromJson(initialData);
-  }
-
-  Progress._internal();
-
-  get serviceData => _serviceData;
-
-  set serviceData(value) {
-    _serviceData = value;
-  }
-
-  // int get progressPercentage => _progressPercentage;
-  //
-  // set progressPercentage(int value) {
-  //   _progressPercentage = value;
-  // }
-}
+import 'package:trac2move/util/ConnectBLE.dart';
+import 'package:flutter_blue/flutter_blue.dart';
+import 'package:trac2move/util/Upload.dart';
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -61,17 +35,27 @@ serviceMain() async {
   ServiceClient.setExecutionCallback((initialData) async {
     //you set initialData when you are calling AppClient.execute()
     //from your flutter application code and receive it here
-
-    Progress currentUploadProgress = new Progress();
-    currentUploadProgress.init(initialData);
-    // var serviceData = AppServiceData.fromJson(initialData);
+    var serviceData = AppServiceData.fromJson(initialData);
     //runs your code here
-    // currentUploadProgress._progressPercentage = 20;
-    currentUploadProgress._serviceData.progress = 0;
-    await ServiceClient.update(currentUploadProgress._serviceData);
-    await BLE.doUpload(progress: currentUploadProgress);
-    currentUploadProgress._serviceData.progress = 100;
-    await ServiceClient.endExecution(currentUploadProgress._serviceData);
+    // serviceData.progress = 20;
+    await ServiceClient.update(serviceData);
+    // await BLE.doUpload();
+    BLE_Client bleClient = new BLE_Client();
+    Logger log = Logger();
+    await Future.delayed(Duration(milliseconds: 500));
+    Upload uploader = new Upload();
+    await uploader.init();
+
+    await bleClient.checkBLEstate();
+    await bleClient.start_ble_scan();
+    await bleClient.ble_connect();
+    await bleClient.bleStopRecord();
+    await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
+    await bleClient.blestopUpload();
+    bleClient.closeBLE();
+    uploader.uploadFiles();
+    // serviceData.progress = 100;
+    await ServiceClient.endExecution(serviceData);
     await ServiceClient.stopService();
   });
 }
@@ -101,10 +85,12 @@ void main() async {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
+
     bool firstRun = prefs.getBool('firstRun');
     prefs.setBool('useSecureStorage', useSecureStorage);
 
     if (firstRun == null) {
+      prefs.setBool("uploadInProgress", true);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       if (useSecureStorage) {
@@ -139,7 +125,8 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
-    bool btState = await SystemShortcuts.checkBluetooth;
+    FlutterBlue flutterBlue = FlutterBlue.instance;
+    bool btState = await flutterBlue.isOn;
     if (btState == false) {
       return 2;
     }
