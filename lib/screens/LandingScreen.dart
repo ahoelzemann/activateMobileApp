@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_logs/flutter_logs.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
@@ -27,7 +28,7 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends State<LandingScreen>
     with WidgetsBindingObserver {
   Logger log = new Logger();
-
+  // FlutterLogs flutterlogs = FlutterLogs();
   String _result = 'result';
   String _status = 'status';
 
@@ -494,6 +495,7 @@ class _LandingScreenState extends State<LandingScreen>
                   var y = null;
                   var x = y * 1;
                 } catch (e) {
+                  // FlutterLogs.logError("TAG", "subTag", e);
                   log.logToFile(e);
                 }
                 String path = await log.exportToZip();

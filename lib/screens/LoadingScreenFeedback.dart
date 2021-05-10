@@ -19,6 +19,7 @@ class LoadingScreenFeedback extends StatelessWidget {
         color: Color.fromRGBO(57, 70, 84, 1.0),
         padding: const EdgeInsets.all(8.0),
         child: AlertDialog(
+
           title: Container(
             child:  Row(
                 children: [
