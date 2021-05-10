@@ -160,6 +160,7 @@ class Upload {
         if (result == "sftp_connected") {
           try {
             try {
+              print(await client.sftpMkdir(this.serverFilePath));
               print(await client.sftpMkdir(serverlogfolder));
             } catch (e) {
               print('Folder already exists');

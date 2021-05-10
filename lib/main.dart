@@ -90,7 +90,7 @@ void main() async {
     prefs.setBool('useSecureStorage', useSecureStorage);
 
     if (firstRun == null) {
-      prefs.setBool("uploadInProgress", true);
+      prefs.setBool("uploadInProgress", false);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       if (useSecureStorage) {
@@ -111,7 +111,7 @@ void main() async {
         await prefs.setString('login', "trac2move_upload");
         await prefs.setString('password', "5aU=txXKoU!");
       }
-      prefs.setBool('firstRun', false);
+
     }
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
@@ -121,18 +121,22 @@ void main() async {
 }
 
 Future<int> _readActiveParticipantAndCheckBLE() async {
+
   try {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
     FlutterBlue flutterBlue = FlutterBlue.instance;
+    bool firstRun = instance.getBool("firstRun");
     bool btState = await flutterBlue.isOn;
-    if (btState == false) {
+    if (!btState && !firstRun) {
       return 2;
     }
     if (participant == null) {
+      instance.setBool('firstRun', false);
       return null;
     } else {
+      instance.setBool('firstRun', false);
       await BLE.getStepsAndMinutes();
       return 1;
     }

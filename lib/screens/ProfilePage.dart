@@ -45,7 +45,7 @@ class MapScreenState extends State<ProfilePage> {
 
   bool _status = true;
   TextEditingController studienIDController =
-      new TextEditingController(text: "InternalTests-");
+      new TextEditingController(text: "L-");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave;
 

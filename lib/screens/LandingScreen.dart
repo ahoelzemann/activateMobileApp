@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_logs/flutter_logs.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
@@ -27,7 +28,7 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends State<LandingScreen>
     with WidgetsBindingObserver {
   Logger log = new Logger();
-
+  // FlutterLogs flutterlogs = FlutterLogs();
   String _result = 'result';
   String _status = 'status';
 
@@ -51,25 +52,20 @@ class _LandingScreenState extends State<LandingScreen>
       case AppLifecycleState.resumed:
         SharedPreferences prefs = await SharedPreferences.getInstance();
         var isUploading = prefs.getBool("uploadInProgress");
-        if (isUploading ==null || !isUploading) {
-          try {
-            BLE.closeConnection();
-          } catch (e) {
-            log.logToFile(e);
-          }
+        if (isUploading == null || !isUploading) {
           showOverlay("Synchronisiere Schritte und aktive Minuten.",
               SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-          if (Platform.isAndroid) {
-            await BLE.getStepsAndMinutes();
-          }
+          // if (Platform.isAndroid) {
+          await BLE.getStepsAndMinutes();
+          // }
 
-          // Navigator.pop(context);
-          Navigator.push(
-            context,
+          await Future.delayed(Duration(seconds: 1));
+          // Navigator.push(
+          //   context,
             MaterialPageRoute(
                 builder: (context) =>
-                    Stack(children: [LandingScreen(), OverlayView()])),
-          );
+                    Stack(children: [LandingScreen(), OverlayView()]));
+          // );
           hideOverlay();
         }
         break;
@@ -499,6 +495,7 @@ class _LandingScreenState extends State<LandingScreen>
                   var y = null;
                   var x = y * 1;
                 } catch (e) {
+                  // FlutterLogs.logError("TAG", "subTag", e);
                   log.logToFile(e);
                 }
                 String path = await log.exportToZip();
@@ -759,7 +756,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(hours: 6))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording

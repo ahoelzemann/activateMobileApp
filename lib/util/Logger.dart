@@ -61,7 +61,8 @@ class Logger {
           //If set 'true' logger will append instead of overwriting
           logMessage:
           message.toString() + "\nStacktrace: " + message.stackTrace.toString(),
-          appendTimeStamp: true); //Add time stamp at the end of log message
+          appendTimeStamp: true);
+      print("Entry added to logfile");//Add time stamp at the end of log message
     } catch (e) {
       FlutterLogs.logToFile(
           logFileName: _my_log_file_name,
@@ -69,7 +70,8 @@ class Logger {
           //If set 'true' logger will append instead of overwriting
           logMessage:
           message.toString(),
-          appendTimeStamp: true); //Add time stamp at the end of log message
+          appendTimeStamp: true);
+      print(e.strackTrace);//Add time stamp at the end of log message
     }
 
   }

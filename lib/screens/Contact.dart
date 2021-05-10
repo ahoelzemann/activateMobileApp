@@ -137,7 +137,7 @@ _displayDialog(BuildContext context) async {
               child: new Text('Senden'),
               onPressed: () {
                 var password = Text(_textFieldController.text);
-                if (password.data == 'activate#prevention2021%') {
+                if (password.data == '') {
                   Navigator.pop(context);
                   Navigator.pop(context);
                   Navigator.push(

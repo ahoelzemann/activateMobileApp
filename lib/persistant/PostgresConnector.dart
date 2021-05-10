@@ -31,7 +31,7 @@ class PostgresConnector {
             if (res.body.length > 2) {
               return 'Studienteilnehmer bereits vorhanden';
             } else {
-              await http.post(url,
+              var result = await http.post(url,
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
