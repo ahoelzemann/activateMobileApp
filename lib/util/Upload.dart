@@ -31,7 +31,6 @@ class Upload {
   Directory tempDir;
   String localFilesDirectory;
   String serverPath;
-  Logger log = Logger();
 
   Future<bool> init() async {
     try {
@@ -63,8 +62,8 @@ class Upload {
       );
 
       return true;
-    } catch (e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
     }
   }
 
@@ -105,11 +104,11 @@ class Upload {
                 ));
                 try {
                   File(localFilePath).delete();
-                } catch (e) {
-                  log.logToFile(e);
+                }  catch (e, stacktrace) {
+                  logError(e, stacktrace);
                 }
-              } catch (e) {
-                log.logToFile(e);
+              }  catch (e, stacktrace) {
+                logError(e, stacktrace);
                 print(e);
                 await Future.delayed(Duration(seconds: 10));
                 await client.sftpUpload(
@@ -122,38 +121,24 @@ class Upload {
             }
             // filePaths = io.Directory(localFilesDirectory).listSync();
             // print(filePaths);
-          } catch (e) {
-            print(e.toString());
-            log.logToFile(e);
+          }  catch (e, stacktrace) {
+            logError(e, stacktrace);
           }
 
           print(await client.disconnectSFTP());
           client.disconnect();
         }
       }
-    } on PlatformException catch (e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }
 
   Future<void> uploadLogFile(path) async {
-    // String logfile = path.split("/").last;
     String serverlogfolder = this.serverFilePath + "/logfiles/";
-    // Directory externalDirectory;
-    // Directory tempdirectory = await getTemporaryDirectory();
-    // if (Platform.isIOS) {
-    //   externalDirectory = await getApplicationDocumentsDirectory();
-    // } else {
-    //   externalDirectory = await getExternalStorageDirectory();
-    // }
+
     try {
-      // Uint8List filecontent = await io.File(path).readAsBytes();
-      // List<String> tmpList = logfile.split("_");
-      // logfile = tmpList[0] + tmpList[1] + ".zip";
-      // File saveFile = File(tempdirectory.path + "/" + logfile);
-      // // saveFile.createSync();
-      // saveFile.writeAsBytesSync(filecontent);
       String result = await client.connect();
       if (result == "session_connected") {
         result = await client.connectSFTP();
@@ -173,17 +158,16 @@ class Upload {
                 print(progress); // read upload progress
               },
             );
-          } catch (e) {
-            print(e.toString());
-            log.logToFile(e);
+          }  catch (e, stacktrace) {
+            logError(e, stacktrace);
           }
 
           print(await client.disconnectSFTP());
           client.disconnect();
         }
       }
-    } on PlatformException catch (e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }

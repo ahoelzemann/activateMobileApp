@@ -19,22 +19,23 @@ class LoadingScreenFeedback extends StatelessWidget {
         color: Color.fromRGBO(57, 70, 84, 1.0),
         padding: const EdgeInsets.all(8.0),
         child: AlertDialog(
-
-          title: Container(
-            child:  Row(
-                children: [
-                  Icon(
-                    Icons.bluetooth,
-                    color: Colors.green,
-                    size: 50.0,
-                  ),
-                  Text("Bluetooth"),
-                ],
+          title: Row(
+            children: [
+              Icon(
+                Icons.bluetooth,
+                color: Colors.green,
+                size: 50.0,
               ),
+              Text("Bluetooth"),
+            ],
           ),
-          content: AutoSizeText.rich(
+          content: Container(
+            width: size.width*0.75,
+            height: size.height*0.1,
+            child: AutoSizeText.rich(
               TextSpan(
-                text: "Wir testen Ihre Bluetoothverbindung. Bitte vergewissern Sie sich, dass diese aktiviert ist.",
+                text:
+                    "Wir testen Ihre Bluetoothverbindung. Bitte vergewissern Sie sich, dass diese aktiviert ist.",
                 style: TextStyle(
                     fontFamily: "PlayfairDisplay",
                     fontWeight: FontWeight.w500,
@@ -45,6 +46,7 @@ class LoadingScreenFeedback extends StatelessWidget {
               minFontSize: 10,
               maxFontSize: 20,
             ),
+          ),
           // Text(
           //     "Wir testen Ihre Bluetoothverbindung. Bitte vergewissern Sie sich, dass diese aktiviert ist."),
         ),

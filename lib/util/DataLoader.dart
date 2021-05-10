@@ -13,7 +13,6 @@ class mySharedPreferences {
   int steps;
   int active_minutes;
   Participant p;
-  Logger log = Logger();
 
   Future<bool> mySharedPreferencesFirstStart (Participant p) async {
     try {
@@ -32,8 +31,8 @@ class mySharedPreferences {
 
         return true;
       });
-    }catch (e) {
-      log.logToFile(e);
+    }catch (e, stackTrace) {
+      logError(e, stackTrace);
       print(e);
     }
   }

@@ -22,6 +22,9 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/ConnectBLE.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:trac2move/util/Upload.dart';
+import 'package:flutter_fimber/flutter_fimber.dart';
+import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
+
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -32,40 +35,43 @@ serviceMain() async {
   //what ever objects you created in your app main function is not accessible here
 
   //set a callback and define the code you want to execute when your ForegroundService runs
-  ServiceClient.setExecutionCallback((initialData) async {
-    //you set initialData when you are calling AppClient.execute()
-    //from your flutter application code and receive it here
-    var serviceData = AppServiceData.fromJson(initialData);
-    //runs your code here
-    // serviceData.progress = 20;
-    await ServiceClient.update(serviceData);
-    // await BLE.doUpload();
-    BLE_Client bleClient = new BLE_Client();
-    Logger log = Logger();
-    await Future.delayed(Duration(milliseconds: 500));
-    Upload uploader = new Upload();
-    await uploader.init();
+  try {
+    ServiceClient.setExecutionCallback((initialData) async {
+      //you set initialData when you are calling AppClient.execute()
+      //from your flutter application code and receive it here
+      var serviceData = AppServiceData.fromJson(initialData);
+      //runs your code here
+      // serviceData.progress = 20;
+      await ServiceClient.update(serviceData);
+      // await BLE.doUpload();
+      BLE_Client bleClient = new BLE_Client();
 
-    await bleClient.checkBLEstate();
-    await bleClient.start_ble_scan();
-    await bleClient.ble_connect();
-    await bleClient.bleStopRecord();
-    await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
-    await bleClient.blestopUpload();
-    bleClient.closeBLE();
-    uploader.uploadFiles();
-    // serviceData.progress = 100;
-    await ServiceClient.endExecution(serviceData);
-    await ServiceClient.stopService();
-  });
+      await Future.delayed(Duration(milliseconds: 500));
+      Upload uploader = new Upload();
+      await uploader.init();
+
+      await bleClient.checkBLEstate();
+      bleClient.start_ble_scan();
+      await bleClient.ble_connect();
+      await bleClient.bleStopRecord();
+      await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
+      await bleClient.blestopUpload();
+      bleClient.closeBLE();
+      uploader.uploadFiles();
+      // serviceData.progress = 100;
+      await ServiceClient.endExecution(serviceData);
+      await ServiceClient.stopService();
+    });
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
+  }
 }
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  Logger log = new Logger();
-  log.setUpLogs();
+  Fimber.plantTree(FileLoggerTree(numberOfDays: null));
   try {
     bool useSecureStorage = false;
 
@@ -115,13 +121,12 @@ void main() async {
     }
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
-  } catch (e) {
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
   }
 }
 
 Future<int> _readActiveParticipantAndCheckBLE() async {
-
   try {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
@@ -140,9 +145,8 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       await BLE.getStepsAndMinutes();
       return 1;
     }
-  } catch (e) {
-    Logger log = Logger();
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
 
     return 3;
   }

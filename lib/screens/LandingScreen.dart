@@ -2,6 +2,7 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_logs/flutter_logs.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
@@ -27,7 +28,7 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen>
     with WidgetsBindingObserver {
-  Logger log = new Logger();
+
   // FlutterLogs flutterlogs = FlutterLogs();
   String _result = 'result';
   String _status = 'status';
@@ -62,9 +63,9 @@ class _LandingScreenState extends State<LandingScreen>
           await Future.delayed(Duration(seconds: 1));
           // Navigator.push(
           //   context,
-            MaterialPageRoute(
-                builder: (context) =>
-                    Stack(children: [LandingScreen(), OverlayView()]));
+          MaterialPageRoute(
+              builder: (context) =>
+                  Stack(children: [LandingScreen(), OverlayView()]));
           // );
           hideOverlay();
         }
@@ -77,8 +78,8 @@ class _LandingScreenState extends State<LandingScreen>
       case AppLifecycleState.detached:
         try {
           BLE.closeConnection();
-        } catch (e) {
-          log.logToFile(e);
+        }  catch (e, stacktrace) {
+          logError(e, stacktrace);
         }
         break;
     }
@@ -86,7 +87,6 @@ class _LandingScreenState extends State<LandingScreen>
 
   @override
   Widget build(BuildContext context) {
-
     final Size size = MediaQuery.of(context).size;
     final icon_width = size.width * 0.2;
     final text_width = size.width - (size.width * 0.35);
@@ -492,23 +492,31 @@ class _LandingScreenState extends State<LandingScreen>
                       color: Colors.black)),
               onTap: () async {
                 try {
-                  var y = null;
-                  var x = y * 1;
-                } catch (e) {
-                  // FlutterLogs.logError("TAG", "subTag", e);
-                  log.logToFile(e);
+                  var x = null;
+                  var y = 1;
+                  var z = x*y;
+                } catch (e, stackTrace) {
+                  print(e);
+                  logError(e, e.stackTrace);
+                  print('logging done.');
                 }
-                String path = await log.exportToZip();
+                Upload uploader = new Upload();
+                await uploader.init();
 
+                Directory dir = new Directory(
+                    (await getApplicationDocumentsDirectory()).path + "/logs/");
                 showOverlay(
                     'Die Logdatei wird zum Server übertragen.',
                     SpinKitFadingCircle(
                       color: Colors.orange,
                       size: 50.0,
                     ));
-                Upload uploader = new Upload();
-                await uploader.init();
-                uploader.uploadLogFile(path);
+
+                await for (var entity
+                    in dir.list(recursive: true, followLinks: true)) {
+                  uploader.uploadLogFile(entity.path);
+                }
+
                 await Future.delayed(Duration(seconds: 2));
                 updateOverlayText("Datei erfolgreich gesendet."
                     "Vielen Dank");
@@ -646,7 +654,6 @@ class _LandingScreenState extends State<LandingScreen>
         print(stacktrace);
       }
     }
-
   }
 
   void _startRecording(

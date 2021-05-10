@@ -7,7 +7,6 @@ import 'package:trac2move/util/Logger.dart';
 
 // ToDo : Clean up function and implement exceptions
 class PostgresConnector {
-  Logger log;
   final String token =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicGFydGljaXBhbnRzX2FwcCJ9.yyNvCf6g0-yV2JUzTk9nFbYPpbzswCMisY4aEA7otLk";
 
@@ -41,8 +40,8 @@ class PostgresConnector {
               return 'Studienteilnehmer erfolgreich gespeichert';
             }
           });
-        } catch (e) {
-          log.logToFile(e);
+        } catch (e, stacktrace) {
+          logError(e, stacktrace);
           return 'Studienteilnehmer konnte nicht gespeichert werden';
         }
 
@@ -59,8 +58,8 @@ class PostgresConnector {
       });
 
       return response;
-    } catch (e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
     }
   }
 
@@ -75,8 +74,8 @@ class PostgresConnector {
       });
 
       return response;
-    } catch(e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
     }
 
   }
@@ -112,8 +111,8 @@ class PostgresConnector {
               return 'Studienteilnehmer nicht vorhanden';
             }
           });
-        } catch (e) {
-          log.logToFile(e);
+        }  catch (e, stacktrace) {
+          logError(e, stacktrace);
           return 'Kommunikation mit dem Server nicht möglich';
         }
 

@@ -28,7 +28,6 @@ Future<bool> checkBLEStatus() async {
 
 Future<bool> nearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log = Logger();
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
@@ -40,8 +39,8 @@ Future<bool> nearestDevice() async {
     });
 
     return true;
-  } catch (e) {
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
     try {
       print('Connection failed:');
       print('connecting again in 3 seconds.....');
@@ -50,8 +49,8 @@ Future<bool> nearestDevice() async {
       bleClient.closeBLE();
 
       return true;
-    } catch (e) {
-      log.logToFile(e);
+    }  catch (e, stacktrace) {
+      logError(e, stacktrace);
       return false;
     }
   }
@@ -59,7 +58,6 @@ Future<bool> nearestDevice() async {
 
 Future<bool> getStepsAndMinutes() async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log = Logger();
   await Future.delayed(Duration(milliseconds: 1000));
 
   try {
@@ -71,8 +69,8 @@ Future<bool> getStepsAndMinutes() async {
     bleClient.closeBLE();
 
     return true;
-  } on BleError catch (ble_error) {
-    log.logToFile(ble_error);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
 
     // if (ble_error.errorCode.value == 2) {
       print("Error Code 2: Closing BLE Adapter and starting a new one.");
@@ -108,7 +106,6 @@ Future<bool> getStepsAndMinutes() async {
 
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
-  Logger log = Logger();
   await Future.delayed(Duration(milliseconds: 500));
   Upload uploader = new Upload();
   await uploader.init();
@@ -125,8 +122,8 @@ Future<bool> doUpload() async {
     // bleClient = null;
 
     return true;
-  } catch (e) {
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
     print('Connection failed:');
     print('connecting again.....');
     await Future.delayed(Duration(seconds: 3));
@@ -146,7 +143,6 @@ Future<bool> doUpload() async {
 Future<bool> startRecording() async {
   await Future.delayed(Duration(milliseconds: 750));
   BLE_Client bleClient = new BLE_Client();
-  Logger log = Logger();
   try {
     await bleClient.checkBLEstate();
     await Future.delayed(Duration(milliseconds: 750));
@@ -162,8 +158,8 @@ Future<bool> startRecording() async {
     await Future.delayed(Duration(seconds: 5));
     hideOverlay();
     return true;
-  } catch (e) {
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
     print('Connection failed:');
     print('connecting again.....');
     await bleClient.checkBLEstate();
@@ -179,12 +175,11 @@ Future<bool> startRecording() async {
 Future<bool> closeConnection() async {
   await Future.delayed(Duration(milliseconds: 750));
   BLE_Client bleClient = new BLE_Client();
-  Logger log = Logger();
   try {
     bleClient.closeBLE();
     return true;
-  } catch (e) {
-    log.logToFile(e);
+  }  catch (e, stacktrace) {
+    logError(e, stacktrace);
     return false;
   }
 }
