@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:auto_size_text/auto_size_text.dart';
 
 class BTAlert extends StatelessWidget {
 
@@ -22,15 +23,26 @@ class BTAlert extends StatelessWidget {
         padding: const EdgeInsets.all(8.0),
         child: AlertDialog(
           title: Container(
-            child: Expanded(child: Row(
+            child:  Row(
               children: [
                 Icon(Icons.bluetooth_disabled_sharp, color: Colors.red, size: 50.0,),
                 Text("Achtung"),
               ],
-            ), flex: 1,)
+            ),
           ),
-          content: Text(
-              "Kann es sein, dass Ihre Bluetoothverbindung nicht aktiviert ist? Bitte schalten Sie diese ein und starten Sie die App erneut."),
+          content: AutoSizeText.rich(
+              TextSpan(
+                text: "Ihre Bluetoothverbindung ist scheinbar nicht aktiv. Bitte aktivieren Sie diese und starten Sie die App neu.",
+                style: TextStyle(
+                    fontFamily: "PlayfairDisplay",
+                    fontWeight: FontWeight.w500,
+                    color: Colors.black),
+              ),
+              textAlign: TextAlign.left,
+              presetFontSizes: [20, 19, 18, 15, 12, 10],
+              minFontSize: 10,
+              maxFontSize: 20,
+            ),
           actions: [closeButton],
         ),
       ),
