@@ -16,14 +16,14 @@ import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
-import 'package:location/location.dart';
-import 'package:system_shortcuts/system_shortcuts.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/ConnectBLE.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
+import 'package:access_settings_menu/access_settings_menu.dart';
 
 
 //this entire function runs in your ForegroundService
@@ -72,17 +72,26 @@ void main() async {
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Fimber.plantTree(FileLoggerTree(numberOfDays: null));
+  Fimber.e(DateTime.now().toString() + " Beginning Log File:");
   try {
     bool useSecureStorage = false;
-
+    print("secureStorage done");
     if (Platform.isAndroid) {
-      Location location = new Location();
-      if (!await location.serviceEnabled()) {
-        await location.requestService();
+      print("location initialized before if");
+      if (!await Geolocator.isLocationServiceEnabled()) {
+        print("location initialized after if");
+        openSettingsMenu('ACTION_LOCATION_SOURCE_SETTINGS');
+        print("location service requested");
       }
+      await Geolocator.requestPermission();
       await Permission.storage.request();
+      print("storage service requested");
       await Permission.bluetooth.request();
-      await Permission.locationAlways.request();
+      print("bluetooth service requested");
+      // await Permission.locationAlways.request();
+      // print("locationAlways requested");
+      await Permission.locationWhenInUse.request();
+      print("location when in use requested");
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
@@ -94,9 +103,8 @@ void main() async {
 
     bool firstRun = prefs.getBool('firstRun');
     prefs.setBool('useSecureStorage', useSecureStorage);
-
+    prefs.setBool("uploadInProgress", false);
     if (firstRun == null) {
-      prefs.setBool("uploadInProgress", false);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       if (useSecureStorage) {
@@ -131,12 +139,12 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
-    FlutterBlue flutterBlue = FlutterBlue.instance;
     bool firstRun = instance.getBool("firstRun");
-    bool btState = await flutterBlue.isOn;
-    if (!btState && !firstRun) {
-      return 2;
-    }
+    bool btState = false;
+    // await BLE.checkBLEStatus();
+    // if (!firstRun) {
+    //   return 2;
+    // }
     if (participant == null) {
       instance.setBool('firstRun', false);
       return null;
@@ -189,5 +197,17 @@ class Trac2Move extends StatelessWidget {
     } catch (exception) {
       print(exception);
     }
+  }
+}
+
+// create an async void to call the API function with settings name as parameter
+openSettingsMenu(settingsName) async {
+  var resultSettingsOpening = false;
+
+  try {
+    resultSettingsOpening =
+    await AccessSettingsMenu.openSettings(settingsType: settingsName);
+  } catch (e) {
+    resultSettingsOpening = false;
   }
 }

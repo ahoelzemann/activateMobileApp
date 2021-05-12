@@ -1,7 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_logs/flutter_logs.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
@@ -491,15 +490,7 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                try {
-                  var x = null;
-                  var y = 1;
-                  var z = x*y;
-                } catch (e, stackTrace) {
-                  print(e);
-                  logError(e, e.stackTrace);
-                  print('logging done.');
-                }
+
                 Upload uploader = new Upload();
                 await uploader.init();
 
@@ -549,7 +540,6 @@ class _LandingScreenState extends State<LandingScreen>
                 prefs.setString("recordStopedAt", DateTime.now().toString());
                 prefs.setBool("isRecording", false);
                 prefs.remove("recordStartedAt");
-                prefs.setBool("isRecording", false);
                 Navigator.pop(context);
                 Navigator.push(
                   context,
@@ -608,6 +598,7 @@ class _LandingScreenState extends State<LandingScreen>
   void _stopRecordingAndUpload() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool bleActivated = await SystemShortcuts.checkBluetooth;
+    // prefs.setBool("uploadInProgress", true);
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
@@ -622,8 +613,9 @@ class _LandingScreenState extends State<LandingScreen>
       await BLE.doUpload().then((value) {
         if (value == true) {
           prefs.setString("recordStopedAt", DateTime.now().toString());
-          prefs.setBool("isRecording", false);
+
           hideOverlay();
+          // prefs.setBool("uploadInProgress", false);
           Navigator.of(context).pop();
           Navigator.push(
             context,
@@ -642,6 +634,7 @@ class _LandingScreenState extends State<LandingScreen>
             'finished executing service process ;) -> ${resultData.progress}');
         hideOverlay();
         Navigator.of(context).pop();
+        // prefs.setBool("uploadInProgress", false);
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -653,20 +646,12 @@ class _LandingScreenState extends State<LandingScreen>
         print(e);
         print(stacktrace);
       }
+
     }
   }
 
   void _startRecording(
       BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
-    // _scaffoldKey.currentState.showSnackBar(new SnackBar(
-    //   duration: const Duration(minutes: 5),
-    //   content: new Row(
-    //     children: <Widget>[
-    //       new CircularProgressIndicator(),
-    //       new Text("  Starte Bangle...")
-    //     ],
-    //   ),
-    // ));
     showOverlay(
         "Ihre Bangle wird verbunden.",
         SpinKitFadingCircle(
@@ -763,7 +748,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(hours: 6))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 5))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording

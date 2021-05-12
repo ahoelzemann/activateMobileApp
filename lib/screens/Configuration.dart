@@ -94,6 +94,9 @@ class _ConfigurationState extends State<Configuration> {
   Future<int> decrease_steps(int x) async {
     steps = await getSteps();
     steps = steps - x;
+    if (steps < 0) {
+      steps = 0;
+    }
     bool success = await setSteps(steps);
     print('Set steps successful: $success');
     int current_steps = await getSteps();
@@ -114,6 +117,9 @@ class _ConfigurationState extends State<Configuration> {
   Future<int> decrease_minutes(int x) async {
     active_minutes = await getActiveMinutes();
     active_minutes = active_minutes - x;
+    if (active_minutes < 0) {
+      active_minutes = 0;
+    }
     bool success = await setActiveMinutes(active_minutes);
     print('Set active_minutes successful: $success');
     int current_active_minutes = await getActiveMinutes();
@@ -174,7 +180,9 @@ class _ConfigurationState extends State<Configuration> {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            Stack(children: [LandingScreen(), OverlayView()])),
                   );
                 }),
           ),
@@ -203,55 +211,76 @@ class _ConfigurationState extends State<Configuration> {
                             height: icon_height,
                             width: container_width,
                             margin: icon_margins,
-                            child: Row(children: [
-                              Container(
-                                child: Flexible(
-                                  child: new LayoutBuilder(
-                                      builder: (context, constraint) {
-                                    return new Icon(
-                                        Icons.directions_walk_rounded,
-                                        color: Colors.white,
-                                        // color: Color.fromRGBO(195, 130, 89, 1),
-                                        size: constraint.biggest.height);
-                                  }),
-                                ),
-                              ),
-                              Container(
-                                height: icon_height,
-                                width: text_width + icon_width,
-                                margin: text_margins,
-                                child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: AutoSizeText.rich(
-                                        TextSpan(
-                                          text: "Wie viele",
-                                          style: TextStyle(
-                                              fontSize: 20,
-                                              fontFamily: "PlayfairDisplay",
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.black),
-                                          children: <TextSpan>[
-                                            TextSpan(
-                                                text: ' Schritte ',
-                                                style: TextStyle(
-                                                    fontSize: 20,
-                                                    fontFamily:
-                                                        "PlayfairDisplay",
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.black)),
-                                            TextSpan(
-                                              text: 'möchten Sie am Tag gehen?',
-                                              style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.black),
-                                            ),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.left)),
-                              ),
-                            ])),
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Container(
+                                    child: Flexible(
+                                        child: Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                          new LayoutBuilder(
+                                              builder: (context, constraint) {
+                                            return new Icon(
+                                                Icons.directions_walk_rounded,
+                                                color: Colors.white,
+                                                // color: Color.fromRGBO(195, 130, 89, 1),
+                                                size:
+                                                    constraint.biggest.height);
+                                          }),
+                                        ])),
+                                  ),
+                                  Container(
+                                    height: icon_height,
+                                    width: text_width + icon_width,
+                                    margin: text_margins,
+                                    child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: AutoSizeText.rich(
+                                                  TextSpan(
+                                                    text: "Wie viele",
+                                                    style: TextStyle(
+                                                        fontFamily:
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: Colors.black),
+                                                    children: <TextSpan>[
+                                                      TextSpan(
+                                                          text: ' Schritte ',
+                                                          style: TextStyle(
+                                                              fontFamily:
+                                                                  "PlayfairDisplay",
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Colors
+                                                                  .black)),
+                                                      TextSpan(
+                                                        text:
+                                                            'möchten Sie am Tag gehen?',
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                                "PlayfairDisplay",
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                Colors.black),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                textAlign: TextAlign.left,
+                                                presetFontSizes: [20, 19, 18, 15, 12],
+                                                minFontSize: 12,
+                                                maxFontSize: 20))
+                                        ]),
+                                  ),
+                                ])),
                       ])),
 
                   Container(
@@ -263,6 +292,7 @@ class _ConfigurationState extends State<Configuration> {
                             width: container_width,
                             margin: icon_margins,
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Flexible(child: new LayoutBuilder(
                                     builder: (context, constraint) {
@@ -285,7 +315,6 @@ class _ConfigurationState extends State<Configuration> {
                                           TextSpan(
                                             text: steps.toString(),
                                             style: TextStyle(
-                                                fontSize: 20,
                                                 fontFamily: "PlayfairDisplay",
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.black),
@@ -293,15 +322,17 @@ class _ConfigurationState extends State<Configuration> {
                                               TextSpan(
                                                   text: ' Schritte ',
                                                   style: TextStyle(
-                                                      fontSize: 20,
                                                       fontFamily:
-                                                      "PlayfairDisplay",
-                                                      fontWeight: FontWeight.w500,
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       color: Colors.black)),
                                             ],
                                           ),
-                                          textAlign: TextAlign.left)
-                                  ),
+                                          textAlign: TextAlign.left,
+                                        presetFontSizes: [20, 19, 18, 15, 12],
+                                        minFontSize: 12,
+                                        maxFontSize: 20,),),
                                 ),
                                 Flexible(child: new LayoutBuilder(
                                     builder: (context, constraint) {
@@ -316,11 +347,9 @@ class _ConfigurationState extends State<Configuration> {
                                               constraint.biggest.height * 0.8));
                                 }))
                               ],
+                            ),
                             )
-                            // color: Colors.white,
-                            // size: constraint.biggest.height)
-                            )
-                      ])),
+                      ],),),
                   Container(width: size.width, height: size.height * 0.05),
                   Container(
                       width: size.width,
@@ -330,52 +359,75 @@ class _ConfigurationState extends State<Configuration> {
                             height: icon_height,
                             width: container_width,
                             margin: icon_margins,
-                            child: Row(children: [
-                              Flexible(
-                                child: new LayoutBuilder(
-                                    builder: (context, constraint) {
-                                  return new Icon(Ionicons.fitness_outline,
-                                      color: Colors.white,
-                                      // color: Color.fromRGBO(195, 130, 89, 1),
-                                      size: constraint.biggest.height);
-                                }),
-                              ),
-                              Container(
-                                height: icon_height,
-                                width: text_width + icon_width,
-                                margin: text_margins,
-                                child: Align(
-                                    alignment: Alignment.centerLeft,
-                                    child: AutoSizeText.rich(
-                                        TextSpan(
-                                          text: "Wie viele",
-                                          style: TextStyle(
-                                              fontSize: 20,
-                                              fontFamily: "PlayfairDisplay",
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.black),
-                                          children: <TextSpan>[
-                                            TextSpan(
-                                                text: ' Minuten ',
-                                                style: TextStyle(
-                                                    fontSize: 20,
-                                                    fontFamily:
-                                                    "PlayfairDisplay",
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.black)),
-                                            TextSpan(
-                                              text: 'möchten Sie am Tag aktiv sein?',
-                                              style: TextStyle(
-                                                  fontSize: 20,
-                                                  fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.black),
-                                            ),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.left)),
-                              ),
-                            ]))
+                            child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Flexible(
+                                    child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
+                                        children: [
+                                          new LayoutBuilder(
+                                              builder: (context, constraint) {
+                                            return new Icon(
+                                                Ionicons.fitness_outline,
+                                                color: Colors.white,
+                                                // color: Color.fromRGBO(195, 130, 89, 1),
+                                                size:
+                                                    constraint.biggest.height);
+                                          })
+                                        ]),
+                                  ),
+                                  Container(
+                                    height: icon_height,
+                                    width: text_width + icon_width,
+                                    margin: text_margins,
+                                    child: Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        children: [
+                                          Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: AutoSizeText.rich(
+                                                  TextSpan(
+                                                    text: "Wie viele",
+                                                    style: TextStyle(
+                                                        fontFamily:
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                        color: Colors.black),
+                                                    children: <TextSpan>[
+                                                      TextSpan(
+                                                          text: ' Minuten ',
+                                                          style: TextStyle(
+                                                              fontFamily:
+                                                                  "PlayfairDisplay",
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Colors
+                                                                  .black)),
+                                                      TextSpan(
+                                                        text:
+                                                            'möchten Sie am Tag aktiv sein?',
+                                                        style: TextStyle(
+                                                            fontFamily:
+                                                                "PlayfairDisplay",
+                                                            fontWeight:
+                                                                FontWeight.w500,
+                                                            color:
+                                                                Colors.black),
+                                                      ),
+                                                    ],
+                                                  ),
+                                                textAlign: TextAlign.left,
+                                                presetFontSizes: [20, 19, 18, 15, 12],
+                                                minFontSize: 12,
+                                                maxFontSize: 20,),)
+                                        ]),
+                                  ),
+                                ]))
                       ])),
 
                   Container(
@@ -387,6 +439,7 @@ class _ConfigurationState extends State<Configuration> {
                             width: container_width,
                             margin: icon_margins,
                             child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 Flexible(child: new LayoutBuilder(
                                     builder: (context, constraint) {
@@ -401,15 +454,14 @@ class _ConfigurationState extends State<Configuration> {
                                               constraint.biggest.height * 0.8));
                                 })),
                                 Container(
-                                  height: icon_height,
-                                  width: text_width,
-                                  child: Align(
+                                    height: icon_height,
+                                    width: text_width,
+                                    child: Align(
                                       alignment: Alignment.center,
                                       child: AutoSizeText.rich(
                                           TextSpan(
                                             text: active_minutes.toString(),
                                             style: TextStyle(
-                                                fontSize: 20,
                                                 fontFamily: "PlayfairDisplay",
                                                 fontWeight: FontWeight.bold,
                                                 color: Colors.black),
@@ -417,16 +469,18 @@ class _ConfigurationState extends State<Configuration> {
                                               TextSpan(
                                                   text: ' Minuten ',
                                                   style: TextStyle(
-                                                      fontSize: 20,
                                                       fontFamily:
-                                                      "PlayfairDisplay",
-                                                      fontWeight: FontWeight.w500,
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.w500,
                                                       color: Colors.black)),
                                             ],
                                           ),
-                                          textAlign: TextAlign.left
-                                      ),)
-                                ),
+                                        textAlign: TextAlign.left,
+                                        presetFontSizes: [20, 19, 18, 15, 12],
+                                        minFontSize: 12,
+                                        maxFontSize: 20,),
+                                    )),
                                 Flexible(child: new LayoutBuilder(
                                     builder: (context, constraint) {
                                   return new FlatButton(

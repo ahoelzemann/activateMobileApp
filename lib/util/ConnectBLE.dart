@@ -914,12 +914,12 @@ class BLE_Client {
 
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
+            prefs.setBool("uploadInProgress", false);
             completer.complete(_numofFiles);
           }
         });
       }
     });
-    prefs.setBool("uploadInProgress", false);
     return completer.future;
   }
 
