@@ -19,6 +19,7 @@ import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
+import 'package:trac2move/ble/BluetoothManager.dart';
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -467,22 +468,33 @@ class _LandingScreenState extends State<LandingScreen>
             //     hideOverlay();
             //   },
             // ),
-            // ListTile(
-            //   title: Text('Upload abbrechen',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     try {
-            //       await AppClient.stopService();
-            //       setState(() => _result = 'stop service');
-            //     } catch (e, stacktrace) {
-            //       print(e);
-            //       print(stacktrace);
-            //     }
-            //   },
-            // ),
+            ListTile(
+              title: Text('New Connect',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+
+                  BluetoothManager bleManager = new BluetoothManager();
+                  await bleManager.asyncInit();
+
+                  await bleManager.connectToSavedDevice();
+              },
+            ),
+            ListTile(
+              title: Text('New Disconnect',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                BluetoothManager bleManager = new BluetoothManager();
+                await bleManager.asyncInit();
+
+                await bleManager.disconnectFromDevice();
+              },
+            ),
             ListTile(
               title: Text('Upload LogFile',
                   style: TextStyle(

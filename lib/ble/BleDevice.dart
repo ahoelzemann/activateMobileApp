@@ -1,17 +1,18 @@
 import 'package:collection/collection.dart';
-import 'package:flutter_ble_lib/flutter_ble_lib.dart';
+import 'package:flutter_blue/flutter_blue.dart';
 
 class BleDevice {
-  final Peripheral peripheral;
+  final BluetoothDevice device;
   final String name;
-  final DeviceCategory category;
+  // final DeviceCategory category;
+  final BluetoothDeviceType type;
 
-  String get id => peripheral.identifier;
+  DeviceIdentifier get id => device.id;
 
-  BleDevice(ScanResult scanResult)
-      : peripheral = scanResult.peripheral,
-        name = scanResult.name,
-        category = scanResult.category;
+  BleDevice(BluetoothDevice btd)
+      : device = btd,
+        name = btd.name,
+        type = btd.type;
 
   @override
   int get hashCode => id.hashCode;
@@ -32,7 +33,7 @@ enum DeviceCategory { sensorTag, hex, other }
 
 extension on ScanResult {
   String get name =>
-      peripheral.name ?? advertisementData.localName ?? "Unknown";
+      device.name ?? advertisementData.localName ?? "Unknown";
 
   DeviceCategory get category {
     if (name == "SensorTag") {

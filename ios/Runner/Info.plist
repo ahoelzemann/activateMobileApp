@@ -26,6 +26,11 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+		<string>_trac2move._tcp</string>
+	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -37,17 +42,14 @@
 	<string>Zur Verbindung mit der Bangle.js.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Play with BLE Compatible devices</string>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_dartobservatory._tcp</string>
-		<string>_trac2move._tcp</string>
-	</array>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Der Kalendar wird zur Bestimmung des Alters bei der Anmeldung benötigt</string>
 	<key>NSContactsUsageDescription</key>
 	<string>Die Kontakte werden nicht ausgelesen. Leider kann ich nicht nachvollziehen, warum die App diese Benachrichtigung verlangt.</string>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Bluetooth wird zur Übermittlung der Daten von Bangle zur App benötigt.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>Die Location wird zur Übermittlung der Daten von Bangle.js zur App benötigt. </string>
 	<key>NSLocationWhenInUseUsageDescription</key>
