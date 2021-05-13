@@ -18,7 +18,6 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:trac2move/util/Logger.dart';
-import 'package:trac2move/util/ConnectBLE.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
@@ -43,7 +42,7 @@ serviceMain() async {
       // serviceData.progress = 20;
       await ServiceClient.update(serviceData);
       // await BLE.doUpload();
-      BLE_Client bleClient = new BLE_Client();
+      BLE.BLE_Client bleClient = new BLE.BLE_Client();
 
       await Future.delayed(Duration(milliseconds: 500));
       Upload uploader = new Upload();
