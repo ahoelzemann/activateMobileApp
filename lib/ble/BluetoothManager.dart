@@ -28,8 +28,13 @@ Future<bool> getStepsAndMinutes() async {
       return true;
     }).catchError((error) async {
       logError(error.toString());
-      showOverlay("Hoppla, da ist etwas schief gelaufen. Es wird nun 20 Sekunden gewartet und suchen dann erneut nach Ihrerm Tracker.", Icon(Icons.bluetooth_searching_sharp, color: Colors.red, size:
-        50.0,));
+      showOverlay(
+          "Hoppla, da ist etwas schief gelaufen. Es wird nun 20 Sekunden gewartet und suchen dann erneut nach Ihrerm Tracker.",
+          Icon(
+            Icons.bluetooth_searching_sharp,
+            color: Colors.red,
+            size: 50.0,
+          ));
       print("waiting 20 seconds");
       await bleManager.disconnectFromDevice();
       await Future.delayed(Duration(seconds: 20));
@@ -44,15 +49,8 @@ Future<bool> getStepsAndMinutes() async {
       });
     });
   } on EventEmptyException.EventEmptyException catch (e) {
-
     // await bleManager.disconnectFromDevice();
 
-    bleManager = new BluetoothManager();
-    await bleManager.asyncInit();
-    await bleManager._connectToSavedDevice();
-    await bleManager._bleStartRecord(12.5, 8, 25);
-    await Future.delayed(Duration(minutes: 2));
-    await bleManager._bleStopRecord();
     await bleManager.disconnectFromDevice();
     return false;
   }
@@ -64,6 +62,7 @@ Future<bool> syncTimeAndStartRecording() async {
 
   try {
     await bleManager._connectToSavedDevice();
+    await bleManager._bleSyncTime();
     await bleManager._bleStartRecord(12.5, 8, 25);
     await Future.delayed(Duration(minutes: 2));
     await bleManager._bleStopRecord();
@@ -186,8 +185,9 @@ class BluetoothManager {
             await Future.delayed(const Duration(milliseconds: 500));
             await charactx.setNotifyValue(true);
           }
-          bleSubscription = charactx.value.take(2).timeout(Duration(seconds: 10),
-              onTimeout: (timeout) async {
+          bleSubscription = charactx.value
+              .take(2)
+              .timeout(Duration(seconds: 10), onTimeout: (timeout) async {
             await bleSubscription.cancel();
             if (!futureCompleted) {
               futureCompleted = true;
@@ -270,8 +270,9 @@ class BluetoothManager {
             await Future.delayed(const Duration(milliseconds: 500));
             await charactx.setNotifyValue(true);
           }
-          bleSubscription = charactx.value.take(2).timeout(Duration(seconds: 10),
-              onTimeout: (timeout) async {
+          bleSubscription = charactx.value
+              .take(2)
+              .timeout(Duration(seconds: 10), onTimeout: (timeout) async {
             bleSubscription.cancel();
             if (!futureCompleted) {
               futureCompleted = true;
@@ -325,127 +326,6 @@ class BluetoothManager {
     return await completer.future;
   }
 
-  // Future<dynamic> _readMinutes() async {
-  //   BluetoothCharacteristic charactx;
-  //   Completer completer = new Completer();
-  //   String cmd = "";
-  //   var bleSubscription;
-  //   List<BluetoothService> services = await myDevice.device.services.first;
-  //
-  //   for (BluetoothService service in services) {
-  //     if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-  //       for (BluetoothCharacteristic characteristic
-  //           in service.characteristics) {
-  //         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-  //           charactx = characteristic;
-  //           break;
-  //         }
-  //       }
-  //       for (BluetoothCharacteristic characteristic
-  //           in service.characteristics) {
-  //         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-  //           print("Status:" + myDevice.name + " RX UUID discovered");
-  //           print("Sending  actMins command...");
-  //
-  //           cmd = "actMins\n";
-  //           print(Uint8List.fromList(cmd.codeUnits).toString());
-  //           if (!charactx.isNotifying) {
-  //             await Future.delayed(const Duration(milliseconds: 500));
-  //             await charactx.setNotifyValue(true);
-  //           }
-  //           bleSubscription = charactx.value
-  //               .take(2)
-  //               .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
-  //             bleSubscription.cancel();
-  //             completer.complete(false);
-  //           }).listen(
-  //             (event) async {
-  //               print("Event: " + String.fromCharCodes(event));
-  //               if (event[0] == 97 && event[4] == 105) {
-  //                 String dd = String.fromCharCodes(event.sublist(
-  //                     event.indexOf(61) + 1,
-  //                     event.lastIndexOf(13))); //the number between = and \r
-  //                 prefs.setInt("current_active_minutes", int.parse(dd.trim()));
-  //                 print("number of activeMinutes: " + dd.trim().toString());
-  //                 bleSubscription?.cancel();
-  //               }
-  //             },
-  //             onError: (err) {
-  //               print('Error!: $err');
-  //             },
-  //             cancelOnError: true,
-  //             onDone: () async {
-  //               completer.complete(true);
-  //             },
-  //           );
-  //           List myCmd = Uint8List.fromList(cmd.codeUnits);
-  //           await characteristic.write(myCmd,
-  //               withoutResponse: false); //returns void
-  //           completer.complete(true);
-  //         }
-  //       }
-  //     }
-  //     break;
-  //   }
-  // myDevice.device.services.forEach((entry) {
-  //   entry.forEach((service) {
-  //     if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-  //       service.characteristics.forEach((characteristic) {
-  //         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-  //           charactx = characteristic;
-  //         }
-  //       });
-  //       service.characteristics.forEach((characteristic) async {
-  //         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-  //           print("Status:" + myDevice.name + " RX UUID discovered");
-  //           print("Sending  actMins command...");
-  //
-  //           cmd = "actMins\n";
-  //           print(Uint8List.fromList(cmd.codeUnits).toString());
-  //           await Future.delayed(const Duration(milliseconds: 500));
-  //
-  //           if (!charactx.isNotifying) {
-  //             await charactx.setNotifyValue(true);
-  //           }
-  //           bleSubscription = charactx.value
-  //               .take(2)
-  //               .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
-  //             bleSubscription.cancel();
-  //             completer.complete(false);
-  //           }).listen(
-  //             (event) async {
-  //               // print(event.toString() + "  //////////////");
-  //               print("Event: " + String.fromCharCodes(event));
-  //               if (event[0] == 97 && event[4] == 105) {
-  //                 String dd = String.fromCharCodes(event.sublist(
-  //                     event.indexOf(61) + 1,
-  //                     event.lastIndexOf(13))); //the number between = and \r
-  //                 prefs.setInt(
-  //                     "current_active_minutes", int.parse(dd.trim()));
-  //                 print("number of activeMinutes: " + dd.trim().toString());
-  //                 bleSubscription?.cancel();
-  //               }
-  //             },
-  //             onError: (err) {
-  //               print('Error!: $err');
-  //             },
-  //             cancelOnError: true,
-  //             onDone: () async {
-  //               completer.complete(true);
-  //             },
-  //           );
-  //           List myCmd = Uint8List.fromList(cmd.codeUnits);
-  //           await characteristic.write(myCmd,
-  //               withoutResponse: false); //returns void
-  //
-  //         }
-  //       });
-  //     }
-  //   });
-  // });
-  //   return completer.future;
-  // }
-
   Future<dynamic> disconnectFromDevice() async {
     // print(flutterBlue.connectedDevices);
     await myDevice.device.disconnect();
@@ -466,8 +346,6 @@ class BluetoothManager {
         print("Status:" + myDevice.name + " RX UUID discovered");
 
         print("Sending  start command...");
-
-        // await bleSyncTime();
 
         String s = "recStrt(" +
             Hz.toString() +
@@ -556,53 +434,38 @@ class BluetoothManager {
   }
 
   Future<dynamic> _bleSyncTime() async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
-    print(FlutterBlue.instance.connectedDevices);
-    myDevice.device.services.forEach((entry) {
-      entry.forEach((service) {
-        if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-          service.characteristics.forEach((characteristic) async {
-            if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-              print("Status:" + myDevice.name + " RX UUID discovered");
+    BluetoothService service = await myDevice.services.firstWhere(
+        (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
+        orElse: null);
 
-              print("Sending  Time Sync command...");
+    for (BluetoothCharacteristic characteristic in service.characteristics) {
+      if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+        print("Status:" + myDevice.name + " RX UUID discovered");
 
-              DateTime date = DateTime.now();
-              int currentTimeZoneOffset = date.timeZoneOffset.inHours;
-              print('setting time');
-              String timeCmd = "\u0010setTime(" +
-                  (date.millisecondsSinceEpoch / 1000).toString() +
-                  ");" +
-                  "if (E.setTimeZone) " +
-                  "E.setTimeZone(" +
-                  currentTimeZoneOffset.toString() +
-                  ")\n";
-              var aasdf = Uint8List.fromList(timeCmd.codeUnits);
-              await characteristic.write(aasdf, withoutResponse: true);
-              // String timeCmd = "\u0010setTime(";
-              // characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
-              // timeCmd = (date.millisecondsSinceEpoch / 1000).toString() + ");";
-              // characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
-              // timeCmd = "if (E.setTimeZone) ";
-              // characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
-              // timeCmd =
-              //     "E.setTimeZone(" + currentTimeZoneOffset.toString() + ")\n";
-              // characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true); //returns void
-              // print(Uint8List.fromList(timeCmd.codeUnits).toString());
-              // print("time set");
+        print("Sending  Time Sync command...");
 
-              completer.complete(true);
-            }
-          });
-        }
+        DateTime date = DateTime.now();
+        int currentTimeZoneOffset = date.timeZoneOffset.inHours;
+        print('setting time');
+        String timeCmd = "\u0010setTime(";
+        await characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
+        timeCmd = (date.millisecondsSinceEpoch / 1000).toString() + ");";
+        await characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
+        timeCmd = "if (E.setTimeZone) ";
+        await characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
+        timeCmd =
+            "E.setTimeZone(" + currentTimeZoneOffset.toString() + ")\n";
+        await characteristic.write(Uint8List.fromList(timeCmd.codeUnits), withoutResponse: true);
 
-        return completer.future;
-      });
-    });
+        completer.complete(true);
+      }
+    }
+    return completer.future;
   }
 
-// private functions
+
   bool _isSavedDeviceVisible(List<ScanResult> scanResults) {
     String savedDevice = prefs.getString("Devicename");
     for (ScanResult entry in scanResults) {
