@@ -6,7 +6,8 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/ConnectBLE.dart' as BLE;
+// import 'package:trac2move/util/ConnectBLE.dart' as BLE;
+import 'package:trac2move/ble/BluetoothManager.dart' as BLE;
 import 'package:trac2move/screens/Overlay.dart';
 
 String convertDate(DateTime date) {
@@ -369,7 +370,7 @@ class MapScreenState extends State<ProfilePage> {
                 color: Colors.green,
                 onPressed: () async {
                   showOverlay("Wir suchen Ihre Bangle.js", Icon(Icons.watch, color: Colors.blue, size: 50.0,));
-                  await BLE.nearestDevice();
+                  await BLE.findNearestDevice();
                   hideOverlay();
                   SharedPreferences prefs = await SharedPreferences.getInstance();
                   String bangle_name = prefs.getString("Devicename");

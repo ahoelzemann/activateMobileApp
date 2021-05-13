@@ -28,7 +28,6 @@ class LandingScreen extends StatefulWidget {
 
 class _LandingScreenState extends State<LandingScreen>
     with WidgetsBindingObserver {
-
   // FlutterLogs flutterlogs = FlutterLogs();
   String _result = 'result';
   String _status = 'status';
@@ -78,7 +77,7 @@ class _LandingScreenState extends State<LandingScreen>
       case AppLifecycleState.detached:
         try {
           BLE.closeConnection();
-        }  catch (e, stacktrace) {
+        } catch (e, stacktrace) {
           logError(e, stacktrace);
         }
         break;
@@ -476,8 +475,6 @@ class _LandingScreenState extends State<LandingScreen>
                       color: Colors.black)),
               onTap: () async {
 
-                await syncTimeAndStartRecording();
-
               },
             ),
             // ListTile(
@@ -500,7 +497,6 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-
                 Upload uploader = new Upload();
                 await uploader.init();
 
@@ -657,7 +653,6 @@ class _LandingScreenState extends State<LandingScreen>
         print(e);
         print(stacktrace);
       }
-
     }
   }
 
