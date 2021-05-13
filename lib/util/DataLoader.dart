@@ -32,7 +32,7 @@ class mySharedPreferences {
         return true;
       });
     }catch (e, stackTrace) {
-      logError(e, stackTrace);
+      logError(e, stackTrace: stackTrace);
       print(e);
     }
   }

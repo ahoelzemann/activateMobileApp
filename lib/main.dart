@@ -61,7 +61,7 @@ serviceMain() async {
       await ServiceClient.stopService();
     });
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
   }
 }
 
@@ -128,7 +128,7 @@ void main() async {
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
   }
 }
 
@@ -152,7 +152,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       return 1;
     }
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
 
     return 3;
   }
@@ -181,7 +181,8 @@ SetFirstPage() {
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
-          return LoadingScreenFeedback();
+          return Stack(
+              children: [LoadingScreenFeedback(), OverlayView()]);
         }
       });
 }

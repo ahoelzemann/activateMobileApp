@@ -40,7 +40,7 @@ Future<bool> nearestDevice() async {
 
     return true;
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
     try {
       print('Connection failed:');
       print('connecting again in 3 seconds.....');
@@ -50,7 +50,7 @@ Future<bool> nearestDevice() async {
 
       return true;
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
       return false;
     }
   }
@@ -70,7 +70,7 @@ Future<bool> getStepsAndMinutes() async {
 
     return true;
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
 
     // if (ble_error.errorCode.value == 2) {
       print("Error Code 2: Closing BLE Adapter and starting a new one.");
@@ -123,7 +123,7 @@ Future<bool> doUpload() async {
 
     return true;
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
     print('Connection failed:');
     print('connecting again.....');
     await Future.delayed(Duration(seconds: 3));
@@ -159,7 +159,7 @@ Future<bool> startRecording() async {
     hideOverlay();
     return true;
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
     print('Connection failed:');
     print('connecting again.....');
     await bleClient.checkBLEstate();
@@ -179,7 +179,7 @@ Future<bool> closeConnection() async {
     bleClient.closeBLE();
     return true;
   }  catch (e, stacktrace) {
-    logError(e, stacktrace);
+    logError(e, stackTrace: stacktrace);
     return false;
   }
 }

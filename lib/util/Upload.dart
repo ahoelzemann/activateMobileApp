@@ -63,7 +63,7 @@ class Upload {
 
       return true;
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
     }
   }
 
@@ -105,10 +105,10 @@ class Upload {
                 try {
                   File(localFilePath).delete();
                 }  catch (e, stacktrace) {
-                  logError(e, stacktrace);
+                  logError(e, stackTrace: stacktrace);
                 }
               }  catch (e, stacktrace) {
-                logError(e, stacktrace);
+                logError(e, stackTrace: stacktrace);
                 print(e);
                 await Future.delayed(Duration(seconds: 10));
                 await client.sftpUpload(
@@ -122,7 +122,7 @@ class Upload {
             // filePaths = io.Directory(localFilesDirectory).listSync();
             // print(filePaths);
           }  catch (e, stacktrace) {
-            logError(e, stacktrace);
+            logError(e, stackTrace: stacktrace);
           }
 
           print(await client.disconnectSFTP());
@@ -130,7 +130,7 @@ class Upload {
         }
       }
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }
@@ -159,7 +159,7 @@ class Upload {
               },
             );
           }  catch (e, stacktrace) {
-            logError(e, stacktrace);
+            logError(e, stackTrace: stacktrace);
           }
 
           print(await client.disconnectSFTP());
@@ -167,7 +167,7 @@ class Upload {
         }
       }
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }

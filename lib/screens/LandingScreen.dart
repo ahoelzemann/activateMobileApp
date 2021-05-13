@@ -1,6 +1,7 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
@@ -19,7 +20,7 @@ import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
-import 'package:trac2move/ble/BluetoothManager.dart';
+import 'package:trac2move/ble/BluetoothManager.dart' as BLEM;
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -78,7 +79,7 @@ class _LandingScreenState extends State<LandingScreen>
         try {
           BLE.closeConnection();
         } catch (e, stacktrace) {
-          logError(e, stacktrace);
+          logError(e, stackTrace: stacktrace);
         }
         break;
     }
@@ -474,7 +475,7 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-
+                BLEM.syncTimeAndStartRecording();
               },
             ),
             // ListTile(
@@ -531,7 +532,7 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                BluetoothManager bleManager = new BluetoothManager();
+                BLEM.BluetoothManager bleManager = new BLEM.BluetoothManager();
                 await bleManager.asyncInit();
                 await bleManager.disconnectFromDevice();
               },

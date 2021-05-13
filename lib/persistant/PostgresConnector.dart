@@ -41,7 +41,7 @@ class PostgresConnector {
             }
           });
         } catch (e, stacktrace) {
-          logError(e, stacktrace);
+          logError(e, stackTrace: stacktrace);
           return 'Studienteilnehmer konnte nicht gespeichert werden';
         }
 
@@ -59,7 +59,7 @@ class PostgresConnector {
 
       return response;
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
     }
   }
 
@@ -75,7 +75,7 @@ class PostgresConnector {
 
       return response;
     }  catch (e, stacktrace) {
-      logError(e, stacktrace);
+      logError(e, stackTrace: stacktrace);
     }
 
   }
@@ -112,7 +112,7 @@ class PostgresConnector {
             }
           });
         }  catch (e, stacktrace) {
-          logError(e, stacktrace);
+          logError(e, stackTrace: stacktrace);
           return 'Kommunikation mit dem Server nicht möglich';
         }
 
