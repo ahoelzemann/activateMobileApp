@@ -54,20 +54,20 @@ class _LandingScreenState extends State<LandingScreen>
         SharedPreferences prefs = await SharedPreferences.getInstance();
         var isUploading = prefs.getBool("uploadInProgress");
         if (isUploading == null || !isUploading) {
-          showOverlay("Synchronisiere Schritte und aktive Minuten.",
-              SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-          // if (Platform.isAndroid) {
-          await BLE.getStepsAndMinutes();
-          // }
-
-          await Future.delayed(Duration(seconds: 1));
-          // Navigator.push(
-          //   context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  Stack(children: [LandingScreen(), OverlayView()]));
-          // );
-          hideOverlay();
+          // showOverlay("Synchronisiere Schritte und aktive Minuten.",
+          //     SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+          // // if (Platform.isAndroid) {
+          // await BLE.getStepsAndMinutes();
+          // // }
+          //
+          // await Future.delayed(Duration(seconds: 1));
+          // // Navigator.push(
+          // //   context,
+          // MaterialPageRoute(
+          //     builder: (context) =>
+          //         Stack(children: [LandingScreen(), OverlayView()]));
+          // // );
+          // hideOverlay();
         }
         break;
       case AppLifecycleState.inactive:
@@ -469,32 +469,30 @@ class _LandingScreenState extends State<LandingScreen>
             //   },
             // ),
             ListTile(
-              title: Text('New Connect',
+              title: Text('BLE Tests',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
 
-                  BluetoothManager bleManager = new BluetoothManager();
-                  await bleManager.asyncInit();
+                await syncTimeAndStartRecording();
 
-                  await bleManager.connectToSavedDevice();
               },
             ),
-            ListTile(
-              title: Text('New Disconnect',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                BluetoothManager bleManager = new BluetoothManager();
-                await bleManager.asyncInit();
-
-                await bleManager.disconnectFromDevice();
-              },
-            ),
+            // ListTile(
+            //   title: Text('bleSteps',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     BluetoothManager bleManager = new BluetoothManager();
+            //     await bleManager.asyncInit();
+            //
+            //     await bleManager.disconnectFromDevice();
+            //   },
+            // ),
             ListTile(
               title: Text('Upload LogFile',
                   style: TextStyle(
@@ -530,17 +528,18 @@ class _LandingScreenState extends State<LandingScreen>
                 // hideOverlay();
               },
             ),
-            // ListTile(
-            //   title: Text('Overlay Test',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     Navigator.pop(context);
-            //     showOverlay();
-            //   },
-            // ),
+            ListTile(
+              title: Text('Disconnect Bangle',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                BluetoothManager bleManager = new BluetoothManager();
+                await bleManager.asyncInit();
+                await bleManager.disconnectFromDevice();
+              },
+            ),
             ListTile(
               title: Text('Status Zurücksetzen',
                   style: TextStyle(

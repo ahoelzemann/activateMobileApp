@@ -19,12 +19,11 @@ import 'dart:io';
 import 'package:geolocator/geolocator.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/ConnectBLE.dart';
-import 'package:flutter_blue/flutter_blue.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
-
+import 'package:trac2move/ble/BluetoothManager.dart' as BLEManager;
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -150,7 +149,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       return null;
     } else {
       instance.setBool('firstRun', false);
-      await BLE.getStepsAndMinutes();
+      await BLEManager.getStepsAndMinutes();
       return 1;
     }
   }  catch (e, stacktrace) {
