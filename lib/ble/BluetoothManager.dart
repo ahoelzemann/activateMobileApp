@@ -64,8 +64,6 @@ Future<bool> syncTimeAndStartRecording() async {
     await bleManager._connectToSavedDevice();
     await bleManager._bleSyncTime();
     await bleManager._bleStartRecord(12.5, 8, 25);
-    await Future.delayed(Duration(minutes: 2));
-    await bleManager._bleStopRecord();
     await bleManager.disconnectFromDevice();
 
     return true;
