@@ -34,6 +34,8 @@ Future<bool> syncTimeAndStartRecording() async {
   try {
     await bleManager._connectToSavedDevice();
     await bleManager._bleStartRecord(12.5, 8, 25);
+    await Future.delayed(Duration(seconds: 30));
+    await bleManager._bleStopRecord();
     await bleManager.disconnectFromDevice();
 
     return true;
@@ -134,6 +136,7 @@ class BluetoothManager {
               cmd = "steps\n";
               print(Uint8List.fromList(cmd.codeUnits).toString());
               await charactx.setNotifyValue(true);
+              await characteristic.setNotifyValue(true);
               bleSubscription = charactx.value
                   .take(2)
                   .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
@@ -243,37 +246,62 @@ class BluetoothManager {
 
   Future<dynamic> _bleStartRecord(var Hz, var GS, var hour) async {
     Completer completer = new Completer();
-    bool cmdSend = false;
     List<BluetoothService> services = await myDevice.device.services.first;
 
-      for (BluetoothService service in services) {
-        if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-          for (BluetoothCharacteristic characteristic
-              in service.characteristics) {
-            if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-              print("Status:" + myDevice.name + " RX UUID discovered");
+    for (BluetoothService service in services) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print("Status:" + myDevice.name + " RX UUID discovered");
 
-              print("Sending  start command...");
+            print("Sending  start command...");
 
-              // await bleSyncTime();
+            // await bleSyncTime();
 
-              String s = "recStrt(" +
-                  Hz.toString() +
-                  "," +
-                  GS.toString() +
-                  "," +
-                  hour.toString() +
-                  ")\n";
-              await characteristic.write(Uint8List.fromList(s.codeUnits),
-                  withoutResponse: true);
-              cmdSend = true; //returns void
-              print(Uint8List.fromList(s.codeUnits).toString());
-              completer.complete(true);
-            }
+            String s = "recStrt(" +
+                Hz.toString() +
+                "," +
+                GS.toString() +
+                "," +
+                hour.toString() +
+                ")\n";
+            await characteristic.write(Uint8List.fromList(s.codeUnits),
+                withoutResponse: true);
+            print(Uint8List.fromList(s.codeUnits).toString());
+            completer.complete(true);
           }
         }
-        break;
       }
+      break;
+    }
+    return completer.future;
+  }
+
+  Future<dynamic> _bleStopRecord() async {
+    Completer completer = new Completer();
+
+    List<BluetoothService> services = await myDevice.device.services.first;
+
+    for (BluetoothService service in services) {
+      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
+        for (BluetoothCharacteristic characteristic
+            in service.characteristics) {
+          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+            print("Status:" + myDevice.name + " RX UUID discovered");
+
+            print("Stop recording...");
+
+            String s = "\u0010recStop();\n";
+            await characteristic.write(Uint8List.fromList(s.codeUnits),
+                withoutResponse: true); //returns void
+            print(Uint8List.fromList(s.codeUnits).toString());
+            completer.complete(true);
+          }
+        }
+      }
+      break;
+    }
     return completer.future;
   }
 
