@@ -475,7 +475,8 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                BLEM.syncTimeAndStartRecording();
+                BLEM.stopRecordingAndUpload();
+                // BLEM.syncTimeAndStartRecording();
               },
             ),
             // ListTile(

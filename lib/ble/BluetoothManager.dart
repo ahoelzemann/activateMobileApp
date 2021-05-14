@@ -73,6 +73,22 @@ Future<bool> syncTimeAndStartRecording() async {
   }
 }
 
+Future<bool> stopRecordingAndUpload() async {
+  BluetoothManager bleManager = new BluetoothManager();
+  await bleManager.asyncInit();
+
+  try {
+    await bleManager._connectToSavedDevice();
+    await bleManager._bleStopRecord();
+    await bleManager.disconnectFromDevice();
+
+    return true;
+  } catch (e) {
+    logError(e, stackTrace: e.stackTrace);
+    await bleManager.disconnectFromDevice();
+  }
+}
+
 Future<bool> findNearestDevice() async {
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
