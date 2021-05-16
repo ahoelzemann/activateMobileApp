@@ -152,6 +152,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       return 1;
     }
   }  catch (e, stacktrace) {
+    print(e);
     logError(e, stackTrace: stacktrace);
 
     return 3;
