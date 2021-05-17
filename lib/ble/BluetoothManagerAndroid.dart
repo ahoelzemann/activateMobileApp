@@ -26,7 +26,7 @@ Future<bool> checkBLEStatus() async {
   return btState;
 }
 
-Future<bool> nearestDevice() async {
+Future<bool> findNearestDevice() async {
   BLE_Client bleClient = new BLE_Client();
   await Future.delayed(Duration(milliseconds: 1000));
 

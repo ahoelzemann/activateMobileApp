@@ -9,7 +9,7 @@ import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/AppServiceData.dart';
-import 'package:trac2move/ble/ConnectBLE.dart' as BLE;
+import 'package:trac2move/ble/BluetoothManagerAndroid.dart' as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -22,7 +22,7 @@ import 'package:trac2move/util/Upload.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
-import 'package:trac2move/ble/BluetoothManager.dart' as BLEManager;
+import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -44,7 +44,7 @@ serviceMain() async {
       // await BLE.doUpload();
 
       // await BLEManager.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
-      BLE.BLE_Client bleClient = new BLE.BLE_Client();
+      BLEManagerAndroid.BLE_Client bleClient = new BLEManagerAndroid.BLE_Client();
 
       await Future.delayed(Duration(milliseconds: 500));
       Upload uploader = new Upload();
@@ -95,7 +95,7 @@ void main() async {
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
-        BLE.createPermission();
+        BLEManagerAndroid.createPermission();
       }
     }
 
@@ -150,7 +150,12 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       return null;
     } else {
       instance.setBool('firstRun', false);
-      await BLEManager.getStepsAndMinutes();
+      if (Platform.isIOS) {
+        await BLEManagerIOS.getStepsAndMinutes();
+      }
+      else {
+        await BLEManagerAndroid.getStepsAndMinutes();
+      }
       return 1;
     }
   }  catch (e, stacktrace) {

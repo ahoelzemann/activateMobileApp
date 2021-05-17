@@ -12,7 +12,7 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/ConnectBLE.dart' as BLE;
+import 'package:trac2move/ble/BluetoothManagerAndroid.dart' as BLEManagerAndroid;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -20,7 +20,7 @@ import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
-import 'package:trac2move/ble/BluetoothManager.dart' as BLEM;
+import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -77,7 +77,12 @@ class _LandingScreenState extends State<LandingScreen>
         break;
       case AppLifecycleState.detached:
         try {
-          BLE.closeConnection();
+          if (Platform.isAndroid) {
+            BLEManagerAndroid.closeConnection();
+          }
+          else {
+
+          }
         } catch (e, stacktrace) {
           logError(e, stackTrace: stacktrace);
         }
@@ -479,7 +484,7 @@ class _LandingScreenState extends State<LandingScreen>
 
                   _stopRecordingAndUpload();
                 }
-                else BLEM.stopRecordingAndUpload();
+                else BLEManagerIOS.stopRecordingAndUpload();
               },
             ),
             // ListTile(
@@ -536,7 +541,7 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                BLEM.BluetoothManager bleManager = new BLEM.BluetoothManager();
+                BLEManagerIOS.BluetoothManager bleManager = new BLEManagerIOS.BluetoothManager();
                 await bleManager.asyncInit();
                 await bleManager.disconnectFromDevice();
               },
@@ -622,7 +627,7 @@ class _LandingScreenState extends State<LandingScreen>
           size: 50.0,
         ));
     if (Platform.isIOS) {
-      await BLE.doUpload().then((value) {
+      await BLEManagerIOS.stopRecordingAndUpload().then((value) {
         if (value == true) {
           prefs.setString("recordStopedAt", DateTime.now().toString());
 
@@ -669,12 +674,16 @@ class _LandingScreenState extends State<LandingScreen>
           color: Colors.green,
           size: 50.0,
         ));
+    if (Platform.isAndroid) {
+      BLEManagerAndroid.startRecording().whenComplete(() async {
+        await Future.delayed(Duration(seconds: 5));
 
-    BLE.startRecording().whenComplete(() async {
-      await Future.delayed(Duration(seconds: 5));
+        _reloadPage(context, _scaffoldKey);
+      });
+    } else {
+      BLEManagerIOS.syncTimeAndStartRecording();
+    }
 
-      _reloadPage(context, _scaffoldKey);
-    });
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size,
