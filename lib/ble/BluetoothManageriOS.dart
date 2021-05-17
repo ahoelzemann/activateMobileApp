@@ -447,11 +447,11 @@ class BluetoothManager {
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
 
             for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
-              if (Platform.isAndroid) {
-                foregroundService.progress =
-                    foregroundService.progress + incrementelSteps;
-                ServiceClient.update(foregroundService);
-              }
+              // if (Platform.isAndroid) {
+              //   foregroundService.progress =
+              //       foregroundService.progress + incrementelSteps;
+              //   ServiceClient.update(foregroundService);
+              // }
               await Future.delayed(Duration(milliseconds: 500));
               // int _logData = 0;
               // int _idx = 0;

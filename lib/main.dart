@@ -47,8 +47,8 @@ serviceMain() async {
       BLEManagerAndroid.BLE_Client bleClient = new BLEManagerAndroid.BLE_Client();
 
       await Future.delayed(Duration(milliseconds: 500));
-      Upload uploader = new Upload();
-      await uploader.init();
+      // Upload uploader = new Upload();
+      // await uploader.init();
       //
       await bleClient.checkBLEstate();
       bleClient.start_ble_scan();

@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/services.dart' show ByteData, rootBundle;
+import 'package:flutter/services.dart' show ByteData;
 import 'package:ssh/ssh.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:path_provider/path_provider.dart';
+
 import 'dart:typed_data';
 import 'dart:async';
 import 'dart:io';

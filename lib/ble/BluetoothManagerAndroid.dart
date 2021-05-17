@@ -802,12 +802,12 @@ class BLE_Client {
               await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
               _idx = 0;
-              updateOverlayText("Datei " +
-                  (fileCount + 1).toString() +
-                  "/" +
-                  (_numofFiles).toString() +
-                  ".\n"
-                      "Bitte haben Sie noch etwas Geduld.");
+              // updateOverlayText("Datei " +
+              //     (fileCount + 1).toString() +
+              //     "/" +
+              //     (_numofFiles).toString() +
+              //     ".\n"
+              //         "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
 
               await blerxData(
@@ -836,7 +836,7 @@ class BLE_Client {
             foregroundService.progress =
                 100;
             await ServiceClient.update(foregroundService);
-            hideOverlay();
+            // hideOverlay();
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
             prefs.setBool("uploadInProgress", false);

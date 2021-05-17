@@ -36,6 +36,7 @@ class _LandingScreenState extends State<LandingScreen>
 
   @override
   void initState() {
+    // hideOverlay();
     if (Platform.isAndroid) {
       AppClient.observe.listen((json) {
         var serviceData = AppServiceData.fromJson(json);
@@ -124,10 +125,10 @@ class _LandingScreenState extends State<LandingScreen>
                           (BuildContext context, AsyncSnapshot<int> snapshot) {
                         if (snapshot.hasData) {
                           if (snapshot.data == 0) {
-                            return _getSaveButton('Aufnahme speichern',
-                                Colors.orange, 1, size, context, _scaffoldKey);
-                            // return _getSaveButton('Aufnahme beginnen',
-                            //     Colors.green, 0, size, context, _scaffoldKey);
+                            // return _getSaveButton('Aufnahme speichern',
+                            //     Colors.orange, 1, size, context, _scaffoldKey);
+                            return _getSaveButton('Aufnahme beginnen',
+                                Colors.green, 0, size, context, _scaffoldKey);
                           } else if (snapshot.data == 1) {
                             return _getSaveButton('Aufnahme speichern',
                                 Colors.orange, 1, size, context, _scaffoldKey);
@@ -643,6 +644,7 @@ class _LandingScreenState extends State<LandingScreen>
         }
       });
     } else {
+      prefs.setBool("uploadInProgress", true);
       AppServiceData data = AppServiceData();
       try {
         var result = await AppClient.execute(data);
@@ -650,8 +652,12 @@ class _LandingScreenState extends State<LandingScreen>
         setState(() => _result =
             'finished executing service process ;) -> ${resultData.progress}');
         hideOverlay();
+        Upload uploader = new Upload();
+        await uploader.init();
+        uploader.uploadFiles();
         Navigator.of(context).pop();
-        // prefs.setBool("uploadInProgress", false);
+        prefs.setBool("isRecording", false);
+        prefs.setBool("uploadInProgress", false);
         Navigator.push(
           context,
           MaterialPageRoute(
@@ -766,7 +772,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(minutes: 5))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(hours: 5))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
