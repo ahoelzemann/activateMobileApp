@@ -90,8 +90,8 @@ Future<bool> getStepsAndMinutes() async {
 Future<bool> doUpload() async {
   BLE_Client bleClient = new BLE_Client();
   await Future.delayed(Duration(milliseconds: 500));
-  Upload uploader = new Upload();
-  await uploader.init();
+  // Upload uploader = new Upload();
+  // await uploader.init();
   try {
     await bleClient.checkBLEstate();
     bleClient.start_ble_scan();
@@ -100,7 +100,7 @@ Future<bool> doUpload() async {
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
     bleClient.closeBLE();
-    uploader.uploadFiles();
+    // uploader.uploadFiles();
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
@@ -114,7 +114,7 @@ Future<bool> doUpload() async {
     await bleClient.bleStartUpload();
     await bleClient.blestopUpload();
     bleClient.closeBLE();
-    uploader.uploadFiles();
+    // uploader.uploadFiles();
 
     return false;
   }
@@ -338,7 +338,9 @@ class BLE_Client {
           if ((scanResult.peripheral.name == savedDevice) ||
               (scanResult.peripheral.identifier == savedIdentifier)) {
             _mydevice = scanResult.peripheral;
+            _activateBleManager.stopPeripheralScan();
             print("Device found: " + _mydevice.toString());
+            // await _scanSubscription?.cancel();
           }
         },
         onError: (err) {
@@ -347,67 +349,10 @@ class BLE_Client {
         cancelOnError: true,
         onDone: () async {
           print("Device found: " + _mydevice.toString() + " before completer");
+
           completer.complete(true);
         });
 
-    return completer.future;
-  }
-
-  Future<dynamic> start_ble_scan_() async {
-    Completer completer = new Completer();
-
-    if (_mydevice != null) {
-      bool connected = await _mydevice.isConnected();
-      print("DeviceState: " + connected.toString());
-      if (connected) {
-        try {
-          await _responseSubscription?.cancel();
-          await _characSubscription?.cancel();
-          await _condeviceStateSubscription?.cancel();
-          await _mydevice.disconnectOrCancelConnection();
-          _mydevice = null;
-          _currentDeviceConnected = false;
-        } catch (e) {
-          print("Disconnecting device before new scan process");
-        }
-      }
-    }
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    String savedDevice = prefs.getString("Devicename");
-    String savedIdentifier = prefs.getString("macnum");
-    bool alreadyStoppedScanning = false;
-
-    _bleonSubscription = _activateBleManager
-        .startPeripheralScan()
-        .timeout(Duration(seconds: 30), onTimeout: (timeout) async {
-      if (!alreadyStoppedScanning) {
-        var value = timeout;
-        print(value);
-        await _activateBleManager.stopPeripheralScan();
-      }
-    }).listen(
-      (data) async {
-        if ((data.peripheral.name == savedDevice) ||
-            (data.peripheral.identifier == savedIdentifier)) {
-          if (!alreadyStoppedScanning) {
-            alreadyStoppedScanning = true;
-            _mydevice = data.peripheral;
-            print("Device found: " + _mydevice.toString());
-            await _activateBleManager.stopPeripheralScan();
-            _bleonSubscription?.cancel();
-          }
-        }
-      },
-      onError: (err) {
-        print('Error!: $err');
-      },
-      cancelOnError: true,
-      onDone: () async {
-        print("Device found: " + _mydevice.toString() + " before completer");
-        completer.complete(true);
-      },
-    );
     return completer.future;
   }
 

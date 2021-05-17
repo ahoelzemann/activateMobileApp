@@ -12,7 +12,8 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid.dart' as BLEManagerAndroid;
+import 'package:trac2move/ble/BluetoothManagerAndroid.dart'
+    as BLEManagerAndroid;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -79,10 +80,7 @@ class _LandingScreenState extends State<LandingScreen>
         try {
           if (Platform.isAndroid) {
             BLEManagerAndroid.closeConnection();
-          }
-          else {
-
-          }
+          } else {}
         } catch (e, stacktrace) {
           logError(e, stackTrace: stacktrace);
         }
@@ -481,10 +479,9 @@ class _LandingScreenState extends State<LandingScreen>
                       color: Colors.black)),
               onTap: () async {
                 if (Platform.isAndroid) {
-
                   _stopRecordingAndUpload();
-                }
-                else BLEManagerIOS.stopRecordingAndUpload();
+                } else
+                  BLEManagerIOS.stopRecordingAndUpload();
               },
             ),
             // ListTile(
@@ -541,7 +538,8 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                BLEManagerIOS.BluetoothManager bleManager = new BLEManagerIOS.BluetoothManager();
+                BLEManagerIOS.BluetoothManager bleManager =
+                    new BLEManagerIOS.BluetoothManager();
                 await bleManager.asyncInit();
                 await bleManager.disconnectFromDevice();
               },
@@ -632,7 +630,8 @@ class _LandingScreenState extends State<LandingScreen>
           prefs.setString("recordStopedAt", DateTime.now().toString());
 
           hideOverlay();
-          // prefs.setBool("uploadInProgress", false);
+          prefs.setBool("isRecording", false);
+          prefs.setBool("uploadInProgress", false);
           Navigator.of(context).pop();
           Navigator.push(
             context,
@@ -683,7 +682,6 @@ class _LandingScreenState extends State<LandingScreen>
     } else {
       BLEManagerIOS.syncTimeAndStartRecording();
     }
-
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size,
@@ -696,23 +694,23 @@ class _LandingScreenState extends State<LandingScreen>
     }
 
     return Container(
-        padding: const EdgeInsets.all(20.0),
-        child: new MaterialButton(
-          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          shape: new RoundedRectangleBorder(
-              borderRadius: new BorderRadius.circular(50.0)),
-          child: new Text(actionText),
-          textColor: Colors.white,
-          color: color,
-          onPressed: () async {
-            fun();
-          },
-        ));
+      padding: const EdgeInsets.all(20.0),
+      child: new MaterialButton(
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        shape: new RoundedRectangleBorder(
+            borderRadius: new BorderRadius.circular(50.0)),
+        child: new Text(actionText),
+        textColor: Colors.white,
+        color: color,
+        onPressed: () async {
+          fun();
+        },
+      ),
+    );
   }
 }
 
 void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
-  // _scaffoldKey.currentState.hideCurrentSnackBar();
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString("recordStartedAt", DateTime.now().toString());
   prefs.setBool("isRecording", true);
@@ -737,7 +735,6 @@ Future<List> getGoals() async {
 
 Future<String> getActiveMinutes() async {
   return await SharedPreferences.getInstance().then((value) async {
-    // return await BLE.getStepsAndMinutes().then((completer) {
     return value.getInt('current_active_minutes').toString();
     // });
   });

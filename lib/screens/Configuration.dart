@@ -204,231 +204,242 @@ class _ConfigurationState extends State<Configuration> {
                       }))),
                   Container(width: size.width, height: size.height * 0.05),
                   Container(
-                      width: size.width,
-                      height: size.height * 0.1,
-                      child: Row(children: [
+                    width: size.width,
+                    height: size.height * 0.1,
+                    child: Row(
+                      children: [
                         Container(
-                            height: icon_height,
-                            width: container_width,
-                            margin: icon_margins,
-                            child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Container(
-                                    child: Flexible(
-                                        child: Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                          new LayoutBuilder(
-                                              builder: (context, constraint) {
-                                            return new Icon(
-                                                Icons.directions_walk_rounded,
-                                                color: Colors.white,
-                                                // color: Color.fromRGBO(195, 130, 89, 1),
-                                                size:
-                                                    constraint.biggest.height);
-                                          }),
-                                        ])),
-                                  ),
-                                  Container(
-                                    height: icon_height,
-                                    width: text_width + icon_width,
-                                    margin: text_margins,
+                          height: icon_height,
+                          width: container_width,
+                          margin: icon_margins,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Container(
+                                child: Flexible(
                                     child: Row(
                                         mainAxisAlignment:
-                                            MainAxisAlignment.start,
+                                            MainAxisAlignment.center,
                                         children: [
-                                          Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: AutoSizeText.rich(
-                                                  TextSpan(
-                                                    text: "Wie viele",
+                                      new LayoutBuilder(
+                                          builder: (context, constraint) {
+                                        return new Icon(
+                                            Icons.directions_walk_rounded,
+                                            color: Colors.white,
+                                            // color: Color.fromRGBO(195, 130, 89, 1),
+                                            size: constraint.biggest.height);
+                                      }),
+                                    ])),
+                              ),
+                              Container(
+                                height: icon_height,
+                                margin: text_margins,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Container(
+                                        width: text_width + icon_width,
+                                        child: AutoSizeText.rich(
+                                            TextSpan(
+                                              text: "Wie viele",
+                                              style: TextStyle(
+                                                  fontFamily: "PlayfairDisplay",
+                                                  fontWeight: FontWeight.w500,
+                                                  color: Colors.black),
+                                              children: <TextSpan>[
+                                                TextSpan(
+                                                    text: ' Schritte ',
                                                     style: TextStyle(
                                                         fontFamily:
                                                             "PlayfairDisplay",
                                                         fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.black),
-                                                    children: <TextSpan>[
-                                                      TextSpan(
-                                                          text: ' Schritte ',
-                                                          style: TextStyle(
-                                                              fontFamily:
-                                                                  "PlayfairDisplay",
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color: Colors
-                                                                  .black)),
-                                                      TextSpan(
-                                                        text:
-                                                            'möchten Sie am Tag gehen?',
-                                                        style: TextStyle(
-                                                            fontFamily:
-                                                                "PlayfairDisplay",
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color:
-                                                                Colors.black),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                textAlign: TextAlign.left,
-                                                presetFontSizes: [20, 19, 18, 15, 12],
-                                                minFontSize: 12,
-                                                maxFontSize: 20))
-                                        ]),
-                                  ),
-                                ])),
-                      ])),
-
-                  Container(
-                      width: size.width,
-                      height: size.height * 0.1,
-                      child: Row(children: [
-                        Container(
-                            height: icon_height,
-                            width: container_width,
-                            margin: icon_margins,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Flexible(child: new LayoutBuilder(
-                                    builder: (context, constraint) {
-                                  return new FlatButton(
-                                      onPressed: () => setState(() {
-                                            this.decrease_steps(500);
-                                          }),
-                                      padding: EdgeInsets.all(0.0),
-                                      child: Icon(CupertinoIcons.minus_circled,
-                                          color: Colors.black87,
-                                          size:
-                                              constraint.biggest.height * 0.8));
-                                })),
-                                Container(
-                                  height: icon_height,
-                                  width: text_width,
-                                  child: Align(
-                                      alignment: Alignment.center,
-                                      child: AutoSizeText.rich(
-                                          TextSpan(
-                                            text: steps.toString(),
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black),
-                                            children: <TextSpan>[
-                                              TextSpan(
-                                                  text: ' Schritte ',
+                                                            FontWeight.bold,
+                                                        color: Colors.black)),
+                                                TextSpan(
+                                                  text:
+                                                      'möchten Sie am Tag gehen?',
                                                   style: TextStyle(
                                                       fontFamily:
                                                           "PlayfairDisplay",
                                                       fontWeight:
                                                           FontWeight.w500,
+                                                      color: Colors.black),
+                                                ),
+                                              ],
+                                            ),
+                                            textAlign: TextAlign.left,
+                                            presetFontSizes: [
+                                              20,
+                                              19,
+                                              18,
+                                              15,
+                                              12
+                                            ],
+                                            minFontSize: 10,
+                                            maxFontSize: 20),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  Container(
+                    width: size.width,
+                    height: size.height * 0.1,
+                    child: Row(
+                      children: [
+                        Container(
+                          height: icon_height,
+                          width: container_width,
+                          margin: icon_margins,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(child: new LayoutBuilder(
+                                  builder: (context, constraint) {
+                                return new FlatButton(
+                                    onPressed: () => setState(() {
+                                          this.decrease_steps(500);
+                                        }),
+                                    padding: EdgeInsets.all(0.0),
+                                    child: Icon(CupertinoIcons.minus_circled,
+                                        color: Colors.black87,
+                                        size: constraint.biggest.height * 0.8));
+                              })),
+                              Container(
+                                height: icon_height,
+                                width: text_width,
+                                child: Align(
+                                  alignment: Alignment.center,
+                                  child: AutoSizeText.rich(
+                                    TextSpan(
+                                      text: steps.toString(),
+                                      style: TextStyle(
+                                          fontFamily: "PlayfairDisplay",
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.black),
+                                      children: <TextSpan>[
+                                        TextSpan(
+                                            text: ' Schritte ',
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.black)),
+                                      ],
+                                    ),
+                                    textAlign: TextAlign.left,
+                                    presetFontSizes: [20, 19, 18, 15, 12],
+                                    minFontSize: 12,
+                                    maxFontSize: 20,
+                                  ),
+                                ),
+                              ),
+                              Flexible(child: new LayoutBuilder(
+                                  builder: (context, constraint) {
+                                return new FlatButton(
+                                    onPressed: () => setState(() {
+                                          this.increase_steps(500);
+                                        }),
+                                    padding: EdgeInsets.all(0.0),
+                                    child: Icon(CupertinoIcons.plus_circled,
+                                        color: Colors.black87,
+                                        size: constraint.biggest.height * 0.8));
+                              }))
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
+                  Container(width: size.width, height: size.height * 0.05),
+                  Container(
+                    width: size.width,
+                    height: size.height * 0.1,
+                    child: Row(
+                      children: [
+                        Container(
+                          height: icon_height,
+                          width: container_width,
+                          margin: icon_margins,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Flexible(
+                                child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      new LayoutBuilder(
+                                          builder: (context, constraint) {
+                                        return new Icon(
+                                            Ionicons.fitness_outline,
+                                            color: Colors.white,
+                                            // color: Color.fromRGBO(195, 130, 89, 1),
+                                            size: constraint.biggest.height);
+                                      })
+                                    ]),
+                              ),
+                              Container(
+                                height: icon_height,
+                                width: text_width + icon_width,
+                                margin: text_margins,
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  children: [
+                                    Align(
+                                      alignment: Alignment.centerLeft,
+                                      child: Container(
+                                        width: text_width + icon_width,
+                                        child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: "Wie viele",
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.black),
+                                            children: <TextSpan>[
+                                              TextSpan(
+                                                  text: ' Minuten ',
+                                                  style: TextStyle(
+                                                      fontFamily:
+                                                          "PlayfairDisplay",
+                                                      fontWeight:
+                                                          FontWeight.bold,
                                                       color: Colors.black)),
+                                              TextSpan(
+                                                text:
+                                                    'möchten Sie am Tag aktiv sein?',
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.black),
+                                              ),
                                             ],
                                           ),
                                           textAlign: TextAlign.left,
-                                        presetFontSizes: [20, 19, 18, 15, 12],
-                                        minFontSize: 12,
-                                        maxFontSize: 20,),),
+                                          presetFontSizes: [20, 19, 18, 15, 12],
+                                          minFontSize: 12,
+                                          maxFontSize: 20,
+                                        ),
+                                      ),
+                                    )
+                                  ],
                                 ),
-                                Flexible(child: new LayoutBuilder(
-                                    builder: (context, constraint) {
-                                  return new FlatButton(
-                                      onPressed: () => setState(() {
-                                            this.increase_steps(500);
-                                          }),
-                                      padding: EdgeInsets.all(0.0),
-                                      child: Icon(CupertinoIcons.plus_circled,
-                                          color: Colors.black87,
-                                          size:
-                                              constraint.biggest.height * 0.8));
-                                }))
-                              ],
-                            ),
-                            )
-                      ],),),
-                  Container(width: size.width, height: size.height * 0.05),
-                  Container(
-                      width: size.width,
-                      height: size.height * 0.1,
-                      child: Row(children: [
-                        Container(
-                            height: icon_height,
-                            width: container_width,
-                            margin: icon_margins,
-                            child: Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Flexible(
-                                    child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          new LayoutBuilder(
-                                              builder: (context, constraint) {
-                                            return new Icon(
-                                                Ionicons.fitness_outline,
-                                                color: Colors.white,
-                                                // color: Color.fromRGBO(195, 130, 89, 1),
-                                                size:
-                                                    constraint.biggest.height);
-                                          })
-                                        ]),
-                                  ),
-                                  Container(
-                                    height: icon_height,
-                                    width: text_width + icon_width,
-                                    margin: text_margins,
-                                    child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        children: [
-                                          Align(
-                                              alignment: Alignment.centerLeft,
-                                              child: AutoSizeText.rich(
-                                                  TextSpan(
-                                                    text: "Wie viele",
-                                                    style: TextStyle(
-                                                        fontFamily:
-                                                            "PlayfairDisplay",
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.black),
-                                                    children: <TextSpan>[
-                                                      TextSpan(
-                                                          text: ' Minuten ',
-                                                          style: TextStyle(
-                                                              fontFamily:
-                                                                  "PlayfairDisplay",
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
-                                                              color: Colors
-                                                                  .black)),
-                                                      TextSpan(
-                                                        text:
-                                                            'möchten Sie am Tag aktiv sein?',
-                                                        style: TextStyle(
-                                                            fontFamily:
-                                                                "PlayfairDisplay",
-                                                            fontWeight:
-                                                                FontWeight.w500,
-                                                            color:
-                                                                Colors.black),
-                                                      ),
-                                                    ],
-                                                  ),
-                                                textAlign: TextAlign.left,
-                                                presetFontSizes: [20, 19, 18, 15, 12],
-                                                minFontSize: 12,
-                                                maxFontSize: 20,),)
-                                        ]),
-                                  ),
-                                ]))
-                      ])),
+                              ),
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
+                  ),
 
                   Container(
                       width: size.width,
@@ -459,27 +470,27 @@ class _ConfigurationState extends State<Configuration> {
                                     child: Align(
                                       alignment: Alignment.center,
                                       child: AutoSizeText.rich(
-                                          TextSpan(
-                                            text: active_minutes.toString(),
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.black),
-                                            children: <TextSpan>[
-                                              TextSpan(
-                                                  text: ' Minuten ',
-                                                  style: TextStyle(
-                                                      fontFamily:
-                                                          "PlayfairDisplay",
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.black)),
-                                            ],
-                                          ),
+                                        TextSpan(
+                                          text: active_minutes.toString(),
+                                          style: TextStyle(
+                                              fontFamily: "PlayfairDisplay",
+                                              fontWeight: FontWeight.bold,
+                                              color: Colors.black),
+                                          children: <TextSpan>[
+                                            TextSpan(
+                                                text: ' Minuten ',
+                                                style: TextStyle(
+                                                    fontFamily:
+                                                        "PlayfairDisplay",
+                                                    fontWeight: FontWeight.w500,
+                                                    color: Colors.black)),
+                                          ],
+                                        ),
                                         textAlign: TextAlign.left,
                                         presetFontSizes: [20, 19, 18, 15, 12],
                                         minFontSize: 12,
-                                        maxFontSize: 20,),
+                                        maxFontSize: 20,
+                                      ),
                                     )),
                                 Flexible(child: new LayoutBuilder(
                                     builder: (context, constraint) {

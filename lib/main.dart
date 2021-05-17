@@ -57,7 +57,7 @@ serviceMain() async {
       await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
       await bleClient.blestopUpload();
       bleClient.closeBLE();
-      uploader.uploadFiles();
+      await uploader.uploadFiles();
       serviceData.progress = 100;
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();

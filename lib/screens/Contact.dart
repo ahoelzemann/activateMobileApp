@@ -13,7 +13,6 @@ int active_minutes;
 class Contact extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-
     var taps = 0;
     final text_margins =
         EdgeInsets.only(left: 0.2, top: 0.2, bottom: 0.2, right: 0.2);
@@ -49,7 +48,9 @@ class Contact extends StatelessWidget {
                 Navigator.pop(context);
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => Stack(children: [LandingScreen(), OverlayView()])),
+                  MaterialPageRoute(
+                      builder: (context) =>
+                          Stack(children: [LandingScreen(), OverlayView()])),
                 );
               }),
         ),
@@ -61,63 +62,61 @@ class Contact extends StatelessWidget {
             children: [
               Container(
                 width: size.width * 0.9,
-                // height: size.height * 0.8,
                 margin: text_margins,
                 child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: AutoSizeText.rich(
-                        TextSpan(
-                          text: "\nInhaltlich Verantwortlich\n\n",
-                          style: TextStyle(
-                              fontSize: 20,
-                              fontFamily: "PlayfairDisplay",
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black),
-                          children: <TextSpan>[
-                            TextSpan(
-                                text: "Universität Vechta\n"
-                                    "Driverstraße 22\n"
-                                    "49377 Vechta\n\n"
-                                    "sowie die\n\n"
-                                    "Universität Siegen\n"
-                                    "Hölderlinstraße 3\n"
-                                    "57076 Siegen\n\n",
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                      height: size.height * 0.8,
+                      child: AutoSizeText.rich(
+                          TextSpan(
+                            text: "\nInhaltlich Verantwortlich\n\n",
+                            style: TextStyle(
+                                fontFamily: "PlayfairDisplay",
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black),
+                            children: <TextSpan>[
+                              TextSpan(
+                                  text: "Universität Vechta\n"
+                                      "Driverstraße 22\n"
+                                      "49377 Vechta\n\n"
+                                      "sowie die\n\n"
+                                      "Universität Siegen\n"
+                                      "Hölderlinstraße 3\n"
+                                      "57076 Siegen\n\n",
+                                  style: TextStyle(
+                                      fontFamily: "PlayfairDisplay",
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black)),
+                              TextSpan(
+                                text:
+                                    'Bei technischen Fragen wenden Sie sich bitte an:\n\n',
                                 style: TextStyle(
-                                    fontSize: 20,
                                     fontFamily: "PlayfairDisplay",
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black)),
-                            TextSpan(
-                              text:
-                                  'Bei technischen Fragen wenden Sie sich bitte an:\n\n',
-                              style: TextStyle(
-                                  fontSize: 20,
-                                  fontFamily: "PlayfairDisplay",
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.black),
-                            ),
-                            TextSpan(
-                                text: "Universität Siegen\n"
-                                    "Hölderlinstraße 3\n"
-                                    "57076 Siegen\n\n"
-                                    "Alexander Hölzemann\n"
-                                    "alexander.hoelzemann(at)\nuni-siegen.de",
-                                style: TextStyle(
-                                    fontSize: 20,
-                                    fontFamily: "PlayfairDisplay",
-                                    fontWeight: FontWeight.w500,
-                                    color: Colors.black)),
-                          ],
-                        ),
-                        textAlign: TextAlign.justify)),
-              )
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black),
+                              ),
+                              TextSpan(
+                                  text: "Universität Siegen\n"
+                                      "Hölderlinstraße 3\n"
+                                      "57076 Siegen\n\n"
+                                      "Alexander Hölzemann\n"
+                                      "alexander.hoelzemann(at)\nuni-siegen.de",
+                                  style: TextStyle(
+                                      fontFamily: "PlayfairDisplay",
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black)),
+                            ],
+                          ),
+                          textAlign: TextAlign.justify)),
+                ),
+              ),
             ],
           ),
         ));
   }
 }
-TextEditingController _textFieldController = TextEditingController();
 
+TextEditingController _textFieldController = TextEditingController();
 
 _displayDialog(BuildContext context) async {
   return showDialog(
@@ -163,5 +162,3 @@ _displayDialog(BuildContext context) async {
         );
       });
 }
-
-
