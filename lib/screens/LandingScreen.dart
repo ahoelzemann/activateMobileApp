@@ -12,7 +12,7 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/ConnectBLE.dart' as BLE;
+import 'package:trac2move/ble/ConnectBLE.dart' as BLE;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
@@ -475,8 +475,11 @@ class _LandingScreenState extends State<LandingScreen>
                       fontWeight: FontWeight.bold,
                       color: Colors.black)),
               onTap: () async {
-                BLEM.stopRecordingAndUpload();
-                // BLEM.syncTimeAndStartRecording();
+                if (Platform.isAndroid) {
+
+                  _stopRecordingAndUpload();
+                }
+                else BLEM.stopRecordingAndUpload();
               },
             ),
             // ListTile(

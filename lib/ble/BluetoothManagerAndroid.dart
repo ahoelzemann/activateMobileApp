@@ -39,7 +39,7 @@ Future<bool> nearestDevice() async {
     });
 
     return true;
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
     try {
       print('Connection failed:');
@@ -49,7 +49,7 @@ Future<bool> nearestDevice() async {
       bleClient.closeBLE();
 
       return true;
-    }  catch (e, stacktrace) {
+    } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
       return false;
     }
@@ -69,38 +69,21 @@ Future<bool> getStepsAndMinutes() async {
     bleClient.closeBLE();
 
     return true;
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
 
     // if (ble_error.errorCode.value == 2) {
-      print("Error Code 2: Closing BLE Adapter and starting a new one.");
-      await bleClient.closeBLE();
-      // bleClient = null;
-      BLE_Client bleClient_ = new BLE_Client();
+    print("Error Code 2: Closing BLE Adapter and starting a new one.");
+    await bleClient.closeBLE();
+    // bleClient = null;
+    BLE_Client bleClient_ = new BLE_Client();
 
-      await bleClient_.checkBLEstate();
-      bleClient_.start_ble_scan();
-      await bleClient_.ble_connect();
-      await bleClient_.bleSteps();
-      await bleClient_.bleactMins();
-      bleClient_.closeBLE();
-    // }
-    // try {
-    //   print(e);
-    //   print('Connection failed:');
-    //   print('connecting again in 3 seconds.....');
-    //   await Future.delayed(Duration(seconds: 3));
-    //   bleClient.start_ble_scan();
-    //   await bleClient.ble_connect();
-    //   await bleClient.bleSteps();
-    //   await bleClient.bleactMins();
-    //   bleClient.closeBLE();
-    //
-    //   return true;
-    // } catch (e) {
-    //   log.logToFile(e);
-    //   return false;
-    // }
+    await bleClient_.checkBLEstate();
+    bleClient_.start_ble_scan();
+    await bleClient_.ble_connect();
+    await bleClient_.bleSteps();
+    await bleClient_.bleactMins();
+    bleClient_.closeBLE();
   }
 }
 
@@ -118,11 +101,8 @@ Future<bool> doUpload() async {
     await bleClient.blestopUpload();
     bleClient.closeBLE();
     uploader.uploadFiles();
-
-    // bleClient = null;
-
     return true;
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
     print('Connection failed:');
     print('connecting again.....');
@@ -158,7 +138,7 @@ Future<bool> startRecording() async {
     await Future.delayed(Duration(seconds: 5));
     hideOverlay();
     return true;
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
     print('Connection failed:');
     print('connecting again.....');
@@ -178,7 +158,7 @@ Future<bool> closeConnection() async {
   try {
     bleClient.closeBLE();
     return true;
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
     return false;
   }
@@ -260,7 +240,6 @@ class BLE_Client {
   Future<bool> createClient() async {
     await _activateBleManager.createClient(
         restoreStateIdentifier: "BLE Manager");
-    // _activateBleManager.setLogLevel(LogLevel.verbose);
 
     return true;
   }
@@ -360,7 +339,6 @@ class BLE_Client {
               (scanResult.peripheral.identifier == savedIdentifier)) {
             _mydevice = scanResult.peripheral;
             print("Device found: " + _mydevice.toString());
-
           }
         },
         onError: (err) {
@@ -371,7 +349,6 @@ class BLE_Client {
           print("Device found: " + _mydevice.toString() + " before completer");
           completer.complete(true);
         });
-
 
     return completer.future;
   }
@@ -443,6 +420,7 @@ class BLE_Client {
         new Timer(pollInterval, check);
       }
     }
+
     check();
     return completer.future;
   }
@@ -794,7 +772,6 @@ class BLE_Client {
     String s;
     _characSubscription = characteristic.monitor().listen((event) async {
       _dataSize = event.length;
-      // print(String.fromCharCodes(event));
       if (_idx < _resultLen) {
         if (_logData == 1) {
           //check end of a file
@@ -897,7 +874,6 @@ class BLE_Client {
                   _idx.toString() +
                   " Done uploading //////////////////");
 
-              //Directory tempDir = await getApplicationDocumentsDirectory();
               Directory tempDir = await getTemporaryDirectory();
               await Directory(tempDir.path + '/daily_data')
                   .create(recursive: true);

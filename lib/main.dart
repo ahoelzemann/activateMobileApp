@@ -9,7 +9,7 @@ import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/AppServiceData.dart';
-import 'package:trac2move/util/ConnectBLE.dart' as BLE;
+import 'package:trac2move/ble/ConnectBLE.dart' as BLE;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -42,12 +42,14 @@ serviceMain() async {
       // serviceData.progress = 20;
       await ServiceClient.update(serviceData);
       // await BLE.doUpload();
+
+      // await BLEManager.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
       BLE.BLE_Client bleClient = new BLE.BLE_Client();
 
       await Future.delayed(Duration(milliseconds: 500));
       Upload uploader = new Upload();
       await uploader.init();
-
+      //
       await bleClient.checkBLEstate();
       bleClient.start_ble_scan();
       await bleClient.ble_connect();
@@ -56,7 +58,7 @@ serviceMain() async {
       await bleClient.blestopUpload();
       bleClient.closeBLE();
       uploader.uploadFiles();
-      // serviceData.progress = 100;
+      serviceData.progress = 100;
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
     });
