@@ -55,20 +55,20 @@ class _LandingScreenState extends State<LandingScreen>
         SharedPreferences prefs = await SharedPreferences.getInstance();
         var isUploading = prefs.getBool("uploadInProgress");
         if (isUploading == null || !isUploading) {
-          // showOverlay("Synchronisiere Schritte und aktive Minuten.",
-          //     SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-          // // if (Platform.isAndroid) {
-          // await BLE.getStepsAndMinutes();
-          // // }
-          //
-          // await Future.delayed(Duration(seconds: 1));
-          // // Navigator.push(
-          // //   context,
-          // MaterialPageRoute(
-          //     builder: (context) =>
-          //         Stack(children: [LandingScreen(), OverlayView()]));
-          // // );
-          // hideOverlay();
+          showOverlay("Synchronisiere Schritte und aktive Minuten.",
+              SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+          // if (Platform.isAndroid) {
+          await BLEManagerIOS.getStepsAndMinutes();
+          // }
+
+          await Future.delayed(Duration(seconds: 1));
+          // Navigator.push(
+          //   context,
+          MaterialPageRoute(
+              builder: (context) =>
+                  Stack(children: [LandingScreen(), OverlayView()]));
+          // );
+          hideOverlay();
         }
         break;
       case AppLifecycleState.inactive:
@@ -124,8 +124,10 @@ class _LandingScreenState extends State<LandingScreen>
                           (BuildContext context, AsyncSnapshot<int> snapshot) {
                         if (snapshot.hasData) {
                           if (snapshot.data == 0) {
-                            return _getSaveButton('Aufnahme beginnen',
-                                Colors.green, 0, size, context, _scaffoldKey);
+                            return _getSaveButton('Aufnahme speichern',
+                                Colors.orange, 1, size, context, _scaffoldKey);
+                            // return _getSaveButton('Aufnahme beginnen',
+                            //     Colors.green, 0, size, context, _scaffoldKey);
                           } else if (snapshot.data == 1) {
                             return _getSaveButton('Aufnahme speichern',
                                 Colors.orange, 1, size, context, _scaffoldKey);
@@ -484,19 +486,18 @@ class _LandingScreenState extends State<LandingScreen>
                   BLEManagerIOS.stopRecordingAndUpload();
               },
             ),
-            // ListTile(
-            //   title: Text('bleSteps',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     BluetoothManager bleManager = new BluetoothManager();
-            //     await bleManager.asyncInit();
-            //
-            //     await bleManager.disconnectFromDevice();
-            //   },
-            // ),
+            ListTile(
+              title: Text('UploadDebug',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                Upload uploader = new Upload();
+                await uploader.init();
+                await uploader.uploadFiles();
+              },
+            ),
             ListTile(
               title: Text('Upload LogFile',
                   style: TextStyle(

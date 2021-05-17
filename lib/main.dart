@@ -56,11 +56,13 @@ serviceMain() async {
       await bleClient.bleStopRecord();
       await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
       await bleClient.blestopUpload();
-      bleClient.closeBLE();
-      await uploader.uploadFiles();
+      await bleClient.closeBLE();
+      // await uploader.uploadFiles();
       serviceData.progress = 100;
+      // await ServiceClient.update(serviceData);
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
+      // hideOverlay();
     });
   }  catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);

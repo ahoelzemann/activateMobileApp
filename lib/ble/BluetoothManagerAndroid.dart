@@ -205,7 +205,7 @@ class BLE_Client {
     //send data from bangle
   }
 
-  void closeBLE() async {
+  Future<void> closeBLE() async {
     await Future.delayed(Duration(milliseconds: 1000));
     try {
       if (_currentDeviceConnected == true) {
@@ -235,6 +235,7 @@ class BLE_Client {
       print(e);
     }
     print("BLE Closed   //////////////");
+    return true;
   }
 
   Future<bool> createClient() async {
@@ -796,7 +797,7 @@ class BLE_Client {
               if (Platform.isAndroid) {
                 foregroundService.progress =
                     foregroundService.progress + incrementelSteps;
-                ServiceClient.update(foregroundService);
+                await ServiceClient.update(foregroundService);
               }
               await Future.delayed(Duration(milliseconds: 500));
               _logData = 0;
@@ -832,7 +833,10 @@ class BLE_Client {
                   _fileName.toString() +
                   " saved to file //////////////////");
             } //end of for statement
-
+            foregroundService.progress =
+                100;
+            await ServiceClient.update(foregroundService);
+            hideOverlay();
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
             prefs.setBool("uploadInProgress", false);

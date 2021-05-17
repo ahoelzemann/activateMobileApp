@@ -21,7 +21,7 @@ class Upload {
   String pw;
   bool ble_status;
   var filePaths;
-  var client;
+  SSHClient client;
   String studienID;
   String serverFilePath;
 
@@ -62,7 +62,7 @@ class Upload {
       );
 
       return true;
-    }  catch (e, stacktrace) {
+    } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
     }
   }
@@ -74,65 +74,69 @@ class Upload {
   }
 
   Future<void> uploadFiles() async {
-    try {
+    // Completer completer = new Completer();
+    // try {
       filePaths = io.Directory(localFilesDirectory).listSync();
       String result = await client.connect();
       if (result == "session_connected") {
         result = await client.connectSFTP();
         if (result == "sftp_connected") {
+          // try {
           try {
-            try {
-              print(await client.sftpMkdir(serverFilePath));
-            } catch (e) {
-              print('Folder already exists');
-            }
-            // ToDO: Download Files from Bangle here, save in a local temp folder and delete them after upload
-            for (int i = 0; i < filePaths.length; i++) {
-              localFilePath = filePaths[i].path;
-              serverFileName = localFilePath.split("/").last;
-              serverPath = serverFilePath;
-              String tempPath = tempDir.path;
-              tempPath = tempPath + "/" + serverFileName;
-              try {
-                print("Upload file: " + serverPath);
-                print(await client.sftpUpload(
-                  path: localFilePath,
-                  toPath: serverPath,
-                  callback: (progress) {
-                    print(progress); // read upload progress
-                  },
-                ));
-                try {
-                  File(localFilePath).delete();
-                }  catch (e, stacktrace) {
-                  logError(e, stackTrace: stacktrace);
-                }
-              }  catch (e, stacktrace) {
-                logError(e, stackTrace: stacktrace);
-                print(e);
-                await Future.delayed(Duration(seconds: 10));
-                await client.sftpUpload(
-                    path: tempPath,
-                    toPath: serverPath,
-                    callback: (progress) {
-                      print(progress); // read upload progress
-                    });
-              }
-            }
-            // filePaths = io.Directory(localFilesDirectory).listSync();
-            // print(filePaths);
-          }  catch (e, stacktrace) {
-            logError(e, stackTrace: stacktrace);
+            print(await client.sftpMkdir(serverFilePath));
+          } catch (e) {
+            print('Folder already exists');
           }
+          for (int i = 0; i < filePaths.length; i++) {
+            // Future.forEach(filePaths, (filepath) async {
+            localFilePath = filePaths[i].path;
+            serverFileName = localFilePath
+                .split("/")
+                .last;
+            serverPath = serverFilePath;
+            String tempPath = tempDir.path;
+            tempPath = tempPath + "/" + serverFileName;
 
-          print(await client.disconnectSFTP());
-          client.disconnect();
+            print("Upload file: " + localFilePath);
+            await client.sftpUpload(
+              path: localFilePath,
+              toPath: serverPath,
+              callback: (progress) {
+                print(progress); // read upload progress
+              },
+            );
+            File(localFilePath).delete();
+            print("local file deleted");
+            if (i == (filePaths.length - 1)) {
+              print("if clause reached");
+              // this.client.disconnectSFTP();
+              // this.client.disconnect();
+              // completer.complete(true);
+              return true;
+              // break;
+            } else {
+              continue;
+            }
+          }
+          //         print(await client.disconnectSFTP());
+          //         client.disconnect();
+          //         completer.complete(true);
+          //       } catch (e, stacktrace) {
+          //         logError(e, stackTrace: stacktrace);
+          //       }
+          //
+          //       print(await client.disconnectSFTP());
+          //       client.disconnect();
+          //       completer.complete(true);
+          //     }
+          //   }
+          // } catch (e, stacktrace) {
+          //   logError(e, stackTrace: stacktrace);
+          //   print('Error: ${e.code}\nError Message: ${e.message}');
         }
       }
-    }  catch (e, stacktrace) {
-      logError(e, stackTrace: stacktrace);
-      print('Error: ${e.code}\nError Message: ${e.message}');
-    }
+
+    return true;
   }
 
   Future<void> uploadLogFile(path) async {
@@ -158,7 +162,7 @@ class Upload {
                 print(progress); // read upload progress
               },
             );
-          }  catch (e, stacktrace) {
+          } catch (e, stacktrace) {
             logError(e, stackTrace: stacktrace);
           }
 
@@ -166,7 +170,7 @@ class Upload {
           client.disconnect();
         }
       }
-    }  catch (e, stacktrace) {
+    } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
       print('Error: ${e.code}\nError Message: ${e.message}');
     }

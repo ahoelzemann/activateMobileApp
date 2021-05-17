@@ -26,11 +26,6 @@
 	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSBonjourServices</key>
-	<array>
-		<string>_dartobservatory._tcp</string>
-		<string>_trac2move._tcp</string>
-	</array>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -42,6 +37,11 @@
 	<string>Zur Verbindung mit der Bangle.js.</string>
 	<key>NSBluetoothPeripheralUsageDescription</key>
 	<string>Play with BLE Compatible devices</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_dartobservatory._tcp</string>
+		<string>_trac2move._tcp</string>
+	</array>
 	<key>NSCalendarsUsageDescription</key>
 	<string>Der Kalendar wird zur Bestimmung des Alters bei der Anmeldung benötigt</string>
 	<key>NSContactsUsageDescription</key>
