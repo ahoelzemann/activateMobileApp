@@ -35,7 +35,6 @@ class BluetoothManager {
 
   Future<bool> asyncInit() async {
     FlutterBlue.BlowItUp();
-    // FlutterBlue.reset();
     flutterBlue = FlutterBlue.instance;
     await flutterBlue.stopScan();
     for (var device in await flutterBlue.connectedDevices) {
@@ -55,11 +54,11 @@ class BluetoothManager {
       result = await flutterBlue.scanResults
           .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult))
           .timeout(Duration(seconds: 4));
-      flutterBlue.stopScan();
+      await flutterBlue.stopScan();
       myDevice = result.last.device;
       return true;
     } on TimeoutException catch (e) {
-      flutterBlue.stopScan();
+      await flutterBlue.stopScan();
 
       return false;
     }
@@ -80,7 +79,7 @@ class BluetoothManager {
       // characRX = await service.characteristics.firstWhere(
       //     (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
       //     orElse: null);
-      Fimber.d(myDevice.name + "Services detected");
+      Fimber.d(myDevice.name + " Services detected");
       // if ((await characTX.read()).length > 0) {
       //   hasDataLeftOnStream = true;
       // }
@@ -293,8 +292,9 @@ class BluetoothManager {
               withoutResponse: true);
           timeCmd = "E.setTimeZone(" + currentTimeZoneOffset.toString() + ")\n";
           await characteristic.write(Uint8List.fromList(timeCmd.codeUnits),
-              withoutResponse: true);
+              withoutResponse: false);
 
+          await Future.delayed(Duration(milliseconds: 500));
           completer.complete(true);
         }
       }
@@ -304,9 +304,26 @@ class BluetoothManager {
 
   Future<dynamic> _startRecord(var Hz, var GS, var hour) async {
     Completer completer = new Completer();
-    (await myDevice.discoverServices()).forEach((service) async {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+
+
+    List<BluetoothService> services = await myDevice.discoverServices();
+    BluetoothService service = services.firstWhere(
+            (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
+        orElse: null);
+    BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
+            (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
+        orElse: null);
+    BluetoothCharacteristic characRX = await service.characteristics.firstWhere(
+            (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
+        orElse: null);
+
+    print("Service found and Characteristics initialized");
+
+
+    if (!characTX.isNotifying) {
+      await Future.delayed(const Duration(milliseconds: 500));
+      await characTX.setNotifyValue(true);
+    }
           print("Status:" + myDevice.name + " RX UUID discovered");
 
           print("Sending  start command...");
@@ -318,13 +335,12 @@ class BluetoothManager {
               "," +
               hour.toString() +
               ")\n";
-          await characteristic.write(Uint8List.fromList(s.codeUnits),
-              withoutResponse: true);
+          await characRX.write(Uint8List.fromList(s.codeUnits),
+              withoutResponse: false);
           print(Uint8List.fromList(s.codeUnits).toString());
           completer.complete(true);
-        }
-      }
-    });
+
+
     return completer.future;
   }
 
@@ -631,13 +647,21 @@ Future<bool> syncTimeAndStartRecording() async {
 
   try {
     await bleManager.connectToSavedDevice();
+    await Future.delayed(const Duration(milliseconds: 500));
+    updateOverlayText("Ihre Bangle wurde gefunden."
+        "Wir starten nun die tägliche Aufnahme.");
     await bleManager._syncTime();
+    await Future.delayed(const Duration(seconds: 5));
     await bleManager._startRecord(12.5, 8, 25);
+    updateOverlayText("Die Aufnahme wurde gestartet."
+        "Bitte überprüfen Sie das Display Ihrer Smartwatch.");
     await bleManager.disconnectFromDevice();
 
+    await Future.delayed(const Duration(seconds: 2));
+    hideOverlay();
     return true;
   } catch (e) {
-    logError(e, stackTrace: e.stackTrace);
+    logError(e);
     await bleManager.disconnectFromDevice();
   }
 }

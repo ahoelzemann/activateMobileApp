@@ -128,12 +128,12 @@ Future<bool> startRecording() async {
     await Future.delayed(Duration(milliseconds: 750));
     bleClient.start_ble_scan();
     await bleClient.ble_connect();
-    updateOverlayText("Ihre Bangle wurde gefunden.\n"
+    updateOverlayText("Ihre Bangle wurde gefunden."
         "Wir starten nun die tägliche Aufnahme.");
     await Future.delayed(Duration(seconds: 5));
     await bleClient.bleStartRecord(12.5, 8, 25);
     bleClient.closeBLE();
-    updateOverlayText("Die Aufnahme wurde gestartet.\n"
+    updateOverlayText("Die Aufnahme wurde gestartet."
         "Bitte überprüfen Sie das Display Ihrer Smartwatch.");
     await Future.delayed(Duration(seconds: 5));
     hideOverlay();

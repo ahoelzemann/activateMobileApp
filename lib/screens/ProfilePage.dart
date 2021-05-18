@@ -137,7 +137,6 @@ class MapScreenState extends State<ProfilePage> {
 
   @override
   void initState() {
-    // IF NOT CREATEUSER
     initValues(createUser);
     ageToSave = calculateAge(selectedDate);
     super.initState();

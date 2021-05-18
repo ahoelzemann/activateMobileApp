@@ -45,7 +45,8 @@ serviceMain() async {
 
       // await BLEManager.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
       BLEManagerAndroid.BLE_Client bleClient = new BLEManagerAndroid.BLE_Client();
-
+      BLEManagerIOS.BluetoothManager bluetoothManager = new BLEManagerIOS.BluetoothManager();
+      await bluetoothManager.asyncInit();
       await Future.delayed(Duration(milliseconds: 500));
       // Upload uploader = new Upload();
       // await uploader.init();
