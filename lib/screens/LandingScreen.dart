@@ -53,12 +53,7 @@ class _LandingScreenState extends State<LandingScreen>
           // }
 
           await Future.delayed(Duration(seconds: 1));
-          // Navigator.push(
-          //   context,
-          MaterialPageRoute(
-              builder: (context) =>
-                  Stack(children: [LandingScreen(), OverlayView()]));
-          // );
+          _reloadPage(context);
           hideOverlay();
         }
         break;
@@ -704,7 +699,7 @@ class _LandingScreenState extends State<LandingScreen>
     } else {
       await BLEManagerIOS.syncTimeAndStartRecording();
     }
-    _reloadPage(context, _scaffoldKey);
+    _reloadPage(context);
     await Future.delayed(
       Duration(seconds: 3),
     );
@@ -738,7 +733,7 @@ class _LandingScreenState extends State<LandingScreen>
   }
 }
 
-void _reloadPage(context, GlobalKey<ScaffoldState> _scaffoldKey) async {
+void _reloadPage(context) async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
   prefs.setString("recordStartedAt", DateTime.now().toString());
   prefs.setBool("isRecording", true);
