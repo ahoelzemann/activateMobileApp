@@ -128,7 +128,7 @@ _displayDialog(BuildContext context) async {
             controller: _textFieldController,
             textInputAction: TextInputAction.go,
             obscureText: true,
-            keyboardType: TextInputType.numberWithOptions(),
+            keyboardType: TextInputType.text,
             decoration: InputDecoration(hintText: "Bitte Passwort eingeben"),
           ),
           actions: <Widget>[
