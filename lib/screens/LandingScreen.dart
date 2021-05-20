@@ -536,33 +536,33 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //       BLEManagerIOS.stopRecordingAndUpload();
             //   },
             // ),
-            ListTile(
-              title: Text('New AndroidBLE Lib',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                // for (int i =0; i < 5; i++) {
-                //   BLEManagerAndroid.BLE_Client androidBLEClient =
-                //   new BLEManagerAndroid.BLE_Client();
-                //   await androidBLEClient.init();
-                //   try {
-                //     await androidBLEClient.checkBLEstate();
-                //     await androidBLEClient.connect();
-                //     await Future.delayed(Duration(seconds: 1));
-                //     await androidBLEClient.getMinutes();
-                //     await androidBLEClient.getSteps();
-                //     await Future.delayed(Duration(seconds: 1));
-                //     await androidBLEClient.disconnect();
-                //     _reloadPage(context);
-                //   } catch (e) {
-                //     await androidBLEClient.disconnect();
-                //   }
-                _reloadPage(context);
-                // }
-              },
-            ),
+            // ListTile(
+            //   title: Text('New AndroidBLE Lib',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     // for (int i =0; i < 5; i++) {
+            //     //   BLEManagerAndroid.BLE_Client androidBLEClient =
+            //     //   new BLEManagerAndroid.BLE_Client();
+            //     //   await androidBLEClient.init();
+            //     //   try {
+            //     //     await androidBLEClient.checkBLEstate();
+            //     //     await androidBLEClient.connect();
+            //     //     await Future.delayed(Duration(seconds: 1));
+            //     //     await androidBLEClient.getMinutes();
+            //     //     await androidBLEClient.getSteps();
+            //     //     await Future.delayed(Duration(seconds: 1));
+            //     //     await androidBLEClient.disconnect();
+            //     //     _reloadPage(context);
+            //     //   } catch (e) {
+            //     //     await androidBLEClient.disconnect();
+            //     //   }
+            //     _reloadPage(context);
+            //     // }
+            //   },
+            // ),
             ListTile(
               title: Text('Upload LogFile',
                   style: TextStyle(
@@ -847,7 +847,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(hours: 10))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
