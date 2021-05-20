@@ -10,13 +10,12 @@ import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Directory, File, Platform;
 
 class BluetoothManager {
-  // Singleton
-  // static final BluetoothManager _bluetoothManager =
-  //     BluetoothManager._internal();
-  //
-  // factory BluetoothManager() => _bluetoothManager;
-  //
-  // BluetoothManager._internal();
+  static final BluetoothManager _bluetoothManager =
+      BluetoothManager._internal();
+
+  factory BluetoothManager() => _bluetoothManager;
+
+  BluetoothManager._internal();
 
   FlutterBlue flutterBlue;
 
@@ -68,37 +67,22 @@ class BluetoothManager {
     if (await _findMyDevice()) {
       await myDevice.connect(autoConnect: false);
       Fimber.d(myDevice.name + " Device connected");
-      // services = await myDevice.discoverServices();
-      // service = await services.firstWhere(
-      //     (element) =>
-      //         (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
-      //     orElse: null);
-      // characTX = await service.characteristics.firstWhere(
-      //     (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
-      //     orElse: null);
-      // characRX = await service.characteristics.firstWhere(
-      //     (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
-      //     orElse: null);
-      Fimber.d(myDevice.name + " Services detected");
-      // if ((await characTX.read()).length > 0) {
-      //   hasDataLeftOnStream = true;
-      // }
       return true;
     } else {
       Fimber.d(myDevice.name + " Device not visible");
-
       return false;
     }
   }
 
   Future<dynamic> disconnectFromDevice() async {
-    // print(flutterBlue.connectedDevices);
+    Completer completer = new Completer();
     await myDevice.disconnect();
-    // FlutterBlue.reset();
+    completer.complete(true);
     print("Device: " +
         myDevice.name +
         " Status: " +
         BluetoothDeviceState.connected.toString());
+    return completer.future;
   }
 
   Future<dynamic> _findNearestDevice() async {
@@ -149,7 +133,6 @@ class BluetoothManager {
 
   Future<dynamic> _readSteps() async {
     BluetoothCharacteristic charactx;
-    int resultLen = 0;
     Completer completer = new Completer();
     String cmd = "";
     var bleSubscription;
@@ -171,7 +154,6 @@ class BluetoothManager {
             await charactx.setNotifyValue(false);
             await Future.delayed(const Duration(milliseconds: 500));
             await charactx.setNotifyValue(true);
-            // await characteristic.setNotifyValue(true);
             bleSubscription = charactx.value
                 .take(2)
                 .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
@@ -179,7 +161,6 @@ class BluetoothManager {
               completer.complete(false);
             }).listen(
               (event) async {
-                // print(event.toString() + "  //////////////");
                 print("Event: " + String.fromCharCodes(event));
                 if (event[0] == 115 && event[4] == 115) {
                   String dd = String.fromCharCodes(event.sublist(
@@ -305,41 +286,38 @@ class BluetoothManager {
   Future<dynamic> _startRecord(var Hz, var GS, var hour) async {
     Completer completer = new Completer();
 
-
     List<BluetoothService> services = await myDevice.discoverServices();
     BluetoothService service = services.firstWhere(
-            (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
+        (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
         orElse: null);
     BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
-            (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
+        (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
         orElse: null);
     BluetoothCharacteristic characRX = await service.characteristics.firstWhere(
-            (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
+        (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
         orElse: null);
 
     print("Service found and Characteristics initialized");
-
 
     if (!characTX.isNotifying) {
       await Future.delayed(const Duration(milliseconds: 500));
       await characTX.setNotifyValue(true);
     }
-          print("Status:" + myDevice.name + " RX UUID discovered");
+    print("Status:" + myDevice.name + " RX UUID discovered");
 
-          print("Sending  start command...");
+    print("Sending  start command...");
 
-          String s = "recStrt(" +
-              Hz.toString() +
-              "," +
-              GS.toString() +
-              "," +
-              hour.toString() +
-              ")\n";
-          await characRX.write(Uint8List.fromList(s.codeUnits),
-              withoutResponse: false);
-          print(Uint8List.fromList(s.codeUnits).toString());
-          completer.complete(true);
-
+    String s = "recStrt(" +
+        Hz.toString() +
+        "," +
+        GS.toString() +
+        "," +
+        hour.toString() +
+        ")\n";
+    await characRX.write(Uint8List.fromList(s.codeUnits),
+        withoutResponse: false);
+    print(Uint8List.fromList(s.codeUnits).toString());
+    completer.complete(true);
 
     return completer.future;
   }
@@ -435,7 +413,6 @@ class BluetoothManager {
   Future<dynamic> startUpload(
       {foregroundServiceClient, foregroundService}) async {
     BluetoothCharacteristic characTX;
-    // BluetoothCharacteristic characRX;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
     prefs.setBool("uploadInProgress", true);
@@ -463,14 +440,7 @@ class BluetoothManager {
                 " FILES, THIS WILL TAKE SOME MINUTES ...");
 
             for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
-              // if (Platform.isAndroid) {
-              //   foregroundService.progress =
-              //       foregroundService.progress + incrementelSteps;
-              //   ServiceClient.update(foregroundService);
-              // }
               await Future.delayed(Duration(milliseconds: 500));
-              // int _logData = 0;
-              // int _idx = 0;
               updateOverlayText("Datei " +
                   (fileCount + 1).toString() +
                   "/" +
@@ -544,55 +514,51 @@ class BluetoothManager {
     await characTX.setNotifyValue(false);
     await Future.delayed(const Duration(milliseconds: 500));
     await characTX.setNotifyValue(true);
-    int _idx = 0;
+
     int _logData = 0;
     Map<String, List<int>> _result = {};
     List<int> _data = [];
-    // List<int> _data = List.filled(5000000, 0);
-    // maybe init with fixed size
     String _fileName;
     Completer completer = new Completer();
     String s;
     StreamSubscription _characSubscription;
     _characSubscription = characTX.value.listen((event) async {
       int _dataSize = event.length;
-      // if (_idx < _resultLen) {
-        if (_logData == 1) {
-          //check end of a file
-          if (_dataSize >= 15 &&
-              event[0] == 255 &&
-              event[1] == 255 &&
-              event[2] == 255 &&
-              event[3] == 255 &&
-              event[4] == 255 &&
-              event[5] == 0 &&
-              event[6] == 0 &&
-              event[7] == 0 &&
-              event[8] == 0 &&
-              event[9] == 0 &&
-              event[10] == 0 &&
-              event[11] == 255 &&
-              event[12] == 255 &&
-              event[13] == fileCount) {
-            if (_characSubscription != null) {
-              await _characSubscription?.cancel();
-            }
-            _result[_fileName] = _data;
-            completer.complete(_result);
-          } else {
-            for (int i = 0; i < _dataSize; i++) {
-              _data.add(event[i]);
-              _idx += 1;
-            }
+      if (_logData == 1) {
+        //check end of a file
+        if (_dataSize >= 15 &&
+            event[0] == 255 &&
+            event[1] == 255 &&
+            event[2] == 255 &&
+            event[3] == 255 &&
+            event[4] == 255 &&
+            event[5] == 0 &&
+            event[6] == 0 &&
+            event[7] == 0 &&
+            event[8] == 0 &&
+            event[9] == 0 &&
+            event[10] == 0 &&
+            event[11] == 255 &&
+            event[12] == 255 &&
+            event[13] == fileCount) {
+          if (_characSubscription != null) {
+            await _characSubscription?.cancel();
           }
-        } else if (_dataSize == 17) {
-          if (event[13] == 46 &&
-              event[14] == 98 &&
-              event[15] == 105 &&
-              event[16] == 110) {
-            _fileName = String.fromCharCodes(event);
-            _logData = 1;
+          _result[_fileName] = _data;
+          completer.complete(_result);
+        } else {
+          for (int i = 0; i < _dataSize; i++) {
+            _data.add(event[i]);
           }
+        }
+      } else if (_dataSize == 17) {
+        if (event[13] == 46 &&
+            event[14] == 98 &&
+            event[15] == 105 &&
+            event[16] == 110) {
+          _fileName = String.fromCharCodes(event);
+          _logData = 1;
+        }
         // }
       } else {
         if (_characSubscription != null) {
@@ -666,8 +632,7 @@ Future<bool> syncTimeAndStartRecording() async {
   }
 }
 
-Future<bool> stopRecordingAndUpload(
-    {foregroundServiceClient, foregroundService}) async {
+Future<bool> stopRecordingAndUpload() async {
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
 

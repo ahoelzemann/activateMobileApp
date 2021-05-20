@@ -6,7 +6,7 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid.dart' as BLEManagerAndroid;
+import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart' as BLEManagerAndroid;
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Platform;
@@ -371,7 +371,7 @@ class MapScreenState extends State<ProfilePage> {
                 onPressed: () async {
                   showOverlay("Wir suchen Ihre Bangle.js", Icon(Icons.watch, color: Colors.blue, size: 50.0,));
                   if (Platform.isAndroid) {
-                    await BLEManagerAndroid.findNearestDevice();
+                    await BLEManagerIOS.findNearestDevice();
                   }
                   else {
                     await BLEManagerIOS.findNearestDevice();

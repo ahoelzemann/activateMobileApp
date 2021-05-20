@@ -41,18 +41,6 @@ Future<bool> findNearestDevice() async {
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
-    try {
-      print('Connection failed:');
-      print('connecting again in 3 seconds.....');
-      await Future.delayed(Duration(seconds: 3));
-      await bleClient.find_nearest_device();
-      bleClient.closeBLE();
-
-      return true;
-    } catch (e, stacktrace) {
-      logError(e, stackTrace: stacktrace);
-      return false;
-    }
   }
 }
 
@@ -66,24 +54,12 @@ Future<bool> getStepsAndMinutes() async {
     await bleClient.ble_connect();
     await bleClient.bleSteps();
     await bleClient.bleactMins();
-    bleClient.closeBLE();
+    await bleClient.closeBLE();
 
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
-
-    // if (ble_error.errorCode.value == 2) {
     print("Error Code 2: Closing BLE Adapter and starting a new one.");
-    await bleClient.closeBLE();
-    // bleClient = null;
-    BLE_Client bleClient_ = new BLE_Client();
-
-    await bleClient_.checkBLEstate();
-    bleClient_.start_ble_scan();
-    await bleClient_.ble_connect();
-    await bleClient_.bleSteps();
-    await bleClient_.bleactMins();
-    bleClient_.closeBLE();
   }
 }
 
@@ -228,9 +204,9 @@ class BLE_Client {
         await _bleonSubscription.cancel();
       }
 
-      if (_activateBleManager != null) {
-        await _activateBleManager.destroyClient();
-      }
+      // if (_activateBleManager != null) {
+        // await _activateBleManager.destroyClient();
+      // }
     } catch (e) {
       print(e);
     }

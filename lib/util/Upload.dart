@@ -98,13 +98,13 @@ class Upload {
             tempPath = tempPath + "/" + serverFileName;
 
             print("Upload file: " + localFilePath);
-            await client.sftpUpload(
+            print(await client.sftpUpload(
               path: localFilePath,
               toPath: serverPath,
               callback: (progress) {
                 print(progress); // read upload progress
               },
-            );
+            ));
             File(localFilePath).delete();
             print("local file deleted");
             if (i == (filePaths.length - 1)) {

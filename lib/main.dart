@@ -9,7 +9,7 @@ import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/AppServiceData.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid.dart' as BLEManagerAndroid;
+import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart' as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -37,33 +37,13 @@ serviceMain() async {
     ServiceClient.setExecutionCallback((initialData) async {
       //you set initialData when you are calling AppClient.execute()
       //from your flutter application code and receive it here
-      var serviceData = AppServiceData.fromJson(initialData);
-      //runs your code here
-      // serviceData.progress = 20;
-      await ServiceClient.update(serviceData);
-      // await BLE.doUpload();
 
-      // await BLEManager.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
-      BLEManagerAndroid.BLE_Client bleClient = new BLEManagerAndroid.BLE_Client();
-      BLEManagerIOS.BluetoothManager bluetoothManager = new BLEManagerIOS.BluetoothManager();
-      await bluetoothManager.asyncInit();
+      var serviceData = AppServiceData.fromJson(initialData);
+      await ServiceClient.update(serviceData);
       await Future.delayed(Duration(milliseconds: 500));
-      // Upload uploader = new Upload();
-      // await uploader.init();
-      //
-      await bleClient.checkBLEstate();
-      bleClient.start_ble_scan();
-      await bleClient.ble_connect();
-      await bleClient.bleStopRecord();
-      await bleClient.bleStartUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
-      await bleClient.blestopUpload();
-      await bleClient.closeBLE();
-      // await uploader.uploadFiles();
-      serviceData.progress = 100;
-      // await ServiceClient.update(serviceData);
+      await BLEManagerAndroid.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
-      // hideOverlay();
     });
   }  catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
@@ -157,7 +137,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
         await BLEManagerIOS.getStepsAndMinutes();
       }
       else {
-        await BLEManagerAndroid.getStepsAndMinutes();
+        // await BLEManagerAndroid.getStepsAndMinutes();
       }
       return 1;
     }
@@ -203,7 +183,7 @@ class Trac2Move extends StatelessWidget {
   Widget build(BuildContext context) {
     try {
       return MaterialApp(
-          debugShowCheckedModeBanner: true, home: SetFirstPage());
+          debugShowCheckedModeBanner: true, home: AppRetainWidget(child: SetFirstPage()));
     } catch (exception) {
       print(exception);
     }

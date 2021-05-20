@@ -1,7 +1,9 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_ble_lib/flutter_ble_lib.dart';
+import 'package:flutter/services.dart';
+import 'package:need_resume/need_resume.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:trac2move/screens/Configuration.dart';
@@ -12,7 +14,7 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid.dart'
+import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
     as BLEManagerAndroid;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
@@ -23,57 +25,139 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 
+class AppRetainWidget extends StatelessWidget {
+  const AppRetainWidget({Key key, this.child}) : super(key: key);
+
+  final Widget child;
+
+  final _channel = const MethodChannel('com.example/app_retain');
+
+  @override
+  Widget build(BuildContext context) {
+    return WillPopScope(
+      onWillPop: () async {
+        if (Platform.isAndroid) {
+          if (Navigator.of(context).canPop()) {
+            return true;
+          } else {
+            _channel.invokeMethod('sendToBackground');
+            return false;
+          }
+        } else {
+          return true;
+        }
+      },
+      child: child,
+    );
+  }
+}
+
+class LifecycleEventHandler extends WidgetsBindingObserver {
+  final AsyncCallback resumeCallBack;
+  final AsyncCallback suspendingCallBack;
+
+  LifecycleEventHandler({
+    this.resumeCallBack,
+    this.suspendingCallBack,
+  });
+
+  @override
+  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        if (resumeCallBack != null) {
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          var isUploading = prefs.getBool("uploadInProgress");
+          if (isUploading == null || !isUploading) {
+            showOverlay("Synchronisiere Schritte und aktive Minuten.",
+                SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+            if (Platform.isIOS) {
+              await BLEManagerIOS.getStepsAndMinutes();
+            } else {
+              await BLEManagerAndroid.getStepsAndMinutes();
+            }
+            // _reloadPage(context);
+          }
+          await resumeCallBack();
+        }
+
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        if (suspendingCallBack != null) {
+          await suspendingCallBack();
+        }
+        break;
+    }
+  }
+}
+
 class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
 }
 
-class _LandingScreenState extends State<LandingScreen>
-    with WidgetsBindingObserver {
-  // FlutterLogs flutterlogs = FlutterLogs();
+class _LandingScreenState extends ResumableState<LandingScreen> {
+  // @override
+  // void initState() {
+  //   hideOverlay();
+  //   super.initState();
+  //   // WidgetsBinding.instance.addObserver(
+  //   //   LifecycleEventHandler(
+  //   //     resumeCallBack: () async => setState(
+  //   //       () {
+  //   //         hideOverlay();
+  //   //       },
+  //   //     ),
+  //   //   ),
+  //   // );
+  // }
+  // @override
+  // void setState(fn) {
+  //   if(mounted) {
+  //     super.setState(fn);
+  //   }
+  //   else {
+  //     initState();
+  //   }
+  // }
 
   @override
-  void initState() {
-    // hideOverlay();
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
+  void onReady() {
+    // Implement your code inside here
+
+    print('HomeScreen is ready!');
   }
 
   @override
-  void didChangeAppLifecycleState(AppLifecycleState state) async {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        var isUploading = prefs.getBool("uploadInProgress");
-        if (isUploading == null || !isUploading) {
-          showOverlay("Synchronisiere Schritte und aktive Minuten.",
-              SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-          // if (Platform.isAndroid) {
+  void onResume() async {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      var isUploading = prefs.getBool("uploadInProgress");
+      if (isUploading == null || !isUploading) {
+        showOverlay("Synchronisiere Schritte und aktive Minuten.",
+            SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+        if (Platform.isIOS) {
           await BLEManagerIOS.getStepsAndMinutes();
-          // }
+        } else {
+          await BLEManagerAndroid.getStepsAndMinutes();
+        }
+        setState(() {
 
-          await Future.delayed(Duration(seconds: 1));
-          _reloadPage(context);
-          hideOverlay();
-        }
-        break;
-      case AppLifecycleState.inactive:
-        // print("app in inactive");
-        break;
-      case AppLifecycleState.paused:
-        break;
-      case AppLifecycleState.detached:
-        try {
-          if (Platform.isAndroid) {
-            BLEManagerAndroid.closeConnection();
-          } else {}
-        } catch (e, stacktrace) {
-          logError(e, stackTrace: stacktrace);
-        }
-        break;
-    }
+        });
+        // _reloadPage(context);
+      }
+      hideOverlay();
+
+    // print('HomeScreen is resumed!');
   }
 
+  @override
+  void onPause() {
+    // Implement your code inside here
+
+    print('HomeScreen is paused!');
+  }
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -294,39 +378,7 @@ class _LandingScreenState extends State<LandingScreen>
                                             textAlign: TextAlign.center,
                                             textScaleFactor: 1));
                                   }
-                                })
-
-                            // Align(
-                            //   alignment: Alignment.centerLeft,
-                            //   child: AutoSizeText.rich(
-                            //     TextSpan(
-                            //       text: "Bereits",
-                            //       style: TextStyle(
-                            //           fontFamily: "PlayfairDisplay",
-                            //           fontWeight: FontWeight.w500,
-                            //           color: Colors.white),
-                            //       children: <TextSpan>[
-                            //         TextSpan(
-                            //             text: ' 20',
-                            //             style: TextStyle(
-                            //                 fontFamily: "PlayfairDisplay",
-                            //                 fontWeight: FontWeight.bold,
-                            //                 color: Colors.white)),
-                            //         TextSpan(
-                            //             text: ' Minuten aktiv gewesen.',
-                            //             style: TextStyle(
-                            //                 fontFamily: "PlayfairDisplay",
-                            //                 fontWeight: FontWeight.w500,
-                            //                 color: Colors.white)),
-                            //       ],
-                            //     ),
-                            //     textAlign: TextAlign.left,
-                            //     presetFontSizes: [20, 19, 18, 15, 12],
-                            //     minFontSize: 8,
-                            //     maxFontSize: 20,
-                            //   ),
-                            // ),
-                            )
+                                }))
                       ]),
                       Row(children: [
                         Container(
@@ -484,18 +536,33 @@ class _LandingScreenState extends State<LandingScreen>
             //       BLEManagerIOS.stopRecordingAndUpload();
             //   },
             // ),
-            // ListTile(
-            //   title: Text('UploadDebug',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     Upload uploader = new Upload();
-            //     await uploader.init();
-            //     await uploader.uploadFiles();
-            //   },
-            // ),
+            ListTile(
+              title: Text('New AndroidBLE Lib',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                // for (int i =0; i < 5; i++) {
+                //   BLEManagerAndroid.BLE_Client androidBLEClient =
+                //   new BLEManagerAndroid.BLE_Client();
+                //   await androidBLEClient.init();
+                //   try {
+                //     await androidBLEClient.checkBLEstate();
+                //     await androidBLEClient.connect();
+                //     await Future.delayed(Duration(seconds: 1));
+                //     await androidBLEClient.getMinutes();
+                //     await androidBLEClient.getSteps();
+                //     await Future.delayed(Duration(seconds: 1));
+                //     await androidBLEClient.disconnect();
+                //     _reloadPage(context);
+                //   } catch (e) {
+                //     await androidBLEClient.disconnect();
+                //   }
+                _reloadPage(context);
+                // }
+              },
+            ),
             ListTile(
               title: Text('Upload LogFile',
                   style: TextStyle(
@@ -556,15 +623,7 @@ class _LandingScreenState extends State<LandingScreen>
                 prefs.setString("recordStopedAt", DateTime.now().toString());
                 prefs.setBool("isRecording", false);
                 prefs.remove("recordStartedAt");
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => Stack(
-                      children: [LandingScreen(), OverlayView()],
-                    ),
-                  ),
-                );
+                _reloadPage(context);
               },
             ),
             ListTile(
@@ -617,10 +676,9 @@ class _LandingScreenState extends State<LandingScreen>
     );
   }
 
-  void _stopRecordingAndUpload() async {
+  Future<dynamic> _stopRecordingAndUpload() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool bleActivated = await SystemShortcuts.checkBluetooth;
-    // prefs.setBool("uploadInProgress", true);
     if (!bleActivated) {
       await SystemShortcuts.bluetooth();
     }
@@ -639,18 +697,10 @@ class _LandingScreenState extends State<LandingScreen>
             DateTime.now().toString(),
           );
 
-          hideOverlay();
+          // hideOverlay();
           prefs.setBool("isRecording", false);
           prefs.setBool("uploadInProgress", false);
-          Navigator.of(context).pop();
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => Stack(
-                children: [LandingScreen(), OverlayView()],
-              ),
-            ),
-          );
+          _reloadPage(context);
         }
       });
     } else {
@@ -658,35 +708,29 @@ class _LandingScreenState extends State<LandingScreen>
       AppServiceData data = AppServiceData();
       try {
         String _result = 'result';
-        String _status = 'status';
+        // String _status = 'status';
         var result = await AppClient.execute(data);
         var resultData = AppServiceData.fromJson(result);
         setState(() => _result =
             'finished executing service process ;) -> ${resultData.progress}');
-        hideOverlay();
+        // hideOverlay();
         Upload uploader = new Upload();
         await uploader.init();
         uploader.uploadFiles();
-        Navigator.of(context).pop();
         prefs.setBool("isRecording", false);
         prefs.setBool("uploadInProgress", false);
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => Stack(
-              children: [LandingScreen(), OverlayView()],
-            ),
-          ),
-        );
+        _reloadPage(context);
       } catch (e, stacktrace) {
-        hideOverlay();
+        // hideOverlay();
         print(e);
         print(stacktrace);
       }
     }
+
+    return true;
   }
 
-  void _startRecording(
+  Future<dynamic> _startRecording(
       BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
     showOverlay(
         "Ihre Bangle wird verbunden.",
@@ -695,15 +739,21 @@ class _LandingScreenState extends State<LandingScreen>
           size: 50.0,
         ));
     if (Platform.isAndroid) {
-      await BLEManagerAndroid.startRecording();
+      await BLEManagerAndroid.syncTimeAndStartRecording();
     } else {
       await BLEManagerIOS.syncTimeAndStartRecording();
     }
-    _reloadPage(context);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    prefs.setString("recordStartedAt", DateTime.now().toString());
+    prefs.setBool("isRecording", true);
+    prefs.setInt("current_steps", 0);
+    prefs.setInt("current_active_minutes", 0);
+    // _reloadPage(context);
     await Future.delayed(
       Duration(seconds: 3),
     );
-    hideOverlay();
+
+    return true;
   }
 
   Widget _getSaveButton(String actionText, Color color, int action, Size size,
@@ -726,7 +776,10 @@ class _LandingScreenState extends State<LandingScreen>
         textColor: Colors.white,
         color: color,
         onPressed: () async {
-          fun();
+          await fun();
+          if (mounted)
+            setState(() {});
+          else _reloadPage(context);
         },
       ),
     );
@@ -734,11 +787,9 @@ class _LandingScreenState extends State<LandingScreen>
 }
 
 void _reloadPage(context) async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  prefs.setString("recordStartedAt", DateTime.now().toString());
-  prefs.setBool("isRecording", true);
   hideOverlay();
-  Navigator.of(context).pop();
+  // rebuildAllChildren(context);
+  Navigator.pop(context);
   Navigator.push(
     context,
     MaterialPageRoute(
@@ -796,7 +847,7 @@ Future<int> isRecording() async {
   }
 
   bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(hours: 5))) ? true : false;
+      now.isAfter(recordStartedAt.add(Duration(minutes: 1))) ? true : false;
 
   if (!isRecording) {
     // Time to start recording
@@ -812,4 +863,13 @@ Future<int> isRecording() async {
     return 3;
   }
   // return isRecording;
+}
+
+void rebuildAllChildren(BuildContext context) {
+  void rebuild(Element el) {
+    el.markNeedsBuild();
+    el.visitChildren(rebuild);
+  }
+
+  (context as Element).visitChildren(rebuild);
 }
