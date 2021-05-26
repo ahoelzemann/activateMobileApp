@@ -5,10 +5,11 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/exceptions/OSNotInstalledException.dart';
+import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:android_long_task/android_long_task.dart';
+import 'package:bluetooth_enable/bluetooth_enable.dart';
 
 class BLE_Client {
   BleManager _bleManager;
@@ -46,7 +47,7 @@ class BLE_Client {
         .listen((bluetoothState) async {
       if (bluetoothState == BluetoothState.POWERED_ON &&
           !completer.isCompleted) {
-        await _subscription?.cancel();
+        await _subscription.cancel();
         completer.complete(true);
       } else if (bluetoothState == BluetoothState.POWERED_OFF &&
           !completer.isCompleted) {
@@ -86,8 +87,8 @@ class BLE_Client {
       },
       cancelOnError: true,
       onDone: () async {
-        _bleSubscription?.cancel();
-        await Future.delayed(Duration(seconds: 10));
+        _bleSubscription.cancel();
+        await Future.delayed(Duration(seconds: 5));
         try {
           var sortedEntries = bangles.entries.toList()
             ..sort((e1, e2) {
@@ -98,7 +99,7 @@ class BLE_Client {
           List<String> bangle = sortedEntries.first.key.split("#");
           updateOverlayText("Wir haben folgende Bangle.js gefunden: " +
               bangle[0] +
-              ".\nDiese wird nun als Standardgerät in der App hinterlegt.");
+              ".Diese wird nun als Standardgerät in der App hinterlegt.");
           await Future.delayed(Duration(seconds: 10));
           updateOverlayText(
               "Wir speichern nun Ihre Daten am Server und lokal auf Ihrem Gerät.");
@@ -130,7 +131,7 @@ class BLE_Client {
             myDevice = scanResult.peripheral;
             _bleManager.stopPeripheralScan();
             print("Device found: " + myDevice.toString());
-            await _scanSubscription?.cancel();
+            await _scanSubscription.cancel();
             completer.complete(true);
           }
         },
@@ -173,7 +174,7 @@ class BLE_Client {
         characRX = _characteristics.firstWhere((characteristic) =>
             characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX);
         print("Status: Connected to " + myDevice.name.toString());
-        _deviceStateSubscription?.cancel();
+        _deviceStateSubscription.cancel();
         completer.complete(true);
       }
     });
@@ -185,6 +186,7 @@ class BLE_Client {
     if (await myDevice.isConnected()) {
       print("DISCONNECTING...");
       await myDevice.disconnectOrCancelConnection();
+      await _bleManager.destroyClient();
     }
     print("Disconnected!");
   }
@@ -209,12 +211,12 @@ class BLE_Client {
         try {
           _actMins = int.parse(dd.trim());
         } on FormatException catch (e) {
-          await _responseSubscription?.cancel();
+          await _responseSubscription.cancel();
           disconnect();
         }
 
         prefs.setInt("current_active_minutes", _actMins);
-        await _responseSubscription?.cancel();
+        await _responseSubscription.cancel();
         completer.complete(_actMins);
       }
     });
@@ -244,11 +246,11 @@ class BLE_Client {
         try {
           _steps = int.parse(dd.trim());
         } on FormatException catch (e) {
-          await _responseSubscription?.cancel();
+          await _responseSubscription.cancel();
           disconnect();
         }
         prefs.setInt("current_steps", _steps);
-        await _responseSubscription?.cancel();
+        await _responseSubscription.cancel();
         completer.complete(_steps);
       }
     });
@@ -313,7 +315,6 @@ class BLE_Client {
 
     print("Sending  start command...");
 
-    await bleSyncTime();
     await Future.delayed(Duration(milliseconds: 1000));
     String s = "recStrt(" +
         Hz.toString() +
@@ -368,7 +369,7 @@ class BLE_Client {
         String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
             event.lastIndexOf(13))); //the number between = and \r
         int noOfFiles = int.parse(dd.trim());
-        await _responseSubscription?.cancel();
+        await _responseSubscription.cancel();
         completer.complete(noOfFiles);
       }
     });
@@ -405,7 +406,7 @@ class BLE_Client {
             event[12] == 255 &&
             event[13] == fileCount) {
           if (_characSubscription != null) {
-            await _characSubscription?.cancel();
+            await _characSubscription.cancel();
           }
           _result[_fileName] = _data;
           completer.complete(_result);
@@ -466,7 +467,7 @@ class BLE_Client {
           foregroundService.progress + incrementelSteps;
       ServiceClient.update(foregroundService);
       String _fileName = _currentResult.keys.first;
-      List<dynamic> _currentFile = _currentResult.values.first;
+      List<int> _currentFile = _currentResult.values.first;
       print(fileCount.toString() +
           "  " +
           _fileName.toString() +
@@ -512,7 +513,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<bool> createPermission() async {
+  Future<void> createPermission() async {
     new BLE_Client();
   }
 
@@ -526,7 +527,8 @@ class BLE_Client {
   }
 }
 
-Future<bool> getStepsAndMinutes() async {
+Future<dynamic> getStepsAndMinutes() async {
+  await Future.delayed(Duration(seconds: 1));
   BLE_Client androidBLEClient = new BLE_Client();
   await androidBLEClient.init();
   try {
@@ -534,26 +536,39 @@ Future<bool> getStepsAndMinutes() async {
     await androidBLEClient.connect();
     await androidBLEClient.getMinutes();
     await androidBLEClient.getSteps();
+    await Future.delayed(Duration(seconds: 2));
     await androidBLEClient.disconnect();
+
+    return true;
   } catch (e) {
     await androidBLEClient.disconnect();
+
+    return false;
   }
 }
 
 Future<bool> stopRecordingAndUpload(
     {foregroundServiceClient, foregroundService}) async {
   BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(seconds: 1));
+  // SharedPreferences prefs = await SharedPreferences.getInstance();
+
   await bleClient.init();
   try {
     await bleClient.checkBLEstate();
     bleClient.start_ble_scan();
     await bleClient.connect();
+    await Future.delayed(Duration(seconds: 6));
     await bleClient.bleStopRecord();
+    await Future.delayed(Duration(seconds: 2));
     await bleClient.startUpload(
         foregroundServiceClient: foregroundServiceClient,
         foregroundService: foregroundService);
+    await Future.delayed(Duration(seconds: 2));
     await bleClient.blestopUpload();
     await bleClient.disconnect();
+    await Future.delayed(Duration(seconds: 30));
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
@@ -563,21 +578,19 @@ Future<bool> stopRecordingAndUpload(
 }
 
 Future<bool> syncTimeAndStartRecording() async {
-  await Future.delayed(Duration(milliseconds: 500));
   BLE_Client client = new BLE_Client();
+  int hour =
+      (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
   await client.init();
   try {
     await client.checkBLEstate();
     await client.connect();
-    updateOverlayText("Ihre Bangle wurde gefunden."
-        "Wir starten nun die tägliche Aufnahme.");
     await Future.delayed(Duration(seconds: 3));
-    await client.bleStartRecord(12.5, 8, 25);
+    await client.bleSyncTime();
+    await client.bleStartRecord(12.5, 8, hour);
     await client.disconnect();
-    updateOverlayText("Die Aufnahme wurde gestartet."
-        "Bitte überprüfen Sie das Display Ihrer Smartwatch.");
+
     await Future.delayed(Duration(seconds: 3));
-    hideOverlay();
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
@@ -606,4 +619,18 @@ Future<bool> createPermission() async {
   // bleClient.closeBLE();
 
   return true;
+}
+
+Future<void> refresh() async {
+  BLE_Client client = new BLE_Client();
+  await client.init();
+  if (await client._bleManager.bluetoothState() == BluetoothState.POWERED_OFF) {
+    await client._bleManager.enableRadio();
+  } else if (await client._bleManager.bluetoothState() ==
+      BluetoothState.POWERED_ON) {
+    await client._bleManager.disableRadio();
+    await Future.delayed(Duration(seconds: 1));
+    await client._bleManager.enableRadio();
+  }
+
 }

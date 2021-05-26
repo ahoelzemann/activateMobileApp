@@ -47,7 +47,7 @@ class PostgresConnector {
 
       });
 
-  Future<http.Response> getParticipants() async {
+  Future<dynamic> getParticipants() async {
     try {
       var url = Uri.parse(this.url + 'participants');
 
@@ -60,10 +60,11 @@ class PostgresConnector {
       return response;
     }  catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
+      return false;
     }
   }
 
-  Future<http.Response> getOneParticipant(String studienID) async {
+  Future<dynamic> getOneParticipant(String studienID) async {
     try {
       var url = Uri.parse(this.url+'participants?studienid=eq.$studienID');
 
@@ -76,6 +77,7 @@ class PostgresConnector {
       return response;
     }  catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
+      return false;
     }
 
   }

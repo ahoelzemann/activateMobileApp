@@ -29,13 +29,12 @@ dependencies:
   evil_icons_flutter: ^0.5.0
   ionicons: ^0.1.2
   flutter_ble_lib: ^2.3.2
-  #  flutter_ble_lib:
-  #    git : https://github.com/Polidea/FlutterBleLib
   path_provider: ^2.0.1
   #cron: ^0.3.0
 #  flutter_launcher_icons: "^0.8.0"
   flutter_secure_storage: ^4.1.0
-  system_shortcuts: ^1.0.0
+  system_shortcuts: 0.2.3
+
   auto_size_text: ^2.1.0
   permission_handler: ^7.0.0
   location: ^4.1.1
@@ -43,11 +42,13 @@ dependencies:
   flutter_blue: ^0.7.3
   access_settings_menu: ^0.0.1
   flutter_fimber_filelogger: ^1.1.1+1
+  flutter_cupertino_date_picker: ^1.0.26+2
   geolocator: ^7.0.3
   flutter_fimber: ^0.6.3
   need_resume: ^1.0.6
-#  flutter_blue:
-#    git : https://github.com/boskokg/flutter_blue
+  battery: ^2.0.2
+  day_night_time_picker: ^1.0.2
+  bluetooth_enable: ^0.1.1
 
   flutter:
     sdk: flutter

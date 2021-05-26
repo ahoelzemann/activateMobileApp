@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:date_format/date_format.dart';
@@ -6,7 +8,6 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart' as BLEManagerAndroid;
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Platform;
@@ -49,7 +50,7 @@ class MapScreenState extends State<ProfilePage> {
   TextEditingController studienIDController =
       new TextEditingController(text: "L-");
   DateTime selectedDate = DateTime(2000, 1);
-  int ageToSave;
+  int ageToSave = 0;
 
   final FocusNode myFocusNode = FocusNode();
 
@@ -74,7 +75,7 @@ class MapScreenState extends State<ProfilePage> {
       });
   }
 
-  Widget _getAppBar() {
+  PreferredSizeWidget _getAppBar() {
     if (createUser) {
       return new AppBar(
           automaticallyImplyLeading: createUser ? false : true,
@@ -108,7 +109,7 @@ class MapScreenState extends State<ProfilePage> {
   Future<int> initValues(createUser) async {
     if (!createUser) {
       SharedPreferences msp = await SharedPreferences.getInstance();
-      List participant = msp.getStringList('participant');
+      List<String> participant = msp.getStringList('participant');
       studienIDController = new TextEditingController(text: participant[1]);
       setState(() {
         List<String> datestring = participant[4].split(".");
@@ -567,8 +568,9 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
         studienID: values[5],
         age: int.parse(values[8].substring(1, 3)),
         bangleID: values[11],
-        birthday: values[15]);
-
+        birthday: values[15],
+        worn_at: values[15]);
+  //Todo: Fix the index of worn_at
     mySharedPreferences msp = new mySharedPreferences();
     bool result = await msp.mySharedPreferencesFirstStart(participant);
 
@@ -596,8 +598,9 @@ Future<String> _saveUserOnServer(int ageToSave, DateTime birthday,
   return result;
 }
 
-Future<String> _saveLocalUser(int ageToSave, DateTime birthday,
+Future<dynamic> _saveLocalUser(int ageToSave, DateTime birthday,
     String studienID, String bangleID, String worn_at) {
+  Completer completer = new Completer();
   String date = convertDate(birthday);
 
   if (bangleID == null) {
@@ -611,6 +614,6 @@ Future<String> _saveLocalUser(int ageToSave, DateTime birthday,
       worn_at: worn_at);
   mySharedPreferences msp = new mySharedPreferences();
   msp.mySharedPreferencesFirstStart(participant);
-
-  return null;
+  completer.complete("done");
+  return completer.future;
 }

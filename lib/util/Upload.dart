@@ -14,23 +14,23 @@ import 'dart:io' as io;
 import 'package:trac2move/util/Logger.dart';
 
 class Upload {
-  SharedPreferences prefs;
-  String host;
-  int port;
-  String login;
-  String pw;
-  bool ble_status;
+   SharedPreferences prefs;
+   String host;
+   int port;
+   String login;
+   String pw;
+   bool ble_status;
   var filePaths;
-  SSHClient client;
-  String studienID;
-  String serverFilePath;
+   SSHClient client;
+   String studienID;
+   String serverFilePath;
 
   //List<String> testfiles = getTestFilesPaths();
-  String localFilePath;
-  String serverFileName;
-  Directory tempDir;
-  String localFilesDirectory;
-  String serverPath;
+   String localFilePath;
+   String serverFileName;
+   Directory tempDir;
+   String localFilesDirectory;
+   String serverPath;
 
   Future<bool> init() async {
     try {
@@ -39,20 +39,20 @@ class Upload {
       serverFilePath = "activity_data/" + studienID;
       tempDir = await getTemporaryDirectory();
       localFilesDirectory = tempDir.path + "/daily_data/";
-      if (prefs.getBool("useSecureStorage")) {
-        final storage = new FlutterSecureStorage();
-        host = utf8
-            .decode(base64.decode(await storage.read(key: 'serverAddress')));
-        port = int.parse(
-            utf8.decode(base64.decode(await storage.read(key: 'port'))));
-        login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-        pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
-      } else {
+      // if (prefs.getBool("useSecureStorage")!) {
+      //   final storage = new FlutterSecureStorage();
+      //   host = utf8
+      //       .decode(base64.decode(await storage.read(key: 'serverAddress')));
+      //   port = int.parse(
+      //       utf8.decode(base64.decode(await storage.read(key: 'port'))));
+      //   login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+      //   pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+      // } else {
         host = prefs.getString('serverAddress');
         port = int.parse(prefs.getString("port"));
         login = prefs.getString("login");
         pw = prefs.getString("password");
-      }
+      // }
 
       client = new SSHClient(
         host: host,
@@ -64,6 +64,7 @@ class Upload {
       return true;
     } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
+      return false;
     }
   }
 
@@ -73,7 +74,7 @@ class Upload {
         buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
 
-  Future<void> uploadFiles() async {
+  Future<dynamic> uploadFiles() async {
     // Completer completer = new Completer();
     // try {
       filePaths = io.Directory(localFilesDirectory).listSync();
@@ -172,7 +173,7 @@ class Upload {
       }
     } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
-      print('Error: ${e.code}\nError Message: ${e.message}');
+      // print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }
 }

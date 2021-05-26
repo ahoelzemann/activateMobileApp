@@ -7,12 +7,12 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:trac2move/screens/Overlay.dart';
 
-int steps;
-int active_minutes;
+int steps = 0;
+int active_minutes = 0;
 
 class Configuration extends StatefulWidget {
   Configuration({
-    Key key,
+     Key key,
   }) : super(key: key);
 
   @override

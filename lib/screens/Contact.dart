@@ -7,8 +7,8 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:trac2move/screens/Overlay.dart';
 
-int steps;
-int active_minutes;
+int steps = 0;
+int active_minutes = 0;
 
 class Contact extends StatelessWidget {
   @override
@@ -145,7 +145,7 @@ _displayDialog(BuildContext context) async {
                         builder: (context) => ProfilePage(createUser: false)),
                   );
                 } else {
-                  return showDialog(
+                  showDialog(
                     context: context,
                     builder: (context) {
                       return AlertDialog(

@@ -9,13 +9,15 @@ import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/AppServiceData.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart' as BLEManagerAndroid;
+import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
+as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
+import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
@@ -23,6 +25,7 @@ import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
+import 'package:bluetooth_enable/bluetooth_enable.dart';
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -39,13 +42,24 @@ serviceMain() async {
       //from your flutter application code and receive it here
 
       var serviceData = AppServiceData.fromJson(initialData);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
       await ServiceClient.update(serviceData);
       await Future.delayed(Duration(milliseconds: 500));
-      await BLEManagerAndroid.stopRecordingAndUpload(foregroundServiceClient: ServiceClient, foregroundService: serviceData);
+      if (!prefs.getBool("timeNeverSet")) {
+        await BLEManagerAndroid.stopRecordingAndUpload(
+            foregroundServiceClient: ServiceClient,
+            foregroundService: serviceData);
+        Upload uploader = new Upload();
+        await uploader.init();
+        uploader.uploadFiles();
+      }
+      await BLEManagerAndroid.syncTimeAndStartRecording();
+      await Future.delayed(Duration(seconds: 20));
+      // await BLEManagerAndroid.refresh();
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
     });
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
   }
 }
@@ -54,7 +68,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  Fimber.plantTree(FileLoggerTree(numberOfDays: null));
+  Fimber.plantTree(FileLoggerTree());
   Fimber.e(DateTime.now().toString() + " Beginning Log File:");
   try {
     bool useSecureStorage = false;
@@ -87,9 +101,14 @@ void main() async {
     bool firstRun = prefs.getBool('firstRun');
     prefs.setBool('useSecureStorage', useSecureStorage);
     prefs.setBool("uploadInProgress", false);
+    if (prefs.getBool('timeNeverSet') == null) {
+      prefs.setBool('timeNeverSet', true);
+    }
     if (firstRun == null) {
+      firstRun = true;
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
+      prefs.setBool("firstRun", firstRun);
       if (useSecureStorage) {
         final storage = new FlutterSecureStorage();
         await storage.write(
@@ -102,17 +121,18 @@ void main() async {
             value: base64.encode(utf8.encode("trac2move_upload")));
         await storage.write(
             key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
-      } else {
+      }
+        else {
+          print("saving server credentials...");
         await prefs.setString('serverAddress', "131.173.80.175");
         await prefs.setString('port', "22");
         await prefs.setString('login', "trac2move_upload");
         await prefs.setString('password', "5aU=txXKoU!");
       }
-
     }
 
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
   }
 }
@@ -123,25 +143,38 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
     bool firstRun = instance.getBool("firstRun");
-    bool btState = false;
+    // bool btState = false;
     // await BLE.checkBLEStatus();
     // if (!firstRun) {
     //   return 2;
     // }
+
     if (participant == null) {
-      instance.setBool('firstRun', false);
       return null;
     } else {
       instance.setBool('firstRun', false);
       if (Platform.isIOS) {
-        await BLEManagerIOS.getStepsAndMinutes();
+        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+
+        return 1;
+      } else {
+        bool btState = await SystemShortcuts.checkBluetooth;
+        if (btState) {
+          BLEManagerAndroid.refresh();
+        } else {
+          await BluetoothEnable.enableBluetooth;
+        }
+        await BLEManagerAndroid.getStepsAndMinutes().timeout(
+            Duration(seconds: 30), onTimeout: () async {
+
+
+          return 1;
+        });
+
+        return 1;
       }
-      else {
-        // await BLEManagerAndroid.getStepsAndMinutes();
-      }
-      return 1;
     }
-  }  catch (e, stacktrace) {
+  } catch (e, stacktrace) {
     print(e);
     logError(e, stackTrace: stacktrace);
 
@@ -172,8 +205,7 @@ SetFirstPage() {
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
-          return Stack(
-              children: [LoadingScreenFeedback(), OverlayView()]);
+          return Stack(children: [LoadingScreenFeedback(), OverlayView()]);
         }
       });
 }
@@ -183,9 +215,10 @@ class Trac2Move extends StatelessWidget {
   Widget build(BuildContext context) {
     try {
       return MaterialApp(
-          debugShowCheckedModeBanner: true, home: AppRetainWidget(child: SetFirstPage()));
+          debugShowCheckedModeBanner: true, home: SetFirstPage());
     } catch (exception) {
       print(exception);
+      return LoadingScreenFeedback();
     }
   }
 }

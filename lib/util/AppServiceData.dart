@@ -21,5 +21,5 @@ class AppServiceData extends ServiceData {
   String get notificationTitle => 'Datenübertragung zum Server';
 
   @override
-  String get notificationDescription => 'Zu $progress % abgeschlossen. Bitte haben Sie noch etwas Geduld.';
+  String get notificationDescription => 'Der Vorgang dauert etwa 30 Minuten. Bitte haben Sie noch etwas Geduld.';
 }

@@ -6,9 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:need_resume/need_resume.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
+import 'package:day_night_time_picker/day_night_time_picker.dart';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
+
 import 'dart:io';
 import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
@@ -25,73 +27,15 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 
-class AppRetainWidget extends StatelessWidget {
-  const AppRetainWidget({Key key, this.child}) : super(key: key);
+// Import package
+// import 'package:battery/battery.dart';
 
-  final Widget child;
+// Instantiate it
+// var battery = Battery();
 
-  final _channel = const MethodChannel('com.example/app_retain');
-
-  @override
-  Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        if (Platform.isAndroid) {
-          if (Navigator.of(context).canPop()) {
-            return true;
-          } else {
-            _channel.invokeMethod('sendToBackground');
-            return false;
-          }
-        } else {
-          return true;
-        }
-      },
-      child: child,
-    );
-  }
-}
-
-class LifecycleEventHandler extends WidgetsBindingObserver {
-  final AsyncCallback resumeCallBack;
-  final AsyncCallback suspendingCallBack;
-
-  LifecycleEventHandler({
-    this.resumeCallBack,
-    this.suspendingCallBack,
-  });
-
-  @override
-  Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
-    switch (state) {
-      case AppLifecycleState.resumed:
-        if (resumeCallBack != null) {
-          SharedPreferences prefs = await SharedPreferences.getInstance();
-          var isUploading = prefs.getBool("uploadInProgress");
-          if (isUploading == null || !isUploading) {
-            showOverlay("Synchronisiere Schritte und aktive Minuten.",
-                SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-            if (Platform.isIOS) {
-              await BLEManagerIOS.getStepsAndMinutes();
-            } else {
-              await BLEManagerAndroid.getStepsAndMinutes();
-            }
-            // _reloadPage(context);
-          }
-          await resumeCallBack();
-        }
-
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.detached:
-        if (suspendingCallBack != null) {
-          await suspendingCallBack();
-        }
-        break;
-    }
-  }
-}
+// Duration _activeHours = Duration(minutes:1);
+Duration _activeHours = Duration(hours: 10);
+// String _buttonText =  "Startzeit wählen";
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -99,65 +43,36 @@ class LandingScreen extends StatefulWidget {
 }
 
 class _LandingScreenState extends ResumableState<LandingScreen> {
-  // @override
-  // void initState() {
-  //   hideOverlay();
-  //   super.initState();
-  //   // WidgetsBinding.instance.addObserver(
-  //   //   LifecycleEventHandler(
-  //   //     resumeCallBack: () async => setState(
-  //   //       () {
-  //   //         hideOverlay();
-  //   //       },
-  //   //     ),
-  //   //   ),
-  //   // );
-  // }
-  // @override
-  // void setState(fn) {
-  //   if(mounted) {
-  //     super.setState(fn);
-  //   }
-  //   else {
-  //     initState();
-  //   }
-  // }
-
   @override
-  void onReady() {
-    // Implement your code inside here
-
-    print('HomeScreen is ready!');
+  void onReady() async {
+    // print('HomeScreen is ready!');
   }
 
   @override
   void onResume() async {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      var isUploading = prefs.getBool("uploadInProgress");
-      if (isUploading == null || !isUploading) {
-        showOverlay("Synchronisiere Schritte und aktive Minuten.",
-            SpinKitFadingCircle(color: Colors.blue, size: 50.0));
-        if (Platform.isIOS) {
-          await BLEManagerIOS.getStepsAndMinutes();
-        } else {
-          await BLEManagerAndroid.getStepsAndMinutes();
-        }
-        setState(() {
-
-        });
-        // _reloadPage(context);
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var isUploading = prefs.getBool("uploadInProgress");
+    if (isUploading == null || !isUploading) {
+      showOverlay("Synchronisiere Schritte und aktive Minuten.",
+          SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+      if (Platform.isIOS) {
+        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+      } else {
+        await BLEManagerAndroid.getStepsAndMinutes()
+            .timeout(Duration(seconds: 30));
       }
       hideOverlay();
+      setState(() {});
+      // _reloadPage(context);
 
-    // print('HomeScreen is resumed!');
+    }
   }
 
   @override
   void onPause() {
     // Implement your code inside here
-
-    print('HomeScreen is paused!');
   }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -189,30 +104,17 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   width: size.width,
                   height: size.height * 0.3,
                   child: FutureBuilder(
-                      future: isRecording(),
+                      future: timeToUpload(),
                       builder:
-                          (BuildContext context, AsyncSnapshot<int> snapshot) {
+                          (BuildContext context, AsyncSnapshot<bool> snapshot) {
                         if (snapshot.hasData) {
-                          if (snapshot.data == 0) {
-                            // return _getSaveButton('Aufnahme speichern',
-                            //     Colors.orange, 1, size, context, _scaffoldKey);
-                            return _getSaveButton('Aufnahme beginnen',
-                                Colors.green, 0, size, context, _scaffoldKey);
-                          } else if (snapshot.data == 1) {
-                            return _getSaveButton('Aufnahme speichern',
-                                Colors.orange, 1, size, context, _scaffoldKey);
-                          } else if (snapshot.data == 2) {
-                            return Image.asset(
-                                'assets/images/lp_background.png',
-                                fit: BoxFit.fill);
-                          } else if (snapshot.data == 3) {
-                            return _getSaveButton('Aufnahme beginnen',
-                                Colors.green, 0, size, context, _scaffoldKey);
-                          } else {
-                            return Image.asset(
-                                'assets/images/lp_background.png',
-                                fit: BoxFit.fill);
-                          }
+                          // if (snapshot.data == true) {
+                          return _triggerUploadAndSchedule(context);
+                          // } else {
+                          //   return Image.asset(
+                          //       'assets/images/lp_background.png',
+                          //       fit: BoxFit.fill);
+
                         } else {
                           return Image.asset('assets/images/lp_background.png',
                               fit: BoxFit.fill);
@@ -299,7 +201,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                         return Align(
                                             alignment: Alignment.centerLeft,
                                             child: AutoSizeText(
-                                                'Es konnte kein Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                                'Es konnte keine Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
                                                 style: TextStyle(
                                                     fontFamily:
                                                         "PlayfairDisplay",
@@ -370,7 +272,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                     return Align(
                                         alignment: Alignment.centerLeft,
                                         child: AutoSizeText(
-                                            'Es konnte keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                            'Es konnten keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
                                             style: TextStyle(
                                                 fontFamily: "PlayfairDisplay",
                                                 fontWeight: FontWeight.bold,
@@ -450,7 +352,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                     return Align(
                                         alignment: Alignment.centerLeft,
                                         child: AutoSizeText(
-                                            'Es konnte keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
+                                            'Es konnten keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
                                             style: TextStyle(
                                                 fontFamily: "PlayfairDisplay",
                                                 fontWeight: FontWeight.bold,
@@ -483,46 +385,15 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
             // ListTile(
-            //   title: Text('Upload',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     // showOverlay(
-            //     //     'Ihre Daten werden hochgeladen.'
-            //     //     '\nDies kann bis zu einer Stunde dauern.',
-            //     //     SpinKitFadingCircle(
-            //     //       color: Colors.orange,
-            //     //       size: 50.0,
-            //     //     ));
-            //     if (Platform.isIOS) {
-            //       // await BLEManagerIOS.doUpload();
-            //     } else {
-            //       try {
-            //         String _result = 'result';
-            //         String _status = 'status';
-            //         if (Platform.isAndroid) {
-            //           AppClient.observe.listen((json) {
-            //             var serviceData = AppServiceData.fromJson(json);
-            //             setState(() {
-            //               _status = serviceData.notificationDescription;
-            //             });
-            //           });
-            //         }
-            //         AppServiceData data = AppServiceData();
-            //         var result = await AppClient.execute(data);
-            //         var resultData = AppServiceData.fromJson(result);
-            //         setState(() => _result =
-            //             'finished executing service process ;) -> ${resultData.progress}');
-            //       } catch (e, stacktrace) {
-            //         print(e);
-            //         print(stacktrace);
-            //       }
-            //     }
-            //     hideOverlay();
-            //   },
-            // ),
+            //     title: Text('Startzeit wählen',
+            //         style: TextStyle(
+            //             fontFamily: "PlayfairDisplay",
+            //             fontWeight: FontWeight.bold,
+            //             color: Colors.black)),
+            //     onTap: () async {
+            //       await scheduleNext();
+            //     }),
+
             // ListTile(
             //   title: Text('BLE Tests',
             //       style: TextStyle(
@@ -536,35 +407,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //       BLEManagerIOS.stopRecordingAndUpload();
             //   },
             // ),
-            // ListTile(
-            //   title: Text('New AndroidBLE Lib',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     // for (int i =0; i < 5; i++) {
-            //     //   BLEManagerAndroid.BLE_Client androidBLEClient =
-            //     //   new BLEManagerAndroid.BLE_Client();
-            //     //   await androidBLEClient.init();
-            //     //   try {
-            //     //     await androidBLEClient.checkBLEstate();
-            //     //     await androidBLEClient.connect();
-            //     //     await Future.delayed(Duration(seconds: 1));
-            //     //     await androidBLEClient.getMinutes();
-            //     //     await androidBLEClient.getSteps();
-            //     //     await Future.delayed(Duration(seconds: 1));
-            //     //     await androidBLEClient.disconnect();
-            //     //     _reloadPage(context);
-            //     //   } catch (e) {
-            //     //     await androidBLEClient.disconnect();
-            //     //   }
-            //     _reloadPage(context);
-            //     // }
-            //   },
-            // ),
             ListTile(
-              title: Text('Upload LogFile',
+              title: Text('DEBUGGING ONLY: Upload LogFile',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
                       fontWeight: FontWeight.bold,
@@ -592,40 +436,85 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Vielen Dank");
                 await Future.delayed(Duration(seconds: 2));
                 hideOverlay();
-
-                // await BLE.doUpload();
-                // hideOverlay();
               },
             ),
             // ListTile(
-            //   title: Text('Disconnect Bangle',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
+            //   title: Text(
+            //     'Stopp erzwingen',
+            //     style: TextStyle(
+            //         fontFamily: "PlayfairDisplay",
+            //         fontWeight: FontWeight.bold,
+            //         color: Colors.black),
+            //   ),
             //   onTap: () async {
-            //     BLEManagerIOS.BluetoothManager bleManager =
-            //         new BLEManagerIOS.BluetoothManager();
-            //     await bleManager.asyncInit();
-            //     await bleManager.disconnectFromDevice();
+            //     SharedPreferences prefs = await SharedPreferences.getInstance();
+            //
+            //     // if (!btState) {
+            //       await BLEManagerAndroid.refresh();
+            //     // }
+            //     TimeOfDay _time = TimeOfDay(hour: 7, minute: 0);
+            //     Navigator.of(context).push(showPicker(
+            //         context: context,
+            //         hourLabel: "Stunden",
+            //         minuteLabel: "Minuten",
+            //         okText: "Bestätigen",
+            //         cancelText: "Abbrechen",
+            //         disableMinute: true,
+            //         disableHour: false,
+            //         is24HrFormat: true,
+            //         value: _time,
+            //         onChange: (dateTime) async {
+            //           showOverlay(
+            //               'Ihre Geräte werden geladen.',
+            //               SpinKitFadingCircle(
+            //                 color: Colors.orange,
+            //                 size: 50.0,
+            //               ));
+            //           prefs.setInt("recordingWillStartAt", dateTime.hour);
+            //           if (Platform.isAndroid) {
+            //             prefs.setBool("uploadInProgress", true);
+            //             AppServiceData data = AppServiceData();
+            //             try {
+            //               String _result = 'result';
+            //               var result = await AppClient.execute(data);
+            //               var resultData = AppServiceData.fromJson(result);
+            //               setState(() => _result =
+            //               'finished executing service process ;) -> ${resultData.progress}');
+            //
+            //               prefs.setBool("isRecording", false);
+            //               prefs.setBool("uploadInProgress", false);
+            //               prefs.setBool("timeNeverSet", false);
+            //               _reloadPage(context);
+            //               return true;
+            //             } catch (e, stacktrace) {
+            //               print(e);
+            //               print(stacktrace);
+            //
+            //               return false;
+            //             }
+            //           } else {
+            //             SharedPreferences prefs = await SharedPreferences.getInstance();
+            //             bool timeNeverSet = prefs.getBool("timeNeverSet");
+            //             if (!timeNeverSet) {
+            //               await BLEManagerIOS.stopRecordingAndUpload();
+            //             }
+            //             await BLEManagerIOS.syncTimeAndStartRecording();
+            //             hideOverlay();
+            //             prefs.setBool("isRecording", false);
+            //             prefs.setBool("uploadInProgress", false);
+            //             prefs.setBool("timeNeverSet", false);
+            //             _reloadPage(context);
+            //
+            //             return true;
+            //           }
+            //         },
+            //         onChangeDateTime: (dateTime) async {
+            //           (await SharedPreferences.getInstance())
+            //               .setString("recordingWillStartAtString", checkIfTimeIsToday(dateTime).toString());
+            //         }
+            //     ));
             //   },
             // ),
-            ListTile(
-              title: Text(
-                'Status Zurücksetzen',
-                style: TextStyle(
-                    fontFamily: "PlayfairDisplay",
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black),
-              ),
-              onTap: () async {
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                prefs.setString("recordStopedAt", DateTime.now().toString());
-                prefs.setBool("isRecording", false);
-                prefs.remove("recordStartedAt");
-                _reloadPage(context);
-              },
-            ),
             ListTile(
               title: Text('Kontakt',
                   style: TextStyle(
@@ -656,220 +545,255 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     builder: (context) => Configuration(),
                   ),
                 );
-                //Navigator.pop(context);
               },
             ),
-            ListTile(
-              title: Text('App beenden',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () {
-                exit(0);
-                //Navigator.pop(context);
-              },
-            ),
+            // ListTile(
+            //   title: Text('App beenden',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () {
+            //     exit(0);
+            //     //Navigator.pop(context);
+            //   },
+            // ),
           ],
         ),
       ),
     );
   }
 
-  Future<dynamic> _stopRecordingAndUpload() async {
+  Future<bool> timeToUpload() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    bool bleActivated = await SystemShortcuts.checkBluetooth;
-    if (!bleActivated) {
-      await SystemShortcuts.bluetooth();
-    }
-    showOverlay(
-        'Ihre Daten werden hochgeladen.'
-        '\nDies kann bis zu einer Stunde dauern.',
-        SpinKitFadingCircle(
-          color: Colors.orange,
-          size: 50.0,
-        ));
-    if (Platform.isIOS) {
-      await BLEManagerIOS.stopRecordingAndUpload().then((value) {
-        if (value == true) {
-          prefs.setString(
-            "recordStopedAt",
-            DateTime.now().toString(),
-          );
-
-          // hideOverlay();
-          prefs.setBool("isRecording", false);
-          prefs.setBool("uploadInProgress", false);
-          _reloadPage(context);
-        }
-      });
+    DateTime now = DateTime.now();
+    DateTime recordingWillStartAt;
+    bool timeNeverSet = prefs.getBool('timeNeverSet');
+    if (timeNeverSet) {
+      return timeNeverSet;
     } else {
-      prefs.setBool("uploadInProgress", true);
-      AppServiceData data = AppServiceData();
-      try {
-        String _result = 'result';
-        // String _status = 'status';
-        var result = await AppClient.execute(data);
-        var resultData = AppServiceData.fromJson(result);
-        setState(() => _result =
-            'finished executing service process ;) -> ${resultData.progress}');
-        // hideOverlay();
-        Upload uploader = new Upload();
-        await uploader.init();
-        uploader.uploadFiles();
-        prefs.setBool("isRecording", false);
-        prefs.setBool("uploadInProgress", false);
-        _reloadPage(context);
-      } catch (e, stacktrace) {
-        // hideOverlay();
-        print(e);
-        print(stacktrace);
-      }
+      recordingWillStartAt =
+          DateTime.parse(prefs.getString("recordingWillStartAtString"));
+      return (now.isAfter(recordingWillStartAt.add(_activeHours))
+          ? true
+          : false);
     }
-
-    return true;
   }
 
-  Future<dynamic> _startRecording(
-      BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) async {
-    showOverlay(
-        "Ihre Bangle wird verbunden.",
-        SpinKitFadingCircle(
-          color: Colors.green,
-          size: 50.0,
-        ));
-    if (Platform.isAndroid) {
-      await BLEManagerAndroid.syncTimeAndStartRecording();
-    } else {
-      await BLEManagerIOS.syncTimeAndStartRecording();
-    }
+  Future<dynamic> uploadAndSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    prefs.setString("recordStartedAt", DateTime.now().toString());
-    prefs.setBool("isRecording", true);
-    prefs.setInt("current_steps", 0);
-    prefs.setInt("current_active_minutes", 0);
-    // _reloadPage(context);
-    await Future.delayed(
-      Duration(seconds: 3),
-    );
+    TimeOfDay _time = TimeOfDay(hour: 7, minute: 0);
+    Navigator.of(context).push(showPicker(
+        context: context,
+        hourLabel: "Stunden",
+        minuteLabel: "Minuten",
+        okText: "Bestätigen",
+        cancelText: "Abbrechen",
+        disableMinute: true,
+        disableHour: false,
+        is24HrFormat: true,
+        value: _time,
+        onChange: (dateTime) async {
+          showOverlay(
+              'Ihre Geräte werden geladen.',
+              SpinKitFadingCircle(
+                color: Colors.orange,
+                size: 50.0,
+              ));
+          await prefs.setInt("recordingWillStartAt", dateTime.hour);
+          if (Platform.isAndroid) {
+            await BLEManagerAndroid.refresh();
+            prefs.setBool("uploadInProgress", true);
+            AppServiceData data = AppServiceData();
+            try {
+              String _result = 'result';
+              var result = await AppClient.execute(data);
+              var resultData = AppServiceData.fromJson(result);
+              setState(() => _result =
+                  'finished executing service process ;) -> ${resultData.progress}');
 
-    return true;
-  }
+              prefs.setBool("isRecording", false);
+              prefs.setBool("uploadInProgress", false);
+              prefs.setBool("timeNeverSet", false);
+              _reloadPage(context);
+              return true;
+            } catch (e, stacktrace) {
+              print(e);
+              print(stacktrace);
 
-  Widget _getSaveButton(String actionText, Color color, int action, Size size,
-      BuildContext context, GlobalKey<ScaffoldState> _scaffoldKey) {
-    var fun;
-    if (action == 0) {
-      fun = () => _startRecording(context, _scaffoldKey);
-    } else {
-      fun = () => _stopRecordingAndUpload();
-    }
+              return false;
+            }
+          } else {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            bool timeNeverSet = prefs.getBool("timeNeverSet");
+            if (!timeNeverSet) {
+              await BLEManagerIOS.stopRecordingAndUpload();
+              Upload uploader = new Upload();
+              await uploader.init();
+              uploader.uploadFiles();
+              _reloadPage(context);
+            }
+            await BLEManagerIOS.syncTimeAndStartRecording();
+            hideOverlay();
+            prefs.setBool("isRecording", false);
+            prefs.setBool("uploadInProgress", false);
+            prefs.setBool("timeNeverSet", false);
 
-    return Container(
-      padding: const EdgeInsets.all(20.0),
-      child: new MaterialButton(
-        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        shape: new RoundedRectangleBorder(
-          borderRadius: new BorderRadius.circular(50.0),
-        ),
-        child: new Text(actionText),
-        textColor: Colors.white,
-        color: color,
-        onPressed: () async {
-          await fun();
-          if (mounted)
-            setState(() {});
-          else _reloadPage(context);
+
+            return true;
+          }
         },
+        onChangeDateTime: (dateTime) async {
+          (await SharedPreferences.getInstance()).setString(
+              "recordingWillStartAtString",
+              checkIfTimeIsToday(dateTime).toString());
+        }));
+  }
+
+  Widget _triggerUploadAndSchedule(BuildContext context) {
+    return Container(
+        padding: const EdgeInsets.all(20.0),
+        child: FutureBuilder(
+            future: getButtonText(),
+            builder: (BuildContext context, AsyncSnapshot<String> snapshot) {
+              if (snapshot.hasData) {
+                return new MaterialButton(
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: new RoundedRectangleBorder(
+                    borderRadius: new BorderRadius.circular(50.0),
+                  ),
+                  child: new Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      new Icon(Icons.timer, size: 30,),
+                      new Text(snapshot.data),
+                      new Icon(Icons.battery_charging_full_sharp, size: 30,),
+                    ],
+                  ),
+                  textColor: Colors.white,
+                  color: Colors.green,
+                  onPressed: () async {
+                    await uploadAndSchedule();
+                    // await _uploadAndSchedule(false);
+                    // if (mounted) {
+                    //   setState(() {});
+                    //   hideOverlay();
+                    // } else
+                  },
+                );
+              } else {
+                return new MaterialButton(
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  shape: new RoundedRectangleBorder(
+                    borderRadius: new BorderRadius.circular(50.0),
+                  ),
+                  child: new Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: <Widget>[
+                      new Icon(Icons.timer, size: 30,),
+                      new Text("Startzeit wählen"),
+                    ],
+                  ),
+                  textColor: Colors.white,
+                  color: Colors.green,
+                  onPressed: () async {
+                    await uploadAndSchedule();
+                    // await _uploadAndSchedule(false);
+                    // if (mounted) {
+                    //   setState(() {});
+                    //   hideOverlay();
+                    // } else
+                  },
+                );
+              }
+            })
+
+        // new MaterialButton(
+        //   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        //   shape: new RoundedRectangleBorder(
+        //     borderRadius: new BorderRadius.circular(50.0),
+        //   ),
+        //   child: new Text(_buttonText),
+        //   textColor: Colors.white,
+        //   color: Colors.green,
+        //   onPressed: () async {
+        //     await uploadAndSchedule();
+        //     // await _uploadAndSchedule(false);
+        //     // if (mounted) {
+        //     //   setState(() {});
+        //     //   hideOverlay();
+        //     // } else
+        //
+        //   },
+        // ),
+        );
+  }
+
+  DateTime checkIfTimeIsToday(DateTime givenTime) {
+    final now = DateTime.now();
+    int nowHours = now.hour;
+    int givenTimeHours = givenTime.hour;
+    DateTime result;
+    if (givenTimeHours < nowHours) {
+      result = DateTime(now.year, now.month, now.day + 1, givenTimeHours, 0);
+    } else
+      result = givenTime;
+
+    return result;
+  }
+
+  void _reloadPage(context) async {
+    hideOverlay();
+    Navigator.pop(context);
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Stack(
+          children: [LandingScreen(), OverlayView()],
+        ),
       ),
     );
   }
-}
 
-void _reloadPage(context) async {
-  hideOverlay();
-  // rebuildAllChildren(context);
-  Navigator.pop(context);
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => Stack(
-        children: [LandingScreen(), OverlayView()],
-      ),
-    ),
-  );
-}
-
-Future<List> getGoals() async {
-  List<int> result = [];
-  return await SharedPreferences.getInstance().then(
-    (value) async {
-      result.add(value.getInt('steps'));
-      result.add(value.getInt('active_minutes'));
-      return result;
-    },
-  );
-}
-
-Future<String> getActiveMinutes() async {
-  return await SharedPreferences.getInstance().then(
-    (value) async {
-      return value.getInt('current_active_minutes').toString();
-      // });
-    },
-  );
-}
-
-Future<String> getSteps() async {
-  return await SharedPreferences.getInstance().then(
-    (value) async {
-      // return await BLE.getStepsAndMinutes().then((completer) {
-      return value.getInt('current_steps').toString();
-      // });
-    },
-  );
-}
-
-Future<int> isRecording() async {
-  SharedPreferences prefs = await SharedPreferences.getInstance();
-  DateTime now = DateTime.now();
-  DateTime recordStartedAt;
-
-  try {
-    recordStartedAt = DateTime.parse(prefs.getString("recordStartedAt"));
-  } catch (e) {
-    recordStartedAt = DateTime.now();
+  Future<List> getGoals() async {
+    List<int> result = [];
+    return await SharedPreferences.getInstance().then(
+      (value) async {
+        result.add(value.getInt('steps'));
+        result.add(value.getInt('active_minutes'));
+        return result;
+      },
+    );
   }
 
-  bool isRecording = prefs.getBool("isRecording");
-  if (isRecording == null) {
-    isRecording = false;
+  Future<String> getActiveMinutes() async {
+    return await SharedPreferences.getInstance().then(
+      (value) async {
+        return value.getInt('current_active_minutes').toString();
+        // });
+      },
+    );
   }
 
-  bool timeToUpload =
-      now.isAfter(recordStartedAt.add(Duration(hours: 10))) ? true : false;
-
-  if (!isRecording) {
-    // Time to start recording
-    return 0;
-  } else if (timeToUpload && isRecording) {
-    // Time to upload Data
-    return 1;
-  } else if (isRecording && !timeToUpload) {
-    // Time while recording
-    return 2;
-  } else {
-    // exception
-    return 3;
-  }
-  // return isRecording;
-}
-
-void rebuildAllChildren(BuildContext context) {
-  void rebuild(Element el) {
-    el.markNeedsBuild();
-    el.visitChildren(rebuild);
+  Future<String> getSteps() async {
+    return await SharedPreferences.getInstance().then(
+      (value) async {
+        // return await BLE.getStepsAndMinutes().then((completer) {
+        return value.getInt('current_steps').toString();
+        // });
+      },
+    );
   }
 
-  (context as Element).visitChildren(rebuild);
+  Future<String> getButtonText() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool timeNeverSet = await prefs.getBool("timeNeverSet");
+    String _buttonText = timeNeverSet
+        ? "Startzeit wählen"
+        : "Startzeit wählen & Geräte Laden";
+
+    return _buttonText;
+  }
 }

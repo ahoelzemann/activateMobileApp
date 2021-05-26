@@ -42,8 +42,8 @@ android {
         applicationId "com.activate.trac2move"
         minSdkVersion 22
         targetSdkVersion 30
-        versionCode 18
-        versionName "1.1.6"
+        versionCode 25
+        versionName "2.0.3"
 //        versionCode flutterVersionCode.toInteger()
 //        versionName flutterVersionName
     }
@@ -58,9 +58,9 @@ android {
     buildTypes {
         release {
             signingConfig signingConfigs.release
-            minifyEnabled true
+            minifyEnabled false
             useProguard true
-
+            shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

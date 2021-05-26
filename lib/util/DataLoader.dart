@@ -10,8 +10,8 @@ import 'package:trac2move/util/Logger.dart';
 
 
 class mySharedPreferences {
-  int steps;
-  int active_minutes;
+  int steps = 0;
+  int active_minutes= 0;
   Participant p;
 
   Future<bool> mySharedPreferencesFirstStart (Participant p) async {
@@ -19,6 +19,7 @@ class mySharedPreferences {
       return await SharedPreferences.getInstance().then((value) {
           steps = value.getInt("steps");
           active_minutes = value.getInt("active_minutes");
+        // ignore: unnecessary_null_comparison
         if (steps == null) {
           steps = 7000;
           active_minutes = 30;
@@ -34,6 +35,7 @@ class mySharedPreferences {
     }catch (e, stackTrace) {
       logError(e, stackTrace: stackTrace);
       print(e);
+      return false;
     }
   }
 
