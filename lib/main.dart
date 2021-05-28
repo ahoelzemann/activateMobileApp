@@ -46,16 +46,19 @@ serviceMain() async {
       await ServiceClient.update(serviceData);
       await Future.delayed(Duration(milliseconds: 500));
       if (!prefs.getBool("timeNeverSet")) {
-        await BLEManagerAndroid.stopRecordingAndUpload(
-            foregroundServiceClient: ServiceClient,
-            foregroundService: serviceData);
-        Upload uploader = new Upload();
-        await uploader.init();
-        uploader.uploadFiles();
+        try {
+          await BLEManagerAndroid.stopRecordingAndUpload(
+              foregroundServiceClient: ServiceClient,
+              foregroundService: serviceData);
+          Upload uploader = new Upload();
+          await uploader.init();
+          uploader.uploadFiles();
+        } catch(e, stacktrace) {
+          logError(e, stackTrace: stacktrace);
+        }
       }
       await BLEManagerAndroid.syncTimeAndStartRecording();
       await Future.delayed(Duration(seconds: 20));
-      // await BLEManagerAndroid.refresh();
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
     });
@@ -154,7 +157,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     } else {
       instance.setBool('firstRun', false);
       if (Platform.isIOS) {
-        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+        // await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
 
         return 1;
       } else {
@@ -164,12 +167,12 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
         } else {
           await BluetoothEnable.enableBluetooth;
         }
-        await BLEManagerAndroid.getStepsAndMinutes().timeout(
-            Duration(seconds: 30), onTimeout: () async {
-
-
-          return 1;
-        });
+        // await BLEManagerAndroid.getStepsAndMinutes().timeout(
+        //     Duration(seconds: 30), onTimeout: () async {
+        //
+        //
+        //   return 1;
+        // });
 
         return 1;
       }
@@ -205,7 +208,7 @@ SetFirstPage() {
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
         } else {
-          return Stack(children: [LoadingScreenFeedback(), OverlayView()]);
+          return Stack(children: [LoadingScreen()]);
         }
       });
 }

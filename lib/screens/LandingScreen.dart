@@ -45,7 +45,17 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
-    // print('HomeScreen is ready!');
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var isUploading = prefs.getBool("uploadInProgress");
+    if (isUploading == null || !isUploading) {
+      if (Platform.isIOS) {
+        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+      } else {
+        await BLEManagerAndroid.getStepsAndMinutes()
+            .timeout(Duration(seconds: 30));
+      }
+      setState(() {});
+    }
   }
 
   @override
@@ -53,15 +63,15 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     var isUploading = prefs.getBool("uploadInProgress");
     if (isUploading == null || !isUploading) {
-      showOverlay("Synchronisiere Schritte und aktive Minuten.",
-          SpinKitFadingCircle(color: Colors.blue, size: 50.0));
+      // showOverlay("Synchronisiere Schritte und aktive Minuten.",
+      //     SpinKitFadingCircle(color: Colors.blue, size: 50.0));
       if (Platform.isIOS) {
         await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
       } else {
         await BLEManagerAndroid.getStepsAndMinutes()
             .timeout(Duration(seconds: 30));
       }
-      hideOverlay();
+      // hideOverlay();
       setState(() {});
       // _reloadPage(context);
 
@@ -627,18 +637,24 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             bool timeNeverSet = prefs.getBool("timeNeverSet");
             if (!timeNeverSet) {
-              await BLEManagerIOS.stopRecordingAndUpload();
-              Upload uploader = new Upload();
-              await uploader.init();
-              uploader.uploadFiles();
-              _reloadPage(context);
+              try {
+                await BLEManagerIOS.stopRecordingAndUpload();
+                Upload uploader = new Upload();
+                await uploader.init();
+                uploader.uploadFiles();
+
+              } catch (e, stacktrace) {
+                logError(e, stackTrace: stacktrace);
+              }
+
+
             }
             await BLEManagerIOS.syncTimeAndStartRecording();
             hideOverlay();
-            prefs.setBool("isRecording", false);
-            prefs.setBool("uploadInProgress", false);
-            prefs.setBool("timeNeverSet", false);
-
+            await prefs.setBool("isRecording", false);
+            await prefs.setBool("uploadInProgress", false);
+            await prefs.setBool("timeNeverSet", false);
+            _reloadPage(context);
 
             return true;
           }
@@ -666,9 +682,15 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      new Icon(Icons.timer, size: 30,),
+                      new Icon(
+                        Icons.timer,
+                        size: 30,
+                      ),
                       new Text(snapshot.data),
-                      new Icon(Icons.battery_charging_full_sharp, size: 30,),
+                      new Icon(
+                        Icons.battery_charging_full_sharp,
+                        size: 30,
+                      ),
                     ],
                   ),
                   textColor: Colors.white,
@@ -692,7 +714,10 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: <Widget>[
-                      new Icon(Icons.timer, size: 30,),
+                      new Icon(
+                        Icons.timer,
+                        size: 30,
+                      ),
                       new Text("Startzeit wählen"),
                     ],
                   ),
@@ -790,9 +815,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   Future<String> getButtonText() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool timeNeverSet = await prefs.getBool("timeNeverSet");
-    String _buttonText = timeNeverSet
-        ? "Startzeit wählen"
-        : "Startzeit wählen & Geräte Laden";
+    String _buttonText =
+        timeNeverSet ? "Startzeit wählen" : "Startzeit wählen & Geräte Laden";
 
     return _buttonText;
   }

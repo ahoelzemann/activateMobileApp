@@ -419,6 +419,7 @@ class BluetoothManager {
   Future<dynamic> startUpload(
       {foregroundServiceClient, foregroundService}) async {
     BluetoothCharacteristic characTX;
+    int maxtrys =5;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
     prefs.setBool("uploadInProgress", true);
@@ -454,10 +455,11 @@ class BluetoothManager {
               //     ".\n"
               //         "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
-
+              int try_counter = 0;
               Map<String, List<int>> _currentResult = await _sendNext(
                   fileCount, characteristic, characTX);
-              while (_currentResult.length == 0) {
+              while (_currentResult.length == 0 && try_counter != maxtrys) {
+                try_counter++;
                 _currentResult = await _sendNext(
                     fileCount, characteristic, characTX);
               }

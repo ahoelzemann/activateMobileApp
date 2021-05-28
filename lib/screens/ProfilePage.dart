@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'package:flutter_toggle_tab/flutter_toggle_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:date_format/date_format.dart';
@@ -45,7 +45,8 @@ class ProfilePage extends StatefulWidget {
 
 class MapScreenState extends State<ProfilePage> {
   final bool createUser;
-
+  List<bool> isSelected = [true, false, false];
+  bool _switchValue = true;
   bool _status = true;
   TextEditingController studienIDController =
       new TextEditingController(text: "L-");
@@ -291,46 +292,135 @@ class MapScreenState extends State<ProfilePage> {
                                 ],
                               )),
                           Padding(
-                              padding: EdgeInsets.only(
-                                  left: 25.0, right: 25.0, top: 25.0),
-                              child: new Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                mainAxisSize: MainAxisSize.max,
-                                children: <Widget>[
-                                  new Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      new Text(
-                                        'Geburtsdatum',
-                                        style: TextStyle(
-                                            fontSize: 18.0,
-                                            fontWeight: FontWeight.bold),
-                                      ),
-                                    ],
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'Geburtsdatum',
+                                      style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    _status ? _getEditIcon() : new Container(),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 2.0),
+                            child: new Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                RawMaterialButton(
+                                  onPressed: () => _selectDate(context),
+                                  child: Text(
+                                    "${convertDate(selectedDate)}",
                                   ),
-                                  new Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: <Widget>[
-                                      _status
-                                          ? _getEditIcon()
-                                          : new Container(),
-                                    ],
-                                  )
-                                ],
-                              )),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'BCT-Gruppe',
+                                      style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.end,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    CupertinoSwitch(
+                                      value: _switchValue,
+                                      onChanged: (value) {
+                                        setState(() {
+                                          print(value);
+                                          _switchValue = value;
+                                        });
+                                      },
+                                    ),
+                                  ],
+                                )
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'Geschlecht',
+                                      style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
                           Padding(
                               padding: EdgeInsets.only(
                                   left: 25.0, right: 25.0, top: 2.0),
                               child: new Row(
                                 mainAxisSize: MainAxisSize.max,
                                 children: <Widget>[
-                                  RawMaterialButton(
-                                    onPressed: () => _selectDate(context),
-                                    child: Text(
-                                      "${convertDate(selectedDate)}",
+                                  new Center(
+                                    child: FlutterToggleTab(
+                                      width: 50,
+                                      borderRadius: 15,
+                                      initialIndex: 0,
+                                      selectedTextStyle: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.w600),
+                                      unSelectedTextStyle: TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w400),
+                                      labels: ["Male", "Female"],
+                                      icons: [
+                                        Icons.person,
+                                        Icons.pregnant_woman
+                                      ],
+                                      selectedLabelIndex: (index) {
+                                        print("Selected Index $index");
+                                      },
                                     ),
                                   ),
                                 ],
@@ -370,15 +460,21 @@ class MapScreenState extends State<ProfilePage> {
                 textColor: Colors.white,
                 color: Colors.green,
                 onPressed: () async {
-                  showOverlay("Wir suchen Ihre Bangle.js", Icon(Icons.watch, color: Colors.blue, size: 50.0,));
+                  showOverlay(
+                      "Wir suchen Ihre Bangle.js",
+                      Icon(
+                        Icons.watch,
+                        color: Colors.blue,
+                        size: 50.0,
+                      ));
                   if (Platform.isAndroid) {
                     await BLEManagerIOS.findNearestDevice();
-                  }
-                  else {
+                  } else {
                     await BLEManagerIOS.findNearestDevice();
                   }
                   hideOverlay();
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  SharedPreferences prefs =
+                      await SharedPreferences.getInstance();
                   String bangle_name = prefs.getString("Devicename");
                   if (createUser) {
                     Future<String> result = _saveUserOnServer(
@@ -462,9 +558,10 @@ class MapScreenState extends State<ProfilePage> {
         Navigator.of(context).pop();
         Navigator.push(
           context,
-          MaterialPageRoute(builder: (context) => Stack(
-              children: [LandingScreen(), OverlayView()],
-        )),
+          MaterialPageRoute(
+              builder: (context) => Stack(
+                    children: [LandingScreen(), OverlayView()],
+                  )),
         );
       },
     );
@@ -570,7 +667,7 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
         bangleID: values[11],
         birthday: values[15],
         worn_at: values[15]);
-  //Todo: Fix the index of worn_at
+    //Todo: Fix the index of worn_at
     mySharedPreferences msp = new mySharedPreferences();
     bool result = await msp.mySharedPreferencesFirstStart(participant);
 

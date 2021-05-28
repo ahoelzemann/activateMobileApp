@@ -386,7 +386,11 @@ class BLE_Client {
     Completer completer = new Completer();
     String s;
     StreamSubscription _characSubscription;
-    _characSubscription = characTX.monitor().listen((event) async {
+    _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
+        onTimeout: (timeout) async {
+          await _characSubscription.cancel();
+          completer.complete({});
+        }).listen((event) async {
       int _dataSize = event.length;
       if (_logData == 1) {
         //check end of a file
@@ -440,6 +444,7 @@ class BLE_Client {
 
   Future<dynamic> startUpload(
       {foregroundServiceClient, foregroundService}) async {
+    int maxtrys = 5;
     prefs.setBool("uploadInProgress", true);
     int _numofFiles = await startUploadCommand();
     int incrementelSteps = 100 ~/ (_numofFiles + 1);
@@ -461,8 +466,12 @@ class BLE_Client {
           ".\n"
               "Bitte haben Sie noch etwas Geduld.");
       print(fileCount.toString() + " Start uploading ///////////////");
-
+      int try_counter = 0;
       Map<String, List<int>> _currentResult = await _sendNext(fileCount);
+      while (_currentResult.length == 0 && try_counter != maxtrys) {
+        try_counter++;
+        _currentResult = await _sendNext(fileCount);
+      }
       foregroundService.progress =
           foregroundService.progress + incrementelSteps;
       ServiceClient.update(foregroundService);
