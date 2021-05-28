@@ -20,7 +20,7 @@ import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
     as BLEManagerAndroid;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
+// import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
@@ -429,12 +429,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
                 Directory dir = new Directory(
                     (await getApplicationDocumentsDirectory()).path + "/logs/");
-                showOverlay(
-                    'Die Logdatei wird zum Server übertragen.',
-                    SpinKitFadingCircle(
-                      color: Colors.orange,
-                      size: 50.0,
-                    ));
+                // showOverlay(
+                //     'Die Logdatei wird zum Server übertragen.',
+                //     SpinKitFadingCircle(
+                //       color: Colors.orange,
+                //       size: 50.0,
+                //     ));
 
                 await for (var entity
                     in dir.list(recursive: true, followLinks: true)) {
@@ -604,12 +604,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
-          showOverlay(
-              'Ihre Geräte werden geladen.',
-              SpinKitFadingCircle(
-                color: Colors.orange,
-                size: 50.0,
-              ));
+          // showOverlay(
+          //     'Ihre Geräte werden geladen.',
+          //     SpinKitFadingCircle(
+          //       color: Colors.orange,
+          //       size: 50.0,
+          //     ));
           await prefs.setInt("recordingWillStartAt", dateTime.hour);
           if (Platform.isAndroid) {
             await BLEManagerAndroid.refresh();

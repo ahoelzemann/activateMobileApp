@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:trac2move/screens/Loader.dart';
-import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 class OverlayView extends StatelessWidget {
   const OverlayView({
