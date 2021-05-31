@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:typed_data';
-import 'package:android_long_task/android_long_task.dart';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -537,8 +536,9 @@ class BluetoothManager {
 
     _characSubscription = characTX.value.timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
+      print("TIMEOUT FIRED");
       await _characSubscription.cancel();
-      completer.complete({});
+      completer.complete(_result);
     }).listen((event) async {
       int _dataSize = event.length;
       if (_logData == 1) {

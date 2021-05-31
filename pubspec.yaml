@@ -21,11 +21,12 @@ environment:
   sdk: ">=2.7.0 <3.0.0"
 
 dependencies:
+  awesome_notifications: any
   flutter_toggle_tab: ^1.1.2
   shared_preferences: ^2.0.5
   ssh: ^0.0.7
   http: ^0.13.1
-#  flutter_spinkit: "^5.0.0"
+  flutter_spinkit: "^5.0.0"
   date_format: ^2.0.2
   evil_icons_flutter: ^0.5.0
   ionicons: ^0.1.2
@@ -42,13 +43,14 @@ dependencies:
   flutter_blue: ^0.7.3
   access_settings_menu: ^0.0.1
   flutter_fimber_filelogger: ^1.1.1+1
-#  flutter_cupertino_date_picker: ^1.0.26+2
+  flutter_cupertino_date_picker: ^1.0.26+2
   geolocator: ^7.0.3
   flutter_fimber: ^0.6.3
   need_resume: ^1.0.6
-#  battery: ^2.0.2
+  battery: ^2.0.2
   day_night_time_picker: ^1.0.2
   bluetooth_enable: ^0.1.1
+  toggle_switch: "^0.1.9"
 
   flutter:
     sdk: flutter

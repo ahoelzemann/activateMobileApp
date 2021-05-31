@@ -7,10 +7,11 @@ import 'package:need_resume/need_resume.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:day_night_time_picker/day_night_time_picker.dart';
+import 'package:trac2move/persistant/Participant.dart';
 import 'package:trac2move/screens/Configuration.dart';
 import 'dart:async';
 import 'dart:io' show Platform;
-
+import 'package:awesome_notifications/awesome_notifications.dart';
 import 'dart:io';
 import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
@@ -20,7 +21,7 @@ import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
     as BLEManagerAndroid;
 import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
-// import 'package:flutter_spinkit/flutter_spinkit.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
@@ -45,26 +46,35 @@ class LandingScreen extends StatefulWidget {
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var isUploading = prefs.getBool("uploadInProgress");
-    if (isUploading == null || !isUploading) {
-      if (Platform.isIOS) {
-        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
-      } else {
-        await BLEManagerAndroid.getStepsAndMinutes()
-            .timeout(Duration(seconds: 30));
-      }
-      setState(() {});
-    }
+    // SharedPreferences prefs = await SharedPreferences.getInstance();
+    // var isUploading = prefs.getBool("uploadInProgress");
+    // if (isUploading == null || !isUploading) {
+    //   if (Platform.isIOS) {
+    //     await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+    //   } else {
+    //     await BLEManagerAndroid.getStepsAndMinutes()
+    //         .timeout(Duration(seconds: 30));
+    //   }
+    //   setState(() {});
+    // }
+
+    AwesomeNotifications().actionStream.listen((receivedNotification) {
+      Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+        receivedNotification.id
+      } // your page params. I recommend to you to pass all *receivedNotification* object
+          );
+    });
   }
 
   @override
   void onResume() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     var isUploading = prefs.getBool("uploadInProgress");
+    int lastSteps = prefs.getInt("current_steps");
+    int lastActiveMinutes = prefs.getInt("current_active_minutes");
+    int desiredSteps = prefs.getInt("steps");
+    int desiredMinutes = prefs.getInt("active_minutes");
     if (isUploading == null || !isUploading) {
-      // showOverlay("Synchronisiere Schritte und aktive Minuten.",
-      //     SpinKitFadingCircle(color: Colors.blue, size: 50.0));
       if (Platform.isIOS) {
         await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
       } else {
@@ -74,8 +84,13 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       // hideOverlay();
       setState(() {});
       // _reloadPage(context);
-
+      int currentActiveMinutes = prefs.getInt("current_active_minutes");
+      int currentSteps = prefs.getInt("current_steps");
+      if (lastSteps < currentSteps) {
+        showOverlay("Super gemacht, mach weiter so!", Icon(Icons.thumb_up_alt_outlined, size: 50, color: Colors.blue));
+      }
     }
+
   }
 
   @override
@@ -138,205 +153,132 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   width: size.width)
             ]),
             Expanded(
-                child: Row(children: [
-                  Column(
-                    children: [
-                      Row(children: [
-                        Container(
-                          height: MediaQuery.of(context).size.height * 0.1,
-                          width: icon_width,
-                          margin: icon_margins,
-                          child:
-                              new LayoutBuilder(builder: (context, constraint) {
-                            return new Icon(Icons.directions_walk_rounded,
-                                color: Colors.white,
-                                size: constraint.biggest.height);
-                          }),
-                        ),
-                        Container(
-                            height: MediaQuery.of(context).size.height * 0.133,
-                            width: text_width,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20.0,
-                              horizontal: 10.0,
-                            ),
-                            child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: FutureBuilder(
-                                    future: getSteps(),
-                                    builder: (BuildContext context,
-                                        AsyncSnapshot<String> snapshot) {
-                                      if (snapshot.hasData) {
-                                        return Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: AutoSizeText.rich(
-                                            TextSpan(
-                                              text: "Bereits ",
-                                              style: TextStyle(
-                                                  fontFamily: "PlayfairDisplay",
-                                                  fontWeight: FontWeight.w500,
-                                                  color: Colors.white),
-                                              children: <TextSpan>[
-                                                TextSpan(
-                                                    text: snapshot.data,
-                                                    style: TextStyle(
-                                                        fontFamily:
-                                                            "PlayfairDisplay",
-                                                        fontWeight:
-                                                            FontWeight.bold,
-                                                        color: Colors.white)),
-                                                TextSpan(
-                                                    text: ' Schritte gelaufen.',
-                                                    style: TextStyle(
-                                                        fontFamily:
-                                                            "PlayfairDisplay",
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                        color: Colors.white)),
-                                              ],
-                                            ),
-                                            textAlign: TextAlign.left,
-                                            presetFontSizes: [
-                                              20,
-                                              19,
-                                              18,
-                                              15,
-                                              12
-                                            ],
-                                            minFontSize: 12,
-                                            maxFontSize: 20,
-                                          ),
-                                        );
-                                      } else {
-                                        return Align(
+                child: Row(
+                  children: [
+                    Column(
+                      children: [
+                        Row(children: [
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.1,
+                            width: icon_width,
+                            margin: icon_margins,
+                            child: new LayoutBuilder(
+                                builder: (context, constraint) {
+                              return new Icon(Icons.directions_walk_rounded,
+                                  color: Colors.white,
+                                  size: constraint.biggest.height);
+                            }),
+                          ),
+                          Container(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.133,
+                              width: text_width,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 20.0,
+                                horizontal: 10.0,
+                              ),
+                              child: Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: FutureBuilder(
+                                      future: getSteps(),
+                                      builder: (BuildContext context,
+                                          AsyncSnapshot<String> snapshot) {
+                                        if (snapshot.hasData) {
+                                          return Align(
                                             alignment: Alignment.centerLeft,
-                                            child: AutoSizeText(
-                                                'Es konnte keine Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
-                                                style: TextStyle(
-                                                    fontFamily:
-                                                        "PlayfairDisplay",
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white),
-                                                textAlign: TextAlign.center,
-                                                textScaleFactor: 1));
-                                      }
-                                    })))
-                      ]),
-                      Row(children: [
-                        Container(
-                          height: MediaQuery.of(context).size.height * 0.1,
-                          width: icon_width,
-                          margin: icon_margins,
-                          child:
-                              new LayoutBuilder(builder: (context, constraint) {
-                            return new Icon(Ionicons.fitness_outline,
-                                color: Colors.white,
-                                size: constraint.biggest.height);
-                          }),
-                        ),
-                        Container(
-                            height: MediaQuery.of(context).size.height * 0.133,
-                            width: text_width,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20.0,
-                              horizontal: 10.0,
-                            ),
-                            child: FutureBuilder(
-                                future: getActiveMinutes(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot<String> snapshot) {
-                                  if (snapshot.hasData) {
-                                    return Align(
-                                      alignment: Alignment.centerLeft,
-                                      child: AutoSizeText.rich(
-                                        TextSpan(
-                                          text: "Bereits ",
-                                          style: TextStyle(
-                                              fontFamily: "PlayfairDisplay",
-                                              fontWeight: FontWeight.w500,
-                                              color: Colors.white),
-                                          children: <TextSpan>[
-                                            TextSpan(
-                                                text: snapshot.data,
-                                                style: TextStyle(
-                                                    fontFamily:
-                                                        "PlayfairDisplay",
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Colors.white)),
-                                            TextSpan(
-                                                text: ' Minuten aktiv gewesen.',
+                                            child: AutoSizeText.rich(
+                                              TextSpan(
+                                                text: "Bereits ",
                                                 style: TextStyle(
                                                     fontFamily:
                                                         "PlayfairDisplay",
                                                     fontWeight: FontWeight.w500,
-                                                    color: Colors.white)),
-                                          ],
-                                        ),
-                                        textAlign: TextAlign.left,
-                                        presetFontSizes: [20, 19, 18, 15, 12],
-                                        minFontSize: 12,
-                                        maxFontSize: 20,
-                                      ),
-                                    );
-                                  } else {
-                                    return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: AutoSizeText(
-                                            'Es konnten keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white),
-                                            textAlign: TextAlign.center,
-                                            textScaleFactor: 1));
-                                  }
-                                }))
-                      ]),
-                      Row(children: [
-                        Container(
-                          height: MediaQuery.of(context).size.height * 0.1,
-                          width: icon_width,
-                          margin: icon_margins,
-                          child:
-                              new LayoutBuilder(builder: (context, constraint) {
-                            return new Icon(EvilIcons.trophy,
-                                color: Colors.white,
-                                size: constraint.biggest.height);
-                          }),
-                        ),
-                        Container(
-                            height: MediaQuery.of(context).size.height * 0.133,
-                            width: text_width,
-                            padding: const EdgeInsets.symmetric(
-                              vertical: 20.0,
-                              horizontal: 10.0,
-                            ),
-                            child: FutureBuilder(
-                                future: getGoals(),
-                                builder: (BuildContext context,
-                                    AsyncSnapshot<List> snapshot) {
-                                  if (snapshot.hasData) {
-                                    return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: AutoSizeText.rich(
-                                          TextSpan(
-                                            text: snapshot.data[0].toString(),
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white),
-                                            children: <TextSpan>[
-                                              TextSpan(
-                                                  text: ' Schritte\n',
+                                                    color: Colors.white),
+                                                children: <TextSpan>[
+                                                  TextSpan(
+                                                      text: snapshot.data,
+                                                      style: TextStyle(
+                                                          fontFamily:
+                                                              "PlayfairDisplay",
+                                                          fontWeight:
+                                                              FontWeight.bold,
+                                                          color: Colors.white)),
+                                                  TextSpan(
+                                                      text:
+                                                          ' Schritte gelaufen.',
+                                                      style: TextStyle(
+                                                          fontFamily:
+                                                              "PlayfairDisplay",
+                                                          fontWeight:
+                                                              FontWeight.w500,
+                                                          color: Colors.white)),
+                                                ],
+                                              ),
+                                              textAlign: TextAlign.left,
+                                              presetFontSizes: [
+                                                20,
+                                                19,
+                                                18,
+                                                15,
+                                                12
+                                              ],
+                                              minFontSize: 12,
+                                              maxFontSize: 20,
+                                            ),
+                                          );
+                                        } else {
+                                          return Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: AutoSizeText(
+                                                  'Es konnte keine Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
                                                   style: TextStyle(
                                                       fontFamily:
                                                           "PlayfairDisplay",
                                                       fontWeight:
-                                                          FontWeight.w500,
-                                                      color: Colors.white)),
+                                                          FontWeight.bold,
+                                                      color: Colors.white),
+                                                  textAlign: TextAlign.center,
+                                                  textScaleFactor: 1));
+                                        }
+                                      })))
+                        ]),
+                        Row(children: [
+                          Container(
+                            height: MediaQuery.of(context).size.height * 0.1,
+                            width: icon_width,
+                            margin: icon_margins,
+                            child: new LayoutBuilder(
+                                builder: (context, constraint) {
+                              return new Icon(Ionicons.fitness_outline,
+                                  color: Colors.white,
+                                  size: constraint.biggest.height);
+                            }),
+                          ),
+                          Container(
+                              height:
+                                  MediaQuery.of(context).size.height * 0.133,
+                              width: text_width,
+                              padding: const EdgeInsets.symmetric(
+                                vertical: 20.0,
+                                horizontal: 10.0,
+                              ),
+                              child: FutureBuilder(
+                                  future: getActiveMinutes(),
+                                  builder: (BuildContext context,
+                                      AsyncSnapshot<String> snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: AutoSizeText.rich(
+                                          TextSpan(
+                                            text: "Bereits ",
+                                            style: TextStyle(
+                                                fontFamily: "PlayfairDisplay",
+                                                fontWeight: FontWeight.w500,
+                                                color: Colors.white),
+                                            children: <TextSpan>[
                                               TextSpan(
-                                                  text: snapshot.data[1]
-                                                      .toString(),
+                                                  text: snapshot.data,
                                                   style: TextStyle(
                                                       fontFamily:
                                                           "PlayfairDisplay",
@@ -344,7 +286,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                           FontWeight.bold,
                                                       color: Colors.white)),
                                               TextSpan(
-                                                  text: ' aktive Minuten',
+                                                  text:
+                                                      ' Minuten aktiv gewesen.',
                                                   style: TextStyle(
                                                       fontFamily:
                                                           "PlayfairDisplay",
@@ -355,26 +298,148 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                           ),
                                           textAlign: TextAlign.left,
                                           presetFontSizes: [20, 19, 18, 15, 12],
-                                          minFontSize: 8,
+                                          minFontSize: 12,
                                           maxFontSize: 20,
-                                        ));
-                                  } else {
-                                    return Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: AutoSizeText(
-                                            'Es konnten keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
-                                            style: TextStyle(
-                                                fontFamily: "PlayfairDisplay",
-                                                fontWeight: FontWeight.bold,
-                                                color: Colors.white),
-                                            textAlign: TextAlign.center,
-                                            textScaleFactor: 1));
-                                  }
-                                }))
-                      ])
-                    ],
-                  )
-                ]),
+                                        ),
+                                      );
+                                    } else {
+                                      return Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: AutoSizeText(
+                                              'Es konnten keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                              style: TextStyle(
+                                                  fontFamily: "PlayfairDisplay",
+                                                  fontWeight: FontWeight.bold,
+                                                  color: Colors.white),
+                                              textAlign: TextAlign.center,
+                                              textScaleFactor: 1));
+                                    }
+                                  }))
+                        ]),
+                        FutureBuilder(
+                          future: isbctGroup(),
+                          builder: (BuildContext context,
+                              AsyncSnapshot<bool> snapshot) {
+                            if (snapshot.hasData) {
+                              if (snapshot.data == true) {
+                                return Row(
+                                  children: [
+                                    Container(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.1,
+                                      width: icon_width,
+                                      margin: icon_margins,
+                                      child: new LayoutBuilder(
+                                          builder: (context, constraint) {
+                                        return new Icon(EvilIcons.trophy,
+                                            color: Colors.white,
+                                            size: constraint.biggest.height);
+                                      }),
+                                    ),
+                                    Container(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                              0.133,
+                                      width: text_width,
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 20.0,
+                                        horizontal: 10.0,
+                                      ),
+                                      child: FutureBuilder(
+                                        future: getGoals(),
+                                        builder: (BuildContext context,
+                                            AsyncSnapshot<List> snapshot) {
+                                          if (snapshot.hasData) {
+                                            return Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: AutoSizeText.rich(
+                                                  TextSpan(
+                                                    text: snapshot.data[0]
+                                                        .toString(),
+                                                    style: TextStyle(
+                                                        fontFamily:
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white),
+                                                    children: <TextSpan>[
+                                                      TextSpan(
+                                                          text: ' Schritte\n',
+                                                          style: TextStyle(
+                                                              fontFamily:
+                                                                  "PlayfairDisplay",
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                              color: Colors
+                                                                  .white)),
+                                                      TextSpan(
+                                                          text: snapshot.data[1]
+                                                              .toString(),
+                                                          style: TextStyle(
+                                                              fontFamily:
+                                                                  "PlayfairDisplay",
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .bold,
+                                                              color: Colors
+                                                                  .white)),
+                                                      TextSpan(
+                                                          text:
+                                                              ' aktive Minuten',
+                                                          style: TextStyle(
+                                                              fontFamily:
+                                                                  "PlayfairDisplay",
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w500,
+                                                              color: Colors
+                                                                  .white)),
+                                                    ],
+                                                  ),
+                                                  textAlign: TextAlign.left,
+                                                  presetFontSizes: [
+                                                    20,
+                                                    19,
+                                                    18,
+                                                    15,
+                                                    12
+                                                  ],
+                                                  minFontSize: 8,
+                                                  maxFontSize: 20,
+                                                ));
+                                          } else {
+                                            return Align(
+                                                alignment: Alignment.centerLeft,
+                                                child: AutoSizeText(
+                                                    'Es konnten keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
+                                                    style: TextStyle(
+                                                        fontFamily:
+                                                            "PlayfairDisplay",
+                                                        fontWeight:
+                                                            FontWeight.bold,
+                                                        color: Colors.white),
+                                                    textAlign: TextAlign.center,
+                                                    textScaleFactor: 1));
+                                          }
+                                        },
+                                      ),
+                                    )
+                                  ],
+                                );
+                              } else {
+                                return Container();
+                              }
+                            } else {
+                              return Container();
+                            }
+                          },
+                        )
+                      ],
+                    )
+                  ],
+                ),
                 flex: 2),
           ],
         ),
@@ -404,19 +469,21 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //       await scheduleNext();
             //     }),
 
-            // ListTile(
-            //   title: Text('BLE Tests',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     if (Platform.isAndroid) {
-            //       _stopRecordingAndUpload();
-            //     } else
-            //       BLEManagerIOS.stopRecordingAndUpload();
-            //   },
-            // ),
+            ListTile(
+              title: Text('Push tests',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                        id: 10,
+                        channelKey: 'basic_channel',
+                        title: 'Simple Notification',
+                        body: 'Simple body'));
+              },
+            ),
             ListTile(
               title: Text('DEBUGGING ONLY: Upload LogFile',
                   style: TextStyle(
@@ -429,12 +496,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
                 Directory dir = new Directory(
                     (await getApplicationDocumentsDirectory()).path + "/logs/");
-                // showOverlay(
-                //     'Die Logdatei wird zum Server übertragen.',
-                //     SpinKitFadingCircle(
-                //       color: Colors.orange,
-                //       size: 50.0,
-                //     ));
+                showOverlay(
+                    'Die Logdatei wird zum Server übertragen.',
+                    SpinKitFadingCircle(
+                      color: Colors.orange,
+                      size: 50.0,
+                    ));
 
                 await for (var entity
                     in dir.list(recursive: true, followLinks: true)) {
@@ -604,12 +671,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
-          // showOverlay(
-          //     'Ihre Geräte werden geladen.',
-          //     SpinKitFadingCircle(
-          //       color: Colors.orange,
-          //       size: 50.0,
-          //     ));
+          showOverlay(
+              'Ihre Geräte werden geladen.',
+              SpinKitFadingCircle(
+                color: Colors.orange,
+                size: 50.0,
+              ));
           await prefs.setInt("recordingWillStartAt", dateTime.hour);
           if (Platform.isAndroid) {
             await BLEManagerAndroid.refresh();
@@ -642,12 +709,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 Upload uploader = new Upload();
                 await uploader.init();
                 uploader.uploadFiles();
-
               } catch (e, stacktrace) {
                 logError(e, stackTrace: stacktrace);
               }
-
-
             }
             await BLEManagerIOS.syncTimeAndStartRecording();
             hideOverlay();
@@ -819,5 +883,13 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         timeNeverSet ? "Startzeit wählen" : "Startzeit wählen & Geräte Laden";
 
     return _buttonText;
+  }
+
+  Future<bool> isbctGroup() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    List<String> participantAsList = prefs.getStringList("participant");
+    Participant p = fromStringList(participantAsList);
+
+    return p.bctGroup;
   }
 }

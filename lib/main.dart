@@ -26,6 +26,7 @@ import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:bluetooth_enable/bluetooth_enable.dart';
+import 'package:awesome_notifications/awesome_notifications.dart';
 
 //this entire function runs in your ForegroundService
 @pragma('vm:entry-point')
@@ -73,9 +74,29 @@ void main() async {
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Fimber.plantTree(FileLoggerTree());
   Fimber.e(DateTime.now().toString() + " Beginning Log File:");
+  AwesomeNotifications().initialize(
+    // set the icon to null if you want to use the default app icon
+      null,
+      [
+        NotificationChannel(
+            channelKey: 'basic_channel',
+            channelName: 'Basic notifications',
+            channelDescription: 'Notification channel for basic tests',
+            defaultColor: Color(0xFF9D50DD),
+            ledColor: Colors.white
+        )
+      ]
+  );
   try {
     bool useSecureStorage = false;
     print("secureStorage done");
+    AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
+      if (!isAllowed) {
+        // Insert here your friendly dialog box before call the request method
+        // This is very important to not harm the user experience
+        AwesomeNotifications().requestPermissionToSendNotifications();
+      }
+    });
     if (Platform.isAndroid) {
       print("location initialized before if");
       if (!await Geolocator.isLocationServiceEnabled()) {
@@ -157,7 +178,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     } else {
       instance.setBool('firstRun', false);
       if (Platform.isIOS) {
-        // await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
 
         return 1;
       } else {
@@ -167,18 +188,19 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
         } else {
           await BluetoothEnable.enableBluetooth;
         }
-        // await BLEManagerAndroid.getStepsAndMinutes().timeout(
-        //     Duration(seconds: 30), onTimeout: () async {
-        //
-        //
-        //   return 1;
-        // });
+        await BLEManagerAndroid.getStepsAndMinutes().timeout(
+            Duration(seconds: 30), onTimeout: () async {
+
+
+          return 1;
+        });
 
         return 1;
       }
     }
   } catch (e, stacktrace) {
     print(e);
+    print(stacktrace);
     logError(e, stackTrace: stacktrace);
 
     return 3;

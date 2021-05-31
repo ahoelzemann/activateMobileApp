@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter_toggle_tab/flutter_toggle_tab.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:date_format/date_format.dart';
@@ -11,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Platform;
+import 'package:toggle_switch/toggle_switch.dart';
 
 String convertDate(DateTime date) {
   final formattedStr = formatDate(date, [dd, '.', mm, '.', yyyy]);
@@ -46,13 +46,13 @@ class ProfilePage extends StatefulWidget {
 class MapScreenState extends State<ProfilePage> {
   final bool createUser;
   List<bool> isSelected = [true, false, false];
-  bool _switchValue = true;
   bool _status = true;
   TextEditingController studienIDController =
-      new TextEditingController(text: "L-");
+  new TextEditingController(text: "L-");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
-
+  String gender = "d";
+  bool bctGroup = true;
   final FocusNode myFocusNode = FocusNode();
 
   String radioButtonItem = "Links";
@@ -359,11 +359,11 @@ class MapScreenState extends State<ProfilePage> {
                                   mainAxisSize: MainAxisSize.min,
                                   children: <Widget>[
                                     CupertinoSwitch(
-                                      value: _switchValue,
+                                      value: bctGroup,
                                       onChanged: (value) {
                                         setState(() {
                                           print(value);
-                                          _switchValue = value;
+                                          bctGroup = value;
                                         });
                                       },
                                     ),
@@ -395,36 +395,46 @@ class MapScreenState extends State<ProfilePage> {
                             ),
                           ),
                           Padding(
-                              padding: EdgeInsets.only(
-                                  left: 25.0, right: 25.0, top: 2.0),
-                              child: new Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: <Widget>[
-                                  new Center(
-                                    child: FlutterToggleTab(
-                                      width: 50,
-                                      borderRadius: 15,
-                                      initialIndex: 0,
-                                      selectedTextStyle: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.w600),
-                                      unSelectedTextStyle: TextStyle(
-                                          color: Colors.blue,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w400),
-                                      labels: ["Male", "Female"],
-                                      icons: [
-                                        Icons.person,
-                                        Icons.pregnant_woman
-                                      ],
-                                      selectedLabelIndex: (index) {
-                                        print("Selected Index $index");
-                                      },
-                                    ),
-                                  ),
-                                ],
-                              )),
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 2.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                ToggleSwitch(
+                                  minWidth: 90.0,
+                                  minHeight: 50.0,
+                                  initialLabelIndex: 2,
+                                  cornerRadius: 20.0,
+                                  activeFgColor: Colors.white,
+                                  inactiveBgColor: Colors.grey,
+                                  inactiveFgColor: Colors.white,
+                                  labels: ['Männlich', 'Weiblich', 'Divers'],
+                                  icons: [
+                                    Icons.male,
+                                    Icons.female,
+                                    Icons.transgender
+                                  ],
+                                  iconSize: 30.0,
+                                  activeBgColors: [
+                                    Colors.green,
+                                    Colors.green,
+                                    Colors.green
+                                  ],
+                                  onToggle: (index) {
+                                    if (index == 0) {
+                                      gender = "m";
+                                    } else if (index == 1) {
+                                      gender = "f";
+                                    } else if (index == 2) {
+                                      gender = "d";
+                                    }
+                                    print('switched to: $index');
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                           _getActionButtons(),
                         ],
                       ),
@@ -456,73 +466,79 @@ class MapScreenState extends State<ProfilePage> {
               padding: EdgeInsets.only(right: 10.0),
               child: Container(
                   child: new RaisedButton(
-                child: new Text("Speichern"),
-                textColor: Colors.white,
-                color: Colors.green,
-                onPressed: () async {
-                  showOverlay(
-                      "Wir suchen Ihre Bangle.js",
-                      Icon(
-                        Icons.watch,
-                        color: Colors.blue,
-                        size: 50.0,
-                      ));
-                  if (Platform.isAndroid) {
-                    await BLEManagerIOS.findNearestDevice();
-                  } else {
-                    await BLEManagerIOS.findNearestDevice();
-                  }
-                  hideOverlay();
-                  SharedPreferences prefs =
+                    child: new Text("Speichern"),
+                    textColor: Colors.white,
+                    color: Colors.green,
+                    onPressed: () async {
+                      showOverlay(
+                          "Wir suchen Ihre Bangle.js",
+                          Icon(
+                            Icons.watch,
+                            color: Colors.blue,
+                            size: 50.0,
+                          ));
+                      if (Platform.isAndroid) {
+                        await BLEManagerIOS.findNearestDevice();
+                      } else {
+                        await BLEManagerIOS.findNearestDevice();
+                      }
+                      hideOverlay();
+                      SharedPreferences prefs =
                       await SharedPreferences.getInstance();
-                  String bangle_name = prefs.getString("Devicename");
-                  if (createUser) {
-                    Future<String> result = _saveUserOnServer(
-                        ageToSave,
-                        selectedDate,
-                        studienIDController.text,
-                        bangle_name,
-                        radioButtonItem);
-                    result.then((value) {
-                      if (value == "Studienteilnehmer bereits vorhanden") {
-                        showAlertDialogAlreadyExists(context,
-                            value != null ? value : 'Verbinde zu Server');
-                      } else {
-                        _saveLocalUser(
+                      String bangle_name = prefs.getString("Devicename");
+                      if (createUser) {
+                        Future<String> result = _saveUserOnServer(
                             ageToSave,
                             selectedDate,
                             studienIDController.text,
                             bangle_name,
-                            radioButtonItem);
-                        showAlertDialogConfirmation(context);
-                      }
-                    });
-                  } else {
-                    Future<String> result = _patchUserOnServer(
-                        ageToSave,
-                        selectedDate,
-                        studienIDController.text,
-                        bangle_name,
-                        radioButtonItem);
-                    result.then((value) {
-                      if (value == "Studienteilnehmer bereits vorhanden") {
-                        showAlertDialogAlreadyExists(context,
-                            value != null ? value : 'Verbinde zu Server');
+                            radioButtonItem,
+                            bctGroup,
+                            gender);
+                        result.then((value) {
+                          if (value == "Studienteilnehmer bereits vorhanden") {
+                            showAlertDialogAlreadyExists(context,
+                                value != null ? value : 'Verbinde zu Server');
+                          } else {
+                            _saveLocalUser(
+                                ageToSave,
+                                selectedDate,
+                                studienIDController.text,
+                                bangle_name,
+                                radioButtonItem,
+                                bctGroup,
+                                gender);
+                            showAlertDialogConfirmation(context);
+                          }
+                        });
                       } else {
-                        _saveLocalUser(
+                        Future<String> result = _patchUserOnServer(
                             ageToSave,
                             selectedDate,
                             studienIDController.text,
                             bangle_name,
-                            radioButtonItem);
-                        showAlertDialogConfirmation(context);
+                            radioButtonItem,
+                            bctGroup,
+                            gender);
+                        result.then((value) {
+                          if (value == "Studienteilnehmer bereits vorhanden") {
+                            showAlertDialogAlreadyExists(context,
+                                value != null ? value : 'Verbinde zu Server');
+                          } else {
+                            _saveLocalUser(
+                                ageToSave,
+                                selectedDate,
+                                studienIDController.text,
+                                bangle_name,
+                                radioButtonItem, bctGroup, gender);
+                            showAlertDialogConfirmation(context);
+                          }
+                        });
                       }
-                    });
-                  }
-                },
-                shape: new RoundedRectangleBorder(
-                    borderRadius: new BorderRadius.circular(20.0)),
-              )),
+                    },
+                    shape: new RoundedRectangleBorder(
+                        borderRadius: new BorderRadius.circular(20.0)),
+                  )),
             ),
             flex: 2,
           ),
@@ -560,8 +576,8 @@ class MapScreenState extends State<ProfilePage> {
           context,
           MaterialPageRoute(
               builder: (context) => Stack(
-                    children: [LandingScreen(), OverlayView()],
-                  )),
+                children: [LandingScreen(), OverlayView()],
+              )),
         );
       },
     );
@@ -633,7 +649,7 @@ class MapScreenState extends State<ProfilePage> {
                           child: new RaisedButton(
                               shape: new RoundedRectangleBorder(
                                   borderRadius:
-                                      new BorderRadius.circular(20.0)),
+                                  new BorderRadius.circular(20.0)),
                               child: new Text("Herunterladen & Speichern"),
                               textColor: Colors.white,
                               color: Colors.lightBlue,
@@ -666,7 +682,9 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
         age: int.parse(values[8].substring(1, 3)),
         bangleID: values[11],
         birthday: values[15],
-        worn_at: values[15]);
+        worn_at: values[17],
+        bctGroup : value [22],
+        gender : value[24]);
     //Todo: Fix the index of worn_at
     mySharedPreferences msp = new mySharedPreferences();
     bool result = await msp.mySharedPreferencesFirstStart(participant);
@@ -675,28 +693,40 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
   });
 }
 
-Future<String> _patchUserOnServer(int ageToSave, DateTime birthday,
-    String studienID, String bangleID, String worn_at) {
+Future<String> _patchUserOnServer(
+    int ageToSave,
+    DateTime birthday,
+    String studienID,
+    String bangleID,
+    String worn_at,
+    bool bctGroup,
+    String gender) {
   String date = convertDate(birthday);
 
   PostgresConnector postgresconnector = new PostgresConnector();
   var result = postgresconnector.patchParticipant(
-      studienID, ageToSave, date, bangleID, worn_at);
+      studienID, ageToSave, date, bangleID, worn_at, bctGroup, gender);
   return result;
 }
 
 Future<String> _saveUserOnServer(int ageToSave, DateTime birthday,
-    String studienID, String bangleID, String worn_at) {
+    String studienID, String bangleID, String worn_at, bctGroup, gender) {
   String date = convertDate(birthday);
 
   PostgresConnector postgresconnector = new PostgresConnector();
   var result = postgresconnector.postParticipant(
-      studienID, ageToSave, date, bangleID, worn_at);
+      studienID, ageToSave, date, bangleID, worn_at, bctGroup, gender);
   return result;
 }
 
-Future<dynamic> _saveLocalUser(int ageToSave, DateTime birthday,
-    String studienID, String bangleID, String worn_at) {
+Future<dynamic> _saveLocalUser(
+    int ageToSave,
+    DateTime birthday,
+    String studienID,
+    String bangleID,
+    String worn_at,
+    bool bctGroup,
+    String gender) {
   Completer completer = new Completer();
   String date = convertDate(birthday);
 
@@ -708,7 +738,9 @@ Future<dynamic> _saveLocalUser(int ageToSave, DateTime birthday,
       age: ageToSave,
       bangleID: bangleID,
       birthday: date,
-      worn_at: worn_at);
+      worn_at: worn_at,
+      bctGroup: bctGroup,
+      gender: gender);
   mySharedPreferences msp = new mySharedPreferences();
   msp.mySharedPreferencesFirstStart(participant);
   completer.complete("done");
