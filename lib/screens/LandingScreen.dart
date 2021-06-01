@@ -1,8 +1,6 @@
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:need_resume/need_resume.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
@@ -19,7 +17,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
     as BLEManagerAndroid;
-import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:android_long_task/android_long_task.dart';
@@ -27,6 +24,7 @@ import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
+import 'package:trac2move/bct/BCT.dart' as BCT;
 
 // Import package
 // import 'package:battery/battery.dart';
@@ -37,7 +35,8 @@ import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 // Duration _activeHours = Duration(minutes:1);
 Duration _activeHours = Duration(hours: 10);
 // String _buttonText =  "Startzeit wählen";
-
+StreamSubscription _subscription;
+var receivedID;
 class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
@@ -57,17 +56,26 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     //   }
     //   setState(() {});
     // }
+    // _subscription?.cancel();
+    // AwesomeNotifications().cancel('/NotificationPage');
+    try {
+      _subscription = AwesomeNotifications()
+          .actionStream
+          .listen((receivedNotification) {
+        Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+          receivedNotification.id
+        } // your page params. I recommend to you to pass all *receivedNotification* object
+        );
+      });
+    } catch (e) {
+      logError(e);
+    }
 
-    AwesomeNotifications().actionStream.listen((receivedNotification) {
-      Navigator.of(context).pushNamed('/NotificationPage', arguments: {
-        receivedNotification.id
-      } // your page params. I recommend to you to pass all *receivedNotification* object
-          );
-    });
   }
 
   @override
   void onResume() async {
+    print("ON RESUME");
     SharedPreferences prefs = await SharedPreferences.getInstance();
     var isUploading = prefs.getBool("uploadInProgress");
     int lastSteps = prefs.getInt("current_steps");
@@ -81,16 +89,69 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         await BLEManagerAndroid.getStepsAndMinutes()
             .timeout(Duration(seconds: 30));
       }
-      // hideOverlay();
       setState(() {});
-      // _reloadPage(context);
+      // prefs.setInt("current_steps", desiredSteps);
+      // prefs.setInt("current_active_minutes", desiredMinutes);
       int currentActiveMinutes = prefs.getInt("current_active_minutes");
       int currentSteps = prefs.getInt("current_steps");
-      if (lastSteps < currentSteps) {
-        showOverlay("Super gemacht, mach weiter so!", Icon(Icons.thumb_up_alt_outlined, size: 50, color: Colors.blue));
+      BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+      await rules.init(
+          currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+      String halfTimeMsgSteps = "";
+      String halfTimeMsgMinutes = "";
+      String dailyStepsReached = rules.dailyStepsReached();
+      String dailyMinutesReached = rules.dailyMinutesReached();
+      if (rules.halfDayCheck()) {
+        halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+        halfTimeMsgSteps = rules.halfTimeMsgSteps();
+      }
+      if (dailyStepsReached.length > 1) {
+        AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 10,
+                channelKey: 'bct_channel',
+                title: 'Tägliches Schrittziel erreicht',
+                body: dailyStepsReached));
+        showOverlay(
+            dailyStepsReached,
+            Icon(Icons.thumb_up_alt,
+              color: Colors.green,
+              size: 50.0,
+            ),
+            withButton: true);
+      }
+      if (dailyMinutesReached.length > 1) {
+        AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 10,
+                channelKey: 'bct_channel',
+                title: 'Sie sind sehr aktiv!',
+                body: dailyMinutesReached));
+        showOverlay(
+            dailyMinutesReached,
+            Icon(Icons.thumb_up_alt,
+              color: Colors.green,
+              size: 50.0,
+            ),
+            withButton: true);
+      }
+      if (halfTimeMsgSteps.length > 1) {
+        AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 10,
+                channelKey: 'bct_channel',
+                title: 'Halbzeit, toll gemacht!',
+                body: halfTimeMsgSteps));
+      }
+      if (halfTimeMsgMinutes.length > 1) {
+        AwesomeNotifications().createNotification(
+            content: NotificationContent(
+                id: 10,
+                channelKey: 'bct_channel',
+                title: 'Weiter so!',
+                body: halfTimeMsgMinutes));
       }
     }
-
   }
 
   @override
@@ -469,21 +530,21 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //       await scheduleNext();
             //     }),
 
-            ListTile(
-              title: Text('Push tests',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                AwesomeNotifications().createNotification(
-                    content: NotificationContent(
-                        id: 10,
-                        channelKey: 'basic_channel',
-                        title: 'Simple Notification',
-                        body: 'Simple body'));
-              },
-            ),
+            // ListTile(
+            //   title: Text('Push tests',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     AwesomeNotifications().createNotification(
+            //         content: NotificationContent(
+            //             id: 10,
+            //             channelKey: 'basic_channel',
+            //             title: 'Simple Notification',
+            //             body: 'Simple body'));
+            //   },
+            // ),
             ListTile(
               title: Text('DEBUGGING ONLY: Upload LogFile',
                   style: TextStyle(
@@ -501,7 +562,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     SpinKitFadingCircle(
                       color: Colors.orange,
                       size: 50.0,
-                    ));
+                    ),
+                    withButton: false);
 
                 await for (var entity
                     in dir.list(recursive: true, followLinks: true)) {
@@ -659,7 +721,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
   Future<dynamic> uploadAndSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    TimeOfDay _time = TimeOfDay(hour: 7, minute: 0);
+    TimeOfDay _time =
+        TimeOfDay(hour: prefs.getInt("recordingWillStartAt"), minute: 0);
     Navigator.of(context).push(showPicker(
         context: context,
         hourLabel: "Stunden",
@@ -671,38 +734,48 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
+          bool timeNeverSet = prefs.getBool("timeNeverSet");
           showOverlay(
               'Ihre Geräte werden geladen.',
               SpinKitFadingCircle(
                 color: Colors.orange,
                 size: 50.0,
-              ));
+              ),
+              withButton: false);
           await prefs.setInt("recordingWillStartAt", dateTime.hour);
           if (Platform.isAndroid) {
             await BLEManagerAndroid.refresh();
             prefs.setBool("uploadInProgress", true);
-            AppServiceData data = AppServiceData();
-            try {
-              String _result = 'result';
-              var result = await AppClient.execute(data);
-              var resultData = AppServiceData.fromJson(result);
-              setState(() => _result =
-                  'finished executing service process ;) -> ${resultData.progress}');
+            if (!timeNeverSet) {
+              AppServiceData data = AppServiceData();
+              try {
+                String _result = 'result';
+                var result = await AppClient.execute(data);
+                var resultData = AppServiceData.fromJson(result);
+                setState(() => _result =
+                    'finished executing service process ;) -> ${resultData.progress}');
 
-              prefs.setBool("isRecording", false);
-              prefs.setBool("uploadInProgress", false);
-              prefs.setBool("timeNeverSet", false);
-              _reloadPage(context);
-              return true;
-            } catch (e, stacktrace) {
-              print(e);
-              print(stacktrace);
+                prefs.setBool("uploadInProgress", false);
+                _reloadPage(context);
 
-              return false;
+                return true;
+              } catch (e, stacktrace) {
+                print(e);
+                print(stacktrace);
+
+                return false;
+              }
             }
+            hideOverlay();
+            await BLEManagerAndroid.syncTimeAndStartRecording();
+            // hideOverlay();
+            if (timeNeverSet) {
+              _reloadPage(context);
+            }
+            prefs.setBool("timeNeverSet", false);
           } else {
             SharedPreferences prefs = await SharedPreferences.getInstance();
-            bool timeNeverSet = prefs.getBool("timeNeverSet");
+
             if (!timeNeverSet) {
               try {
                 await BLEManagerIOS.stopRecordingAndUpload();
@@ -715,10 +788,11 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             }
             await BLEManagerIOS.syncTimeAndStartRecording();
             hideOverlay();
-            await prefs.setBool("isRecording", false);
+            if (timeNeverSet) {
+              _reloadPage(context);
+            }
             await prefs.setBool("uploadInProgress", false);
             await prefs.setBool("timeNeverSet", false);
-            _reloadPage(context);
 
             return true;
           }
@@ -765,7 +839,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     // if (mounted) {
                     //   setState(() {});
                     //   hideOverlay();
-                    // } else
+                    // }
                   },
                 );
               } else {
@@ -835,15 +909,19 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
   void _reloadPage(context) async {
     hideOverlay();
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => Stack(
-          children: [LandingScreen(), OverlayView()],
-        ),
-      ),
-    );
+    // if (mounted) {
+    //   setState(() {hideOverlay();});
+    // } else {
+      Navigator.pop(context);
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(
+          builder: (context) => Stack(
+            children: [LandingScreen(), OverlayView()],
+          ),
+        ), (e) => false,
+      );
+    // }
   }
 
   Future<List> getGoals() async {
@@ -879,8 +957,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   Future<String> getButtonText() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool timeNeverSet = await prefs.getBool("timeNeverSet");
-    String _buttonText =
-        timeNeverSet ? "Startzeit wählen" : "Startzeit wählen & Geräte Laden";
+    String _buttonText = timeNeverSet ? "Startzeit wählen" : "Ladezyklus";
 
     return _buttonText;
   }

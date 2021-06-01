@@ -23,7 +23,7 @@ class PostgresConnector {
             'bangleid': bangleID,
             'birthday': birthday,
             'worn_at': worn_at,
-            'bctgroup': bctGroup,
+            'bctgroup': bctGroup.toString(),
             'gender': gender
           };
 
@@ -96,7 +96,7 @@ class PostgresConnector {
             'bangleid': bangleID,
             'birthday': birthday,
             'worn_at': worn_at,
-            'bctgroup': bctGroup,
+            'bctgroup': bctGroup.toString(),
             'gender': gender
           };
 

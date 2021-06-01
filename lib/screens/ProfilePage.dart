@@ -683,8 +683,8 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
         bangleID: values[11],
         birthday: values[15],
         worn_at: values[17],
-        bctGroup : value [22],
-        gender : value[24]);
+        bctGroup : values[23].toLowerCase() == 'true',
+        gender : values[27]);
     //Todo: Fix the index of worn_at
     mySharedPreferences msp = new mySharedPreferences();
     bool result = await msp.mySharedPreferencesFirstStart(participant);
@@ -731,7 +731,7 @@ Future<dynamic> _saveLocalUser(
   String date = convertDate(birthday);
 
   if (bangleID == null) {
-    bangleID = 'Bangle.js ba11';
+    bangleID = 'Bangle.js unknown';
   }
   Participant participant = Participant(
       studienID: studienID,

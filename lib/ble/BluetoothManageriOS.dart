@@ -375,35 +375,25 @@ class BluetoothManager {
           if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
             print("Status:" + myDevice.name + " RX UUID discovered");
             print("Sending  start command...");
-            await Future.delayed(const Duration(seconds: 5));
-            cmd = "\u0010startUpload()\n";
-            await characteristic.write(Uint8List.fromList(cmd.codeUnits),
-                withoutResponse: true); //returns void
-            cmd = "\x10var l=ls()\n";
-            await characteristic.write(Uint8List.fromList(cmd.codeUnits),
-                withoutResponse: true); //returns void
-            cmd = "l.length\n";
-            print(Uint8List.fromList(cmd.codeUnits).toString());
-            bleSubscription = charactx.value.listen((event) async {
+            await Future.delayed(const Duration(seconds: 2));
+            cmd = "startUpload()\n";
+            String dt = "";
+            int numOfFiles = 0;
+            bleSubscription = charactx.value.timeout(Duration(seconds: 2),
+                onTimeout: (timeout) async {
+                  if (dt.length == 0) {
+                    numOfFiles = 0;
+                  } else {
+                    dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+                    numOfFiles = int.parse(dt);
+                  }
+                  await bleSubscription.cancel();
+                  completer.complete(numOfFiles);
+                }).listen((event) async {
               print(event.toString() + "  //////////////");
               print(String.fromCharCodes(event));
-              if (event.length > 0) {
-                if (event[0] == 108 && event[2] == 108) {
-                  String dd = String.fromCharCodes(event.sublist(
-                      event.indexOf(61) + 1,
-                      event.lastIndexOf(13))); //the number between = and \r
-                  try {
-                    noOfFiles = int.parse(dd.trim());
-                  } catch (e) {
-                    await characteristic.write(
-                        Uint8List.fromList(cmd.codeUnits),
-                        withoutResponse: false);
-                  }
+              dt += String.fromCharCodes(event);
 
-                  await bleSubscription.cancel();
-                  completer.complete(noOfFiles);
-                }
-              }
             });
 
             await characteristic.write(Uint8List.fromList(cmd.codeUnits),

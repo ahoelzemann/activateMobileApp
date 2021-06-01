@@ -43,10 +43,10 @@ serviceMain() async {
       //from your flutter application code and receive it here
 
       var serviceData = AppServiceData.fromJson(initialData);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
+      // SharedPreferences prefs = await SharedPreferences.getInstance();
       await ServiceClient.update(serviceData);
       await Future.delayed(Duration(milliseconds: 500));
-      if (!prefs.getBool("timeNeverSet")) {
+
         try {
           await BLEManagerAndroid.stopRecordingAndUpload(
               foregroundServiceClient: ServiceClient,
@@ -57,12 +57,13 @@ serviceMain() async {
         } catch(e, stacktrace) {
           logError(e, stackTrace: stacktrace);
         }
-      }
       await BLEManagerAndroid.syncTimeAndStartRecording();
-      await Future.delayed(Duration(seconds: 20));
+      await Future.delayed(Duration(seconds: 1));
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
+      hideOverlay();
     });
+    hideOverlay();
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
   }
@@ -79,11 +80,11 @@ void main() async {
       null,
       [
         NotificationChannel(
-            channelKey: 'basic_channel',
-            channelName: 'Basic notifications',
-            channelDescription: 'Notification channel for basic tests',
+            channelKey: 'bct_channel',
+            channelName: 'BCT Notifications',
+            channelDescription: 'Trac2Move Notification Channel',
             defaultColor: Color(0xFF9D50DD),
-            ledColor: Colors.white
+            ledColor: Colors.deepOrangeAccent
         )
       ]
   );
@@ -130,6 +131,7 @@ void main() async {
     }
     if (firstRun == null) {
       firstRun = true;
+      await prefs.setInt("recordingWillStartAt", 7);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       prefs.setBool("firstRun", firstRun);
@@ -184,7 +186,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       } else {
         bool btState = await SystemShortcuts.checkBluetooth;
         if (btState) {
-          BLEManagerAndroid.refresh();
+          await BLEManagerAndroid.refresh();
         } else {
           await BluetoothEnable.enableBluetooth;
         }

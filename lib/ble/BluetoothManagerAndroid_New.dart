@@ -5,11 +5,10 @@ import 'package:flutter_ble_lib/flutter_ble_lib.dart';
 import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:system_shortcuts/system_shortcuts.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:android_long_task/android_long_task.dart';
-import 'package:bluetooth_enable/bluetooth_enable.dart';
+import 'dart:convert' show utf8;
 
 class BLE_Client {
   BleManager _bleManager;
@@ -356,22 +355,24 @@ class BLE_Client {
 
     print("Sending  start command...");
 
-    String s = "\u0010startUpload()\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
-    s = "\x10var l=ls()\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
-    s = "l.length\n";
-    ;
-    _responseSubscription = characTX.monitor().listen((event) async {
+    String s = "startUpload()\n";
+    String dt = "";
+    int numOfFiles = 0;
+    _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
+        onTimeout: (timeout) async {
+      if (dt.length == 0) {
+        numOfFiles = 0;
+      } else {
+        dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+        numOfFiles = int.parse(dt);
+      }
+      await _responseSubscription.cancel();
+      completer.complete(numOfFiles);
+    }).listen((event) async {
       print(event.toString() + "  //////////////");
       print(String.fromCharCodes(event));
-      if (event[0] == 108 && event[2] == 108) {
-        String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
-            event.lastIndexOf(13))); //the number between = and \r
-        int noOfFiles = int.parse(dd.trim());
-        await _responseSubscription.cancel();
-        completer.complete(noOfFiles);
-      }
+      dt += String.fromCharCodes(event);
+
     });
     characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
 
@@ -388,9 +389,9 @@ class BLE_Client {
     StreamSubscription _characSubscription;
     _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
-          await _characSubscription.cancel();
-          completer.complete({});
-        }).listen((event) async {
+      await _characSubscription.cancel();
+      completer.complete({});
+    }).listen((event) async {
       int _dataSize = event.length;
       if (_logData == 1) {
         //check end of a file
@@ -459,12 +460,6 @@ class BLE_Client {
 
     for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
       await Future.delayed(Duration(milliseconds: 500));
-      updateOverlayText("Datei " +
-          (fileCount + 1).toString() +
-          "/" +
-          (_numofFiles).toString() +
-          ".\n"
-              "Bitte haben Sie noch etwas Geduld.");
       print(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
       Map<String, List<int>> _currentResult = await _sendNext(fileCount);
@@ -561,7 +556,6 @@ Future<bool> stopRecordingAndUpload(
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(seconds: 1));
-  // SharedPreferences prefs = await SharedPreferences.getInstance();
 
   await bleClient.init();
   try {
@@ -631,15 +625,19 @@ Future<bool> createPermission() async {
 }
 
 Future<void> refresh() async {
-  BLE_Client client = new BLE_Client();
-  await client.init();
-  if (await client._bleManager.bluetoothState() == BluetoothState.POWERED_OFF) {
-    await client._bleManager.enableRadio();
-  } else if (await client._bleManager.bluetoothState() ==
-      BluetoothState.POWERED_ON) {
-    await client._bleManager.disableRadio();
-    await Future.delayed(Duration(seconds: 1));
-    await client._bleManager.enableRadio();
+  try {
+    BLE_Client client = new BLE_Client();
+    await client.init();
+    if (await client._bleManager.bluetoothState() ==
+        BluetoothState.POWERED_OFF) {
+      await client._bleManager.enableRadio();
+    } else if (await client._bleManager.bluetoothState() ==
+        BluetoothState.POWERED_ON) {
+      await client._bleManager.disableRadio();
+      await Future.delayed(Duration(seconds: 1));
+      await client._bleManager.enableRadio();
+    }
+  } catch (e) {
+    logError(e);
   }
-
 }
