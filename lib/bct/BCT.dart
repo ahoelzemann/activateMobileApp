@@ -7,6 +7,7 @@ class BCTRuleSet {
   int last_minutes;
   int last_steps;
   DateTime now;
+  String frequence;
 
   Future<void> init(currentsteps, currentminutes, laststeps, lastminutes) async {
     prefs = await SharedPreferences.getInstance();
@@ -31,7 +32,7 @@ class BCTRuleSet {
     if (current_minutes < desiredMinutes) {
       return "Ihnen fehlen noch " +
           (desiredMinutes - current_minutes).toString() +
-          " aktive Minuten um Ihr Tagesziel zu erreichen";
+          " aktive Minuten um Ihr Tagesziel zu erreichen.";
     } else
       return "";
   }
@@ -41,7 +42,7 @@ class BCTRuleSet {
     if (current_steps < desiredSteps) {
       return "Ihnen fehlen noch " +
           (desiredSteps - current_steps).toString() +
-          " Schritte um Ihr Tagesziel zu erreichen";
+          " Schritte um Ihr Tagesziel zu erreichen.";
     } else
       return "";
   }
@@ -59,11 +60,11 @@ class BCTRuleSet {
     if (current_steps < desiredSteps) {
       return "Heute fehlten Ihnen noch " +
           (desiredSteps - current_steps).toString() +
-          " Schritte um Ihr Tagesziel zu erreichen";
+          " Schritte um Ihr Tagesziel zu erreichen.\nMorgen ist ein neuer Tag!";
     } else
       return "Großartig! Sie haben Ihr Tagesziel heute um " +
           (current_steps - desiredSteps).toString() +
-          " Schritte übertroffen";
+          " Schritte übertroffen.";
   }
 
   String letsCallItADayMinutes() {
@@ -71,11 +72,11 @@ class BCTRuleSet {
     if (current_minutes < desiredMinutes) {
       return "Heute fehlten Ihnen noch " +
           (desiredMinutes - current_minutes).toString() +
-          " Minuten um Ihr Tagesziel zu erreichen. Morgen ist ein neuer Tag!";
+          " Minuten um Ihr Tagesziel zu erreichen.\nMorgen ist ein neuer Tag!";
     } else
       return "Großartig! Sie haben Ihr Tagesziel heute um " +
           (current_minutes - desiredMinutes).toString() +
-          " Minuten übertroffen";
+          " Minuten übertroffen.";
   }
 
   String dailyStepsReached() {

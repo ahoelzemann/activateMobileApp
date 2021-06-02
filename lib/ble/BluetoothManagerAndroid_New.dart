@@ -569,11 +569,14 @@ Future<dynamic> getStepsAndMinutes() async {
 
 Future<bool> stopRecordingAndUpload(
     {foregroundServiceClient, foregroundService}) async {
+
+  await refresh();
   BLE_Client bleClient = new BLE_Client();
 
   await Future.delayed(Duration(seconds: 1));
 
   await bleClient.init();
+
   try {
     await bleClient.checkBLEstate();
     bleClient.start_ble_scan();
@@ -604,12 +607,12 @@ Future<bool> syncTimeAndStartRecording() async {
   try {
     await client.checkBLEstate();
     await client.connect();
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 4));
     await client.bleSyncTime();
     await client.bleStartRecord(12.5, 8, hour);
     await client.disconnect();
 
-    await Future.delayed(Duration(seconds: 3));
+    await Future.delayed(Duration(seconds: 1));
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);

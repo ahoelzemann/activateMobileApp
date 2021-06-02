@@ -174,14 +174,14 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         if (dailyStepsReached.length > 1) {
           AwesomeNotifications().createNotification(
               content: NotificationContent(
-                  id: 10,
+                  id: 1,
                   channelKey: 'bct_channel',
                   title: 'Tägliches Schrittziel erreicht',
                   body: dailyStepsReached));
           showOverlay(
               dailyStepsReached,
               Icon(
-                Icons.thumb_up_alt,
+                Icons.check_circle_outline,
                 color: Colors.green,
                 size: 50.0,
               ),
@@ -190,14 +190,14 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         if (dailyMinutesReached.length > 1) {
           AwesomeNotifications().createNotification(
               content: NotificationContent(
-                  id: 10,
+                  id: 2,
                   channelKey: 'bct_channel',
                   title: 'Sie sind sehr aktiv!',
                   body: dailyMinutesReached));
           showOverlay(
               dailyMinutesReached,
               Icon(
-                Icons.thumb_up_alt,
+                Icons.check_circle_outline,
                 color: Colors.green,
                 size: 50.0,
               ),
@@ -206,7 +206,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         if (halfTimeMsgSteps.length > 1) {
           AwesomeNotifications().createNotification(
               content: NotificationContent(
-                  id: 10,
+                  id: 3,
                   channelKey: 'bct_channel',
                   title: 'Halbzeit, toll gemacht!',
                   body: halfTimeMsgSteps));
@@ -214,7 +214,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         if (halfTimeMsgMinutes.length > 1) {
           AwesomeNotifications().createNotification(
               content: NotificationContent(
-                  id: 10,
+
+                  id: 4,
                   channelKey: 'bct_channel',
                   title: 'Weiter so!',
                   body: halfTimeMsgMinutes));
@@ -803,6 +804,32 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
+          if (await isbctGroup()) {
+            int currentActiveMinutes = prefs.getInt("current_active_minutes");
+            int currentSteps = prefs.getInt("current_steps");
+            int lastSteps = prefs.getInt("last_steps");
+            int lastActiveMinutes = prefs.getInt("last_active_minutes");
+            BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+            await rules.init(
+                currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+            String endOfTheMessageSteps = rules.letsCallItADaySteps();
+            String endOfTheMessageMinutes = rules.letsCallItADayMinutes();
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    notificationLayout: NotificationLayout.BigText,
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Tagesziel Schritte',
+                    body: endOfTheMessageSteps));
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    notificationLayout: NotificationLayout.BigText,
+                    id: 11,
+                    channelKey: 'bct_channel',
+                    title: 'Tagesziel aktive Minuten',
+                    body: endOfTheMessageMinutes));
+          }
+
           bool timeNeverSet = prefs.getBool("timeNeverSet");
           showOverlay(
               'Ihre Geräte werden geladen.',
@@ -821,8 +848,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 String _result = 'result';
                 var result = await AppClient.execute(data);
                 var resultData = AppServiceData.fromJson(result);
-                setState(() => _result =
-                    'finished executing service process ;) -> ${resultData.progress}');
+                // setState(() => _result =
+                //     'finished executing service process ;) -> ${resultData.progress}');
 
                 prefs.setBool("uploadInProgress", false);
                 _reloadPage(context);
