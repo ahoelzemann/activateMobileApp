@@ -37,6 +37,7 @@ Duration _activeHours = Duration(hours: 10);
 // String _buttonText =  "Startzeit wählen";
 StreamSubscription _subscription;
 var receivedID;
+
 class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
@@ -59,41 +60,22 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     // _subscription?.cancel();
     // AwesomeNotifications().cancel('/NotificationPage');
     try {
-      _subscription = AwesomeNotifications()
-          .actionStream
-          .listen((receivedNotification) {
+      _subscription =
+          AwesomeNotifications().actionStream.listen((receivedNotification) {
         Navigator.of(context).pushNamed('/NotificationPage', arguments: {
           receivedNotification.id
         } // your page params. I recommend to you to pass all *receivedNotification* object
-        );
+            );
       });
     } catch (e) {
       logError(e);
     }
-
-  }
-
-  @override
-  void onResume() async {
-    print("ON RESUME");
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var isUploading = prefs.getBool("uploadInProgress");
-    int lastSteps = prefs.getInt("current_steps");
-    int lastActiveMinutes = prefs.getInt("current_active_minutes");
-    int desiredSteps = prefs.getInt("steps");
-    int desiredMinutes = prefs.getInt("active_minutes");
-    if (isUploading == null || !isUploading) {
-      if (Platform.isIOS) {
-        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
-      } else {
-        await BLEManagerAndroid.getStepsAndMinutes()
-            .timeout(Duration(seconds: 30));
-      }
-      setState(() {});
-      // prefs.setInt("current_steps", desiredSteps);
-      // prefs.setInt("current_active_minutes", desiredMinutes);
+    if (await isbctGroup()) {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
       int currentActiveMinutes = prefs.getInt("current_active_minutes");
       int currentSteps = prefs.getInt("current_steps");
+      int lastSteps = prefs.getInt("last_steps");
+      int lastActiveMinutes = prefs.getInt("last_active_minutes");
       BCT.BCTRuleSet rules = BCT.BCTRuleSet();
       await rules.init(
           currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
@@ -114,7 +96,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 body: dailyStepsReached));
         showOverlay(
             dailyStepsReached,
-            Icon(Icons.thumb_up_alt,
+            Icon(
+              Icons.thumb_up_alt,
               color: Colors.green,
               size: 50.0,
             ),
@@ -129,7 +112,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 body: dailyMinutesReached));
         showOverlay(
             dailyMinutesReached,
-            Icon(Icons.thumb_up_alt,
+            Icon(
+              Icons.thumb_up_alt,
               color: Colors.green,
               size: 50.0,
             ),
@@ -150,6 +134,91 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 channelKey: 'bct_channel',
                 title: 'Weiter so!',
                 body: halfTimeMsgMinutes));
+      }
+    }
+  }
+
+  @override
+  void onResume() async {
+    // print("ON RESUME");
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var isUploading = prefs.getBool("uploadInProgress");
+    int lastSteps = prefs.getInt("current_steps");
+    int lastActiveMinutes = prefs.getInt("current_active_minutes");
+    int desiredSteps = prefs.getInt("steps");
+    int desiredMinutes = prefs.getInt("active_minutes");
+    if (isUploading == null || !isUploading) {
+      if (Platform.isIOS) {
+        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
+      } else {
+        await BLEManagerAndroid.getStepsAndMinutes()
+            .timeout(Duration(seconds: 30));
+      }
+      setState(() {});
+      // prefs.setInt("current_steps", desiredSteps);
+      // prefs.setInt("current_active_minutes", desiredMinutes);
+      if (await isbctGroup()) {
+        int currentActiveMinutes = prefs.getInt("current_active_minutes");
+        int currentSteps = prefs.getInt("current_steps");
+        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+        await rules.init(
+            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+        String halfTimeMsgSteps = "";
+        String halfTimeMsgMinutes = "";
+        String dailyStepsReached = rules.dailyStepsReached();
+        String dailyMinutesReached = rules.dailyMinutesReached();
+        if (rules.halfDayCheck()) {
+          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+        }
+        if (dailyStepsReached.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Tägliches Schrittziel erreicht',
+                  body: dailyStepsReached));
+          showOverlay(
+              dailyStepsReached,
+              Icon(
+                Icons.thumb_up_alt,
+                color: Colors.green,
+                size: 50.0,
+              ),
+              withButton: true);
+        }
+        if (dailyMinutesReached.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Sie sind sehr aktiv!',
+                  body: dailyMinutesReached));
+          showOverlay(
+              dailyMinutesReached,
+              Icon(
+                Icons.thumb_up_alt,
+                color: Colors.green,
+                size: 50.0,
+              ),
+              withButton: true);
+        }
+        if (halfTimeMsgSteps.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Halbzeit, toll gemacht!',
+                  body: halfTimeMsgSteps));
+        }
+        if (halfTimeMsgMinutes.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Weiter so!',
+                  body: halfTimeMsgMinutes));
+        }
       }
     }
   }
@@ -912,15 +981,16 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     // if (mounted) {
     //   setState(() {hideOverlay();});
     // } else {
-      Navigator.pop(context);
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => Stack(
-            children: [LandingScreen(), OverlayView()],
-          ),
-        ), (e) => false,
-      );
+    Navigator.pop(context);
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (context) => Stack(
+          children: [LandingScreen(), OverlayView()],
+        ),
+      ),
+      (e) => false,
+    );
     // }
   }
 

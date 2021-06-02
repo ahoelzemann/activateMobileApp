@@ -179,6 +179,11 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       return null;
     } else {
       instance.setBool('firstRun', false);
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      int currentActiveMinutes = prefs.getInt("current_active_minutes");
+      int currentSteps = prefs.getInt("current_steps");
+      await prefs.setInt("last_steps", currentSteps);
+      await prefs.setInt("last_active_minutes", currentActiveMinutes);
       if (Platform.isIOS) {
         await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
 

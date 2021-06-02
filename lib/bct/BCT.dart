@@ -21,7 +21,7 @@ class BCTRuleSet {
         DateTime.parse(prefs.getString("recordingWillStartAtString"));
     now = DateTime.now();
     bool halfDayCheck =
-        now.isAfter(recordingTimeStart.add(Duration(seconds: 8))) ? true : false;
+        now.isAfter(recordingTimeStart.add(Duration(hours: 8))) ? true : false;
 
     return halfDayCheck;
   }

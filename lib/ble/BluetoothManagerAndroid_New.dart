@@ -347,36 +347,41 @@ class BLE_Client {
   }
 
   Future<dynamic> startUploadCommand() async {
-    await Future.delayed(Duration(milliseconds: 1000));
-    Completer completer = new Completer();
-    StreamSubscription _responseSubscription;
+    try {
+      await Future.delayed(Duration(milliseconds: 1000));
+      Completer completer = new Completer();
+      StreamSubscription _responseSubscription;
 
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
+      print("Status:" + myDevice.name.toString() + " RX UUID discovered");
 
-    print("Sending  start command...");
+      print("Sending  start command...");
 
-    String s = "startUpload()\n";
-    String dt = "";
-    int numOfFiles = 0;
-    _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
-        onTimeout: (timeout) async {
-      if (dt.length == 0) {
-        numOfFiles = 0;
-      } else {
-        dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
-        numOfFiles = int.parse(dt);
-      }
-      await _responseSubscription.cancel();
-      completer.complete(numOfFiles);
-    }).listen((event) async {
-      print(event.toString() + "  //////////////");
-      print(String.fromCharCodes(event));
-      dt += String.fromCharCodes(event);
+      String s = "startUpload()\n";
+      String dt = "";
+      int numOfFiles = 0;
+      _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
+          onTimeout: (timeout) async {
+            if (dt.length == 0) {
+              numOfFiles = 0;
+            } else {
+              dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+              numOfFiles = int.parse(dt);
+            }
+            await _responseSubscription.cancel();
+            completer.complete(numOfFiles);
+          }).listen((event) async {
+        print(event.toString() + "  //////////////");
+        print(String.fromCharCodes(event));
+        dt += String.fromCharCodes(event);
 
-    });
-    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
+      });
+      characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
 
-    return completer.future;
+      return completer.future;
+    } catch (error) {
+      logError(error);
+    }
+
   }
 
   Future<dynamic> _sendNext(int fileCount) async {
@@ -446,8 +451,16 @@ class BLE_Client {
   Future<dynamic> startUpload(
       {foregroundServiceClient, foregroundService}) async {
     int maxtrys = 5;
+    int _numofFiles = 0;
     prefs.setBool("uploadInProgress", true);
-    int _numofFiles = await startUploadCommand();
+    logError("Sending StartUploadCommand....");
+    try {
+      _numofFiles = await startUploadCommand();
+    } catch (e) {
+      logError(e);
+    }
+
+    logError("StartUpload Command successful.");
     int incrementelSteps = 100 ~/ (_numofFiles + 1);
     print("ble start upload command done /////////////");
     int fileCount = 0;
@@ -455,6 +468,9 @@ class BLE_Client {
 
     print("Status:" + myDevice.name + " RX UUID discovered");
     print("WAITING FOR " +
+        _numofFiles.toString() +
+        " FILES, THIS WILL TAKE SOME MINUTES ...");
+    logError("WAITING FOR " +
         _numofFiles.toString() +
         " FILES, THIS WILL TAKE SOME MINUTES ...");
 
