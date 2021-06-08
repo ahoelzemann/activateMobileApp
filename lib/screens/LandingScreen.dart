@@ -49,22 +49,11 @@ class LandingScreen extends StatefulWidget {
 }
 
 Future<bool> isolate1(String arg) async {
-  print(arg);
-  SharedPreferences prefs = await SharedPreferences.getInstance();
   await BLEManagerIOS.stopRecordingAndUpload();
-  await uploadActivityDataToServer();
-  await prefs.setBool("uploadInProgress", false);
-  await prefs.setBool("timeNeverSet", false);
-  await Future.delayed(Duration(minutes: 2));
+
+  // await Future.delayed(Duration(minutes: 1));
 
   // reloadPage(globalContext);
-  fromIsolate = false;
-  final port = IsolateNameServer.lookupPortByName('main');
-  if (port != null) {
-    port.send('done');
-  } else {
-    print('port is null');
-  }
 
   return true;
 }
@@ -660,38 +649,38 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //             body: 'Simple body'));
             //   },
             // ),
-            ListTile(
-              title: Text('DEBUGGING ONLY: Upload LogFile',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                Upload uploader = new Upload();
-                await uploader.init();
-
-                Directory dir = new Directory(
-                    (await getApplicationDocumentsDirectory()).path + "/logs/");
-                showOverlay(
-                    'Die Logdatei wird zum Server übertragen.',
-                    SpinKitFadingCircle(
-                      color: Colors.orange,
-                      size: 50.0,
-                    ),
-                    withButton: false);
-
-                await for (var entity
-                    in dir.list(recursive: true, followLinks: true)) {
-                  uploader.uploadLogFile(entity.path);
-                }
-
-                await Future.delayed(Duration(seconds: 2));
-                updateOverlayText("Datei erfolgreich gesendet."
-                    "Vielen Dank");
-                await Future.delayed(Duration(seconds: 2));
-                hideOverlay();
-              },
-            ),
+            // ListTile(
+            //   title: Text('DEBUGGING ONLY: Upload LogFile',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     Upload uploader = new Upload();
+            //     await uploader.init();
+            //
+            //     Directory dir = new Directory(
+            //         (await getApplicationDocumentsDirectory()).path + "/logs/");
+            //     showOverlay(
+            //         'Die Logdatei wird zum Server übertragen.',
+            //         SpinKitFadingCircle(
+            //           color: Colors.orange,
+            //           size: 50.0,
+            //         ),
+            //         withButton: false);
+            //
+            //     await for (var entity
+            //         in dir.list(recursive: true, followLinks: true)) {
+            //       uploader.uploadLogFile(entity.path);
+            //     }
+            //
+            //     await Future.delayed(Duration(seconds: 2));
+            //     updateOverlayText("Datei erfolgreich gesendet."
+            //         "Vielen Dank");
+            //     await Future.delayed(Duration(seconds: 2));
+            //     hideOverlay();
+            //   },
+            // ),
             // ListTile(
             //   title: Text(
             //     'Stopp erzwingen',

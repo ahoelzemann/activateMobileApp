@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
@@ -110,6 +111,15 @@ class Upload {
           print("local file deleted");
           if (i == (filePaths.length - 1)) {
             print("if clause reached");
+            await prefs.setBool("uploadInProgress", false);
+            await prefs.setBool("timeNeverSet", false);
+
+            final port = IsolateNameServer.lookupPortByName('main');
+            if (port != null) {
+              port.send('done');
+            } else {
+              print('port is null');
+            }
             // this.client.disconnectSFTP();
             // this.client.disconnect();
             // completer.complete(true);
@@ -142,6 +152,10 @@ class Upload {
     // File newFile = await File(path).copy('$path/filename.jpg');
     Directory tempDir = await getTemporaryDirectory();
     String tempPath = tempDir.path;
+    int steps = prefs.getInt("steps");
+    int minutes = prefs.getInt("active_minutes");
+    // Todo Add active minutes by category here
+    File stepsAndMinutesFile = new File(tempDir.path + "");
     try {
       String result = await client.connect();
       if (result == "session_connected") {

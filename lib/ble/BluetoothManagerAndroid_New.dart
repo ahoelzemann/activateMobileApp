@@ -390,6 +390,7 @@ class BLE_Client {
     List<int> _data = [];
     String _fileName;
     Completer completer = new Completer();
+    var lastEvent = [];
     String s;
     StreamSubscription _characSubscription;
     _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
@@ -398,6 +399,28 @@ class BLE_Client {
       completer.complete(_result);
     }).listen((event) async {
       int _dataSize = event.length;
+      if (event.length + lastEvent.length == 15) {
+        var concatenatedEvents = lastEvent + event;
+        if (concatenatedEvents[0] == 255 &&
+            concatenatedEvents[1] == 255 &&
+            concatenatedEvents[2] == 255 &&
+            concatenatedEvents[3] == 255 &&
+            concatenatedEvents[4] == 255 &&
+            concatenatedEvents[5] == 0 &&
+            concatenatedEvents[6] == 0 &&
+            concatenatedEvents[7] == 0 &&
+            concatenatedEvents[8] == 0 &&
+            concatenatedEvents[9] == 0 &&
+            concatenatedEvents[10] == 0 &&
+            concatenatedEvents[11] == 255 &&
+            concatenatedEvents[12] == 255 &&
+            concatenatedEvents[13] == fileCount) {
+          print("Endsequence altered");
+          await _characSubscription.cancel();
+          _result[_fileName] = _data;
+          completer.complete(_result);
+        }
+      }
       if (_logData == 1) {
         //check end of a file
         if (_dataSize >= 15 &&
@@ -440,6 +463,7 @@ class BLE_Client {
         }
         completer.complete(_result);
       }
+      lastEvent = event;
     });
 
     s = "\u0010sendNext(" + fileCount.toString() + ")\n";

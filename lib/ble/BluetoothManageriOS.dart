@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:flutter_blue/flutter_blue.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,7 @@ import 'package:fimber/fimber.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Directory, File, Platform;
+import 'package:trac2move/util/Upload.dart';
 
 class BluetoothManager {
   static final BluetoothManager _bluetoothManager =
@@ -386,19 +388,18 @@ class BluetoothManager {
             int numOfFiles = 0;
             bleSubscription = charactx.value.timeout(Duration(seconds: 2),
                 onTimeout: (timeout) async {
-                  if (dt.length == 0) {
-                    numOfFiles = 0;
-                  } else {
-                    dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
-                    numOfFiles = int.parse(dt);
-                  }
-                  await bleSubscription.cancel();
-                  completer.complete(numOfFiles);
-                }).listen((event) async {
+              if (dt.length == 0) {
+                numOfFiles = 0;
+              } else {
+                dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+                numOfFiles = int.parse(dt);
+              }
+              await bleSubscription.cancel();
+              completer.complete(numOfFiles);
+            }).listen((event) async {
               print(event.toString() + "  //////////////");
               print(String.fromCharCodes(event));
               dt += String.fromCharCodes(event);
-
             });
 
             await characteristic.write(Uint8List.fromList(cmd.codeUnits),
@@ -413,7 +414,7 @@ class BluetoothManager {
   Future<dynamic> startUpload(
       {foregroundServiceClient, foregroundService}) async {
     BluetoothCharacteristic characTX;
-    int maxtrys =5;
+    int maxtrys = 5;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
     prefs.setBool("uploadInProgress", true);
@@ -450,12 +451,12 @@ class BluetoothManager {
               //         "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
               int try_counter = 0;
-              Map<String, List<int>> _currentResult = await _sendNext(
-                  fileCount, characteristic, characTX);
+              Map<String, List<int>> _currentResult =
+                  await _sendNext(fileCount, characteristic, characTX);
               while (_currentResult.length == 0 && try_counter != maxtrys) {
                 try_counter++;
-                _currentResult = await _sendNext(
-                    fileCount, characteristic, characTX);
+                _currentResult =
+                    await _sendNext(fileCount, characteristic, characTX);
               }
               String _fileName = _currentResult.keys.first;
               List<int> _currentFile = _currentResult.values.first;
@@ -520,7 +521,7 @@ class BluetoothManager {
     await characTX.setNotifyValue(false);
     await Future.delayed(const Duration(milliseconds: 500));
     await characTX.setNotifyValue(true);
-
+    var lastEvent = [];
     int _logData = 0;
     Map<String, List<int>> _result = {};
     List<int> _data = [];
@@ -536,6 +537,28 @@ class BluetoothManager {
       completer.complete(_result);
     }).listen((event) async {
       int _dataSize = event.length;
+      if (event.length + lastEvent.length == 15) {
+        var concatenatedEvents = lastEvent + event;
+        if (concatenatedEvents[0] == 255 &&
+            concatenatedEvents[1] == 255 &&
+            concatenatedEvents[2] == 255 &&
+            concatenatedEvents[3] == 255 &&
+            concatenatedEvents[4] == 255 &&
+            concatenatedEvents[5] == 0 &&
+            concatenatedEvents[6] == 0 &&
+            concatenatedEvents[7] == 0 &&
+            concatenatedEvents[8] == 0 &&
+            concatenatedEvents[9] == 0 &&
+            concatenatedEvents[10] == 0 &&
+            concatenatedEvents[11] == 255 &&
+            concatenatedEvents[12] == 255 &&
+            concatenatedEvents[13] == fileCount) {
+          print("Endsequence altered");
+          await _characSubscription.cancel();
+          _result[_fileName] = _data;
+          completer.complete(_result);
+        }
+      }
       if (_logData == 1) {
         //check end of a file
         if (_dataSize >= 15 &&
@@ -577,6 +600,7 @@ class BluetoothManager {
         }
         completer.complete(_result);
       }
+      lastEvent = event;
     });
 
     s = "\u0010sendNext(" + fileCount.toString() + ")\n";
@@ -634,6 +658,7 @@ Future<dynamic> stopRecordingAndUpload() async {
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
   List<bool> result = [];
+  SharedPreferences prefs = await SharedPreferences.getInstance();
 
   try {
     await bleManager.connectToSavedDevice();
@@ -641,13 +666,14 @@ Future<dynamic> stopRecordingAndUpload() async {
     await bleManager.startUpload();
     await Future.delayed(const Duration(seconds: 3));
     await bleManager.stopUpload();
-    await Future.delayed(const Duration(seconds: 3));
     await Future.delayed(const Duration(milliseconds: 500));
     await bleManager._syncTime();
-    await bleManager._startRecord(12.5, 8,
-        (await SharedPreferences.getInstance()).getInt("recordingWillStartAt"));
+    await bleManager._startRecord(
+        12.5, 8, prefs.getInt("recordingWillStartAt"));
     await bleManager.disconnectFromDevice();
-    await Future.delayed(const Duration(seconds: 30));
+    // await Future.delayed(const Duration(seconds: 30));
+    await uploadActivityDataToServer();
+
     result.add(true);
     completer.complete(result);
     // return await completer.future;
