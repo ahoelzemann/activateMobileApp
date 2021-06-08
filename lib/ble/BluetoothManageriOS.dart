@@ -64,7 +64,7 @@ class BluetoothManager {
 
   Future<dynamic> connectToSavedDevice() async {
     if (await _findMyDevice()) {
-      await myDevice.connect(autoConnect: false);
+      await myDevice.connect(autoConnect: true);
       Fimber.d(myDevice.name + " Device connected");
       return true;
     } else {
@@ -97,11 +97,16 @@ class BluetoothManager {
       try {
         var sortedEntries = bangles.entries.toList()
           ..sort((e1, e2) {
+            print("e1: $e1");
+            print("e2: $e2");
             var diff = e2.value.compareTo(e1.value);
             if (diff == 0) diff = e2.key.compareTo(e1.key);
+            print("diff: $diff");
             return diff;
           });
+
         List<String> bangle = sortedEntries.first.key.split("#");
+        print(bangle.toString());
         updateOverlayText("Wir haben folgende Bangle.js gefunden: " +
             bangle[0] +
             ".\nDiese wird nun als Standardgerät in der App hinterlegt.");
@@ -476,7 +481,7 @@ class BluetoothManager {
 
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
-            prefs.setBool("uploadInProgress", false);
+            // prefs.setBool("uploadInProgress", false);
             completer.complete(_numofFiles);
           }
         });
@@ -600,11 +605,12 @@ Future<dynamic> getStepsAndMinutes() async {
   }
 }
 
-Future<bool> syncTimeAndStartRecording() async {
+Future<dynamic> syncTimeAndStartRecording() async {
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
-
+  Completer completer = new Completer();
   try {
+    await Future.delayed(const Duration(milliseconds: 1500));
     await bleManager.connectToSavedDevice();
     await Future.delayed(const Duration(milliseconds: 500));
     await bleManager._syncTime();
@@ -613,18 +619,21 @@ Future<bool> syncTimeAndStartRecording() async {
     await bleManager.disconnectFromDevice();
 
     await Future.delayed(const Duration(seconds: 2));
-    hideOverlay();
-    return true;
+    // hideOverlay();
+    // completer.complete("dynamic");
+    // return completer.future;
   } catch (e) {
     logError(e);
-    await bleManager.disconnectFromDevice();
-    return false;
+    // completer.complete("false");
+    // return completer.future;
   }
 }
 
-Future<bool> stopRecordingAndUpload() async {
+Future<dynamic> stopRecordingAndUpload() async {
+  Completer completer = new Completer();
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
+  List<bool> result = [];
 
   try {
     await bleManager.connectToSavedDevice();
@@ -633,14 +642,20 @@ Future<bool> stopRecordingAndUpload() async {
     await Future.delayed(const Duration(seconds: 3));
     await bleManager.stopUpload();
     await Future.delayed(const Duration(seconds: 3));
+    await Future.delayed(const Duration(milliseconds: 500));
+    await bleManager._syncTime();
+    await bleManager._startRecord(12.5, 8,
+        (await SharedPreferences.getInstance()).getInt("recordingWillStartAt"));
     await bleManager.disconnectFromDevice();
-    await Future.delayed(const Duration(seconds: 20));
-    return true;
+    await Future.delayed(const Duration(seconds: 30));
+    result.add(true);
+    completer.complete(result);
+    // return await completer.future;
   } catch (e) {
     logError(e);
-    await bleManager.disconnectFromDevice();
-
-    return false;
+    // result.add(true);
+    // completer.complete(result);
+    // return completer.future;
   }
 }
 

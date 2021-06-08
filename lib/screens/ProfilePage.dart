@@ -9,6 +9,7 @@ import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:trac2move/screens/Overlay.dart';
+import 'package:trac2move/screens/Terms.dart';
 import 'dart:io' show Platform;
 import 'package:toggle_switch/toggle_switch.dart';
 
@@ -48,9 +49,10 @@ class MapScreenState extends State<ProfilePage> {
   List<bool> isSelected = [true, false, false];
   bool _status = true;
   TextEditingController studienIDController =
-  new TextEditingController(text: "L-");
+      new TextEditingController(text: "L-");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
+  String agreedOnTerms = "not";
   String gender = "d";
   bool bctGroup = true;
   final FocusNode myFocusNode = FocusNode();
@@ -185,19 +187,83 @@ class MapScreenState extends State<ProfilePage> {
                             ),
                           ),
                           Padding(
-                              padding: EdgeInsets.only(
-                                  left: 25.0, right: 25.0, top: 2.0),
-                              child: new Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: <Widget>[
-                                  new Flexible(
-                                    child: new TextFormField(
-                                        enabled: true,
-                                        autofocus: false,
-                                        controller: studienIDController),
-                                  ),
-                                ],
-                              )),
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 2.0),
+                            child: new Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Flexible(
+                                  child: new TextFormField(
+                                      enabled: true,
+                                      autofocus: false,
+                                      controller: studienIDController),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'Geschlecht',
+                                      style: TextStyle(
+                                          fontSize: 18.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 2.0),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: <Widget>[
+                                ToggleSwitch(
+                                  minWidth: 50.0,
+                                  minHeight: 35.0,
+                                  initialLabelIndex: 2,
+                                  cornerRadius: 20.0,
+                                  activeFgColor: Colors.white,
+                                  inactiveBgColor: Colors.grey,
+                                  inactiveFgColor: Colors.white,
+                                  labels: ['M', 'W', 'D'],
+                                  icons: [
+                                    Icons.male,
+                                    Icons.female,
+                                    Icons.transgender
+                                  ],
+                                  iconSize: 30.0,
+                                  activeBgColors: [
+                                    Colors.green,
+                                    Colors.green,
+                                    Colors.green
+                                  ],
+                                  onToggle: (index) {
+                                    if (index == 0) {
+                                      gender = "m";
+                                    } else if (index == 1) {
+                                      gender = "f";
+                                    } else if (index == 2) {
+                                      gender = "d";
+                                    }
+                                    print('switched to: $index');
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
                           Padding(
                               padding: EdgeInsets.only(
                                   left: 25.0, right: 25.0, top: 25.0),
@@ -375,67 +441,85 @@ class MapScreenState extends State<ProfilePage> {
                           Padding(
                             padding: EdgeInsets.only(
                                 left: 25.0, right: 25.0, top: 25.0),
-                            child: new Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              mainAxisSize: MainAxisSize.max,
-                              children: <Widget>[
-                                new Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    new Text(
-                                      'Geschlecht',
-                                      style: TextStyle(
-                                          fontSize: 18.0,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
+                            child: new InkWell(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                      builder: (context) => Terms()),
+                                ).then((value) => setState(() {}));
+                              },
+                              child: new Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.start,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      new Text(
+                                        'Einwilligungserklärung',
+                                        style: TextStyle(
+                                            fontSize: 15.0,
+                                            fontWeight: FontWeight.bold),
+                                      ),
+                                    ],
+                                  ),
+                                  new Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: <Widget>[
+                                      FutureBuilder(
+                                          future: termsAgreed(),
+                                          builder: (BuildContext context,
+                                              AsyncSnapshot<String> snapshot) {
+                                            if (snapshot.hasData) {
+                                              if (snapshot.data == "not") {
+                                                return CupertinoSwitch(
+                                                  value: false,
+                                                  onChanged: (value) {},
+                                                );
+                                              }
+                                              else if (snapshot.data == "both") {
+                                                return CupertinoSwitch(
+                                                  value: true,
+                                                  onChanged: (value) {},
+                                                );
+                                              }
+                                              else if (snapshot.data == "sick" || snapshot.data == "data") {
+                                                return CupertinoSwitch(
+                                                  activeColor: Colors.blue,
+                                                  value: true,
+                                                  onChanged: (value) {},
+                                                );
+                                              } else if (snapshot.data == "none") {
+                                                return CupertinoSwitch(
+                                                  activeColor: Colors.yellow,
+                                                  value: true,
+                                                  onChanged: (value) {},
+                                                );
+                                              }
+                                              else {
+                                                return CupertinoSwitch(
+                                                  value: false,
+                                                  onChanged: (value) {},
+                                                );
+                                              }
+                                            } else {
+                                              return CupertinoSwitch(
+                                                value: false,
+                                                onChanged: (value) {},
+                                              );
+                                            }
+                                          }),
+                                    ],
+                                  )
+                                ],
+                              ),
                             ),
                           ),
-                          Padding(
-                            padding: EdgeInsets.only(
-                                left: 25.0, right: 25.0, top: 2.0),
-                            child: Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: <Widget>[
-                                ToggleSwitch(
-                                  minWidth: 90.0,
-                                  minHeight: 50.0,
-                                  initialLabelIndex: 2,
-                                  cornerRadius: 20.0,
-                                  activeFgColor: Colors.white,
-                                  inactiveBgColor: Colors.grey,
-                                  inactiveFgColor: Colors.white,
-                                  labels: ['Männlich', 'Weiblich', 'Divers'],
-                                  icons: [
-                                    Icons.male,
-                                    Icons.female,
-                                    Icons.transgender
-                                  ],
-                                  iconSize: 30.0,
-                                  activeBgColors: [
-                                    Colors.green,
-                                    Colors.green,
-                                    Colors.green
-                                  ],
-                                  onToggle: (index) {
-                                    if (index == 0) {
-                                      gender = "m";
-                                    } else if (index == 1) {
-                                      gender = "f";
-                                    } else if (index == 2) {
-                                      gender = "d";
-                                    }
-                                    print('switched to: $index');
-                                  },
-                                ),
-                              ],
-                            ),
-                          ),
-                          _getActionButtons(),
+                          _getSaveButton(),
                         ],
                       ),
                     ),
@@ -454,9 +538,9 @@ class MapScreenState extends State<ProfilePage> {
     super.dispose();
   }
 
-  Widget _getActionButtons() {
+  Widget _getSaveButton() {
     return Padding(
-      padding: EdgeInsets.only(left: 25.0, right: 25.0, top: 45.0),
+      padding: EdgeInsets.only(left: 25.0, right: 25.0, top: 25.0),
       child: new Row(
         mainAxisSize: MainAxisSize.max,
         mainAxisAlignment: MainAxisAlignment.start,
@@ -466,79 +550,101 @@ class MapScreenState extends State<ProfilePage> {
               padding: EdgeInsets.only(right: 10.0),
               child: Container(
                   child: new RaisedButton(
-                    child: new Text("Speichern"),
-                    textColor: Colors.white,
-                    color: Colors.green,
-                    onPressed: () async {
-                      showOverlay(
-                          "Wir suchen Ihre Bangle.js",
-                          Icon(
-                            Icons.watch,
-                            color: Colors.blue,
-                            size: 50.0,
-                          ));
-                      if (Platform.isAndroid) {
-                        await BLEManagerIOS.findNearestDevice();
-                      } else {
-                        await BLEManagerIOS.findNearestDevice();
-                      }
-                      hideOverlay();
-                      SharedPreferences prefs =
-                      await SharedPreferences.getInstance();
-                      String bangle_name = prefs.getString("Devicename");
-                      if (createUser) {
-                        Future<String> result = _saveUserOnServer(
-                            ageToSave,
-                            selectedDate,
-                            studienIDController.text,
-                            bangle_name,
-                            radioButtonItem,
-                            bctGroup,
-                            gender);
-                        result.then((value) {
-                          if (value == "Studienteilnehmer bereits vorhanden") {
-                            showAlertDialogAlreadyExists(context,
-                                value != null ? value : 'Verbinde zu Server');
-                          } else {
-                            _saveLocalUser(
-                                ageToSave,
-                                selectedDate,
-                                studienIDController.text,
-                                bangle_name,
-                                radioButtonItem,
-                                bctGroup,
-                                gender);
-                            showAlertDialogConfirmation(context);
-                          }
-                        });
-                      } else {
-                        Future<String> result = _patchUserOnServer(
-                            ageToSave,
-                            selectedDate,
-                            studienIDController.text,
-                            bangle_name,
-                            radioButtonItem,
-                            bctGroup,
-                            gender);
-                        result.then((value) {
-                          if (value == "Studienteilnehmer bereits vorhanden") {
-                            showAlertDialogAlreadyExists(context,
-                                value != null ? value : 'Verbinde zu Server');
-                          } else {
-                            _saveLocalUser(
-                                ageToSave,
-                                selectedDate,
-                                studienIDController.text,
-                                bangle_name,
-                                radioButtonItem, bctGroup, gender);
-                            showAlertDialogConfirmation(context);
-                          }
-                        });
-                      }
-                    },
-                    shape: new RoundedRectangleBorder(
-                        borderRadius: new BorderRadius.circular(20.0)),
-                  )),
+                child: new Text("Speichern"),
+                textColor: Colors.white,
+                color: Colors.green,
+                onPressed: () async {
+                  if (this.agreedOnTerms == "not") {
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          content: Text(
+                              "Bitte lesen Sie zunächst die Einwilligungserklärung."),
+                          actions: [
+                            FlatButton(
+                              child: Text("OK"),
+                              onPressed: () {
+                                Navigator.of(context).pop();
+                              },
+                            ),
+                          ],
+                        );
+                      },
+                    );
+                  } else {
+                    showOverlay(
+                        "Wir suchen Ihre Bangle.js",
+                        Icon(
+                          Icons.watch,
+                          color: Colors.blue,
+                          size: 50.0,
+                        ));
+                      await BLEManagerIOS.findNearestDevice();
+                    hideOverlay();
+                    SharedPreferences prefs =
+                        await SharedPreferences.getInstance();
+                    String bangle_name = prefs.getString("Devicename");
+                    if (createUser) {
+                      Future<String> result = _saveUserOnServer(
+                          ageToSave,
+                          selectedDate,
+                          studienIDController.text,
+                          bangle_name,
+                          radioButtonItem,
+                          bctGroup,
+                          gender,
+                          agreedOnTerms);
+                      result.then((value) {
+                        if (value == "Studienteilnehmer bereits vorhanden") {
+                          showAlertDialogAlreadyExists(context,
+                              value != null ? value : 'Verbinde zu Server');
+                        } else {
+                          _saveLocalUser(
+                              ageToSave,
+                              selectedDate,
+                              studienIDController.text,
+                              bangle_name,
+                              radioButtonItem,
+                              bctGroup,
+                              gender,
+                              agreedOnTerms);
+                          showAlertDialogConfirmation(context);
+                        }
+                      });
+                    } else {
+                      Future<String> result = _patchUserOnServer(
+                          ageToSave,
+                          selectedDate,
+                          studienIDController.text,
+                          bangle_name,
+                          radioButtonItem,
+                          bctGroup,
+                          gender,
+                          agreedOnTerms);
+                      result.then((value) {
+                        if (value == "Studienteilnehmer bereits vorhanden") {
+                          showAlertDialogAlreadyExists(context,
+                              value != null ? value : 'Verbinde zu Server');
+                        } else {
+                          _saveLocalUser(
+                              ageToSave,
+                              selectedDate,
+                              studienIDController.text,
+                              bangle_name,
+                              radioButtonItem,
+                              bctGroup,
+                              gender,
+                              agreedOnTerms);
+                          showAlertDialogConfirmation(context);
+                        }
+                      });
+                    }
+                  }
+                },
+                shape: new RoundedRectangleBorder(
+                    borderRadius: new BorderRadius.circular(20.0)),
+              )),
             ),
             flex: 2,
           ),
@@ -546,6 +652,7 @@ class MapScreenState extends State<ProfilePage> {
       ),
     );
   }
+
 
   Widget _getEditIcon() {
     return new GestureDetector(
@@ -576,8 +683,8 @@ class MapScreenState extends State<ProfilePage> {
           context,
           MaterialPageRoute(
               builder: (context) => Stack(
-                children: [LandingScreen(), OverlayView()],
-              )),
+                    children: [LandingScreen(), OverlayView()],
+                  )),
         );
       },
     );
@@ -600,73 +707,79 @@ class MapScreenState extends State<ProfilePage> {
   Widget showAlertDialogAlreadyExists(BuildContext context, String message) {
     // set up the AlertDialog
     showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: Center(child: Text(message)),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  child: Text(
-                    "Was möchten Sie tun?\n",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: Colors.red,
-                    ),
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Center(child: Text(message)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              Container(
+                child: Text(
+                  "Was möchten Sie tun?\n",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.red,
                   ),
                 ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 10.0),
-                        child: Container(
-                          child: new RaisedButton(
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 10.0),
+                      child: Container(
+                        child: new RaisedButton(
+                          shape: new RoundedRectangleBorder(
+                              borderRadius: new BorderRadius.circular(20.0)),
+                          child: new Text("Zurück"),
+                          textColor: Colors.red,
+                          color: Colors.white70,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  Expanded(
+                    child: Padding(
+                      padding: EdgeInsets.only(right: 10.0),
+                      child: Container(
+                        child: new RaisedButton(
                             shape: new RoundedRectangleBorder(
                                 borderRadius: new BorderRadius.circular(20.0)),
-                            child: new Text("Zurück"),
-                            textColor: Colors.red,
-                            color: Colors.white70,
-                            onPressed: () {
-                              Navigator.of(context).pop();
-                            },
-                          ),
-                        ),
+                            child: new Text("Herunterladen & Speichern"),
+                            textColor: Colors.white,
+                            color: Colors.lightBlue,
+                            onPressed: () async {
+                              await getOneUserAndStoreLocal(
+                                  studienIDController.text);
+                              showAlertDialogConfirmation(context);
+                            }),
                       ),
                     ),
-                  ],
-                ),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: <Widget>[
-                    Expanded(
-                      child: Padding(
-                        padding: EdgeInsets.only(right: 10.0),
-                        child: Container(
-                          child: new RaisedButton(
-                              shape: new RoundedRectangleBorder(
-                                  borderRadius:
-                                  new BorderRadius.circular(20.0)),
-                              child: new Text("Herunterladen & Speichern"),
-                              textColor: Colors.white,
-                              color: Colors.lightBlue,
-                              onPressed: () async {
-                                await getOneUserAndStoreLocal(
-                                    studienIDController.text);
-                                showAlertDialogConfirmation(context);
-                              }),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          );
-        });
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Future<String> termsAgreed() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    agreedOnTerms = prefs.getString("agreedOnTerms");
+    return agreedOnTerms == null ? "not" : agreedOnTerms;
   }
 }
 
@@ -683,9 +796,10 @@ Future<bool> getOneUserAndStoreLocal(studienID) async {
         bangleID: values[11],
         birthday: values[15],
         worn_at: values[17],
-        bctGroup : values[23].toLowerCase() == 'true',
-        gender : values[27]);
-    //Todo: Fix the index of worn_at
+        bctGroup: values[23].toLowerCase() == 'true',
+        gender: values[27],
+        agreedOnTerms: values[27]);
+    //Todo: Fix the index of agreenOnTerms
     mySharedPreferences msp = new mySharedPreferences();
     bool result = await msp.mySharedPreferencesFirstStart(participant);
 
@@ -700,22 +814,30 @@ Future<String> _patchUserOnServer(
     String bangleID,
     String worn_at,
     bool bctGroup,
-    String gender) {
+    String gender,
+    String agreedOnTerms) {
   String date = convertDate(birthday);
 
   PostgresConnector postgresconnector = new PostgresConnector();
-  var result = postgresconnector.patchParticipant(
-      studienID, ageToSave, date, bangleID, worn_at, bctGroup, gender);
+  var result = postgresconnector.patchParticipant(studienID, ageToSave, date,
+      bangleID, worn_at, bctGroup, gender, agreedOnTerms);
   return result;
 }
 
-Future<String> _saveUserOnServer(int ageToSave, DateTime birthday,
-    String studienID, String bangleID, String worn_at, bctGroup, gender) {
+Future<String> _saveUserOnServer(
+    int ageToSave,
+    DateTime birthday,
+    String studienID,
+    String bangleID,
+    String worn_at,
+    bool bctGroup,
+    String gender,
+    String agreedOnTerms) {
   String date = convertDate(birthday);
 
   PostgresConnector postgresconnector = new PostgresConnector();
-  var result = postgresconnector.postParticipant(
-      studienID, ageToSave, date, bangleID, worn_at, bctGroup, gender);
+  var result = postgresconnector.postParticipant(studienID, ageToSave, date,
+      bangleID, worn_at, bctGroup, gender, agreedOnTerms);
   return result;
 }
 
@@ -726,7 +848,8 @@ Future<dynamic> _saveLocalUser(
     String bangleID,
     String worn_at,
     bool bctGroup,
-    String gender) {
+    String gender,
+    String agreedOnTerms) {
   Completer completer = new Completer();
   String date = convertDate(birthday);
 
@@ -740,7 +863,8 @@ Future<dynamic> _saveLocalUser(
       birthday: date,
       worn_at: worn_at,
       bctGroup: bctGroup,
-      gender: gender);
+      gender: gender,
+      agreedOnTerms: agreedOnTerms);
   mySharedPreferences msp = new mySharedPreferences();
   msp.mySharedPreferencesFirstStart(participant);
   completer.complete("done");

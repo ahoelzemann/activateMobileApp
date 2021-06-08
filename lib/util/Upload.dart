@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData;
 import 'package:ssh/ssh.dart';
@@ -40,7 +41,6 @@ class Upload {
       tempDir = await getTemporaryDirectory();
       localFilesDirectory = tempDir.path + "/daily_data/";
 
-
       // if (prefs.getBool("useSecureStorage")!) {
       //   final storage = new FlutterSecureStorage();
       //   host = utf8
@@ -76,7 +76,7 @@ class Upload {
         buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
 
-  Future<dynamic> uploadFiles() async {
+  void uploadFiles() async {
     // Completer completer = new Completer();
     // try {
     filePaths = io.Directory(localFilesDirectory).listSync();
@@ -113,7 +113,6 @@ class Upload {
             // this.client.disconnectSFTP();
             // this.client.disconnect();
             // completer.complete(true);
-            return true;
             // break;
           } else {
             continue;
@@ -136,13 +135,13 @@ class Upload {
         //   print('Error: ${e.code}\nError Message: ${e.message}');
       }
     }
-
-    return true;
   }
 
   Future<void> uploadLogFile(path) async {
     String serverlogfolder = this.serverFilePath + "/logfiles/";
-
+    // File newFile = await File(path).copy('$path/filename.jpg');
+    Directory tempDir = await getTemporaryDirectory();
+    String tempPath = tempDir.path;
     try {
       String result = await client.connect();
       if (result == "session_connected") {
@@ -155,13 +154,14 @@ class Upload {
             } catch (e) {
               print('Folder already exists');
             }
-            // print("File exists: " + saveFile.existsSync().toString());
-            await client.sftpUpload(
-              path: path,
-              toPath: serverlogfolder,
-              callback: (progress) {
-                print(progress); // read upload progress
-              },
+            // print("File exists: " + path.existsSync().toString());
+            print(
+              await client.sftpUpload(
+                  path: path,
+                  toPath: serverlogfolder,
+                  callback: (progress) {
+                    print(progress); // read upload progress
+                  }),
             );
           } catch (e, stacktrace) {
             logError(e, stackTrace: stacktrace);
@@ -176,4 +176,11 @@ class Upload {
       // print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }
+}
+
+Future<dynamic> uploadActivityDataToServer() async {
+
+  Upload uploader = new Upload();
+  await uploader.init();
+  uploader.uploadFiles();
 }

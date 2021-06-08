@@ -13,7 +13,7 @@ class PostgresConnector {
   final url = 'https://activate-db.uni-vechta.de:443/api/';
 
   Future<String> postParticipant(
-      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender) =>
+      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
       Future.delayed(Duration(seconds: 1), () async {
         try {
           var url = Uri.parse(this.url+'participants');
@@ -24,7 +24,8 @@ class PostgresConnector {
             'birthday': birthday,
             'worn_at': worn_at,
             'bctgroup': bctGroup.toString(),
-            'gender': gender
+            'gender': gender,
+            'agreedonterms': agreedOnTerms
           };
 
           var body = json.encode(data);
@@ -84,7 +85,7 @@ class PostgresConnector {
 
   }
   Future<String> patchParticipant(
-      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender) =>
+      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
       Future.delayed(Duration(seconds: 1), () async {
         try {
           SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -97,7 +98,8 @@ class PostgresConnector {
             'birthday': birthday,
             'worn_at': worn_at,
             'bctgroup': bctGroup.toString(),
-            'gender': gender
+            'gender': gender,
+            'agreedonterms' :agreedOnTerms
           };
 
           var body = json.encode(data);

@@ -9,7 +9,8 @@ class BCTRuleSet {
   DateTime now;
   String frequence;
 
-  Future<void> init(currentsteps, currentminutes, laststeps, lastminutes) async {
+  Future<void> init(
+      currentsteps, currentminutes, laststeps, lastminutes) async {
     prefs = await SharedPreferences.getInstance();
     current_steps = currentsteps;
     current_minutes = currentminutes;
@@ -18,8 +19,13 @@ class BCTRuleSet {
   }
 
   bool halfDayCheck() {
-    DateTime recordingTimeStart =
-        DateTime.parse(prefs.getString("recordingWillStartAtString"));
+    DateTime recordingTimeStart;
+    try {
+      recordingTimeStart =
+          DateTime.parse(prefs.getString("recordingWillStartAtString"));
+    } catch (e) {
+      return false;
+    }
     now = DateTime.now();
     bool halfDayCheck =
         now.isAfter(recordingTimeStart.add(Duration(hours: 8))) ? true : false;

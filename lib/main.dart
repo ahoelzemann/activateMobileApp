@@ -51,13 +51,13 @@ serviceMain() async {
           await BLEManagerAndroid.stopRecordingAndUpload(
               foregroundServiceClient: ServiceClient,
               foregroundService: serviceData);
+          await BLEManagerAndroid.syncTimeAndStartRecording();
           Upload uploader = new Upload();
           await uploader.init();
           uploader.uploadFiles();
         } catch(e, stacktrace) {
           logError(e, stackTrace: stacktrace);
         }
-      await BLEManagerAndroid.syncTimeAndStartRecording();
       await Future.delayed(Duration(seconds: 1));
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
@@ -75,6 +75,7 @@ void main() async {
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Fimber.plantTree(FileLoggerTree());
   Fimber.e(DateTime.now().toString() + " Beginning Log File:");
+  // await Executor().warmUp(isolatesCount: 10, log:true);
   AwesomeNotifications().initialize(
     // set the icon to null if you want to use the default app icon
       null,
@@ -130,6 +131,7 @@ void main() async {
       prefs.setBool('timeNeverSet', true);
     }
     if (firstRun == null) {
+      prefs.setBool("agreedOnTerms", false);
       firstRun = true;
       await prefs.setInt("recordingWillStartAt", 7);
       prefs.setInt("current_steps", 0);

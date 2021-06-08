@@ -395,7 +395,7 @@ class BLE_Client {
     _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
       await _characSubscription.cancel();
-      completer.complete({});
+      completer.complete(_result);
     }).listen((event) async {
       int _dataSize = event.length;
       if (_logData == 1) {
@@ -509,7 +509,7 @@ class BLE_Client {
     foregroundService.progress = 100;
     await ServiceClient.update(foregroundService);
     print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
-    prefs.setBool("uploadInProgress", false);
+    // prefs.setBool("uploadInProgress", false);
     completer.complete(_numofFiles);
 
     return completer.future;
@@ -576,7 +576,8 @@ Future<bool> stopRecordingAndUpload(
   await Future.delayed(Duration(seconds: 1));
 
   await bleClient.init();
-
+  int hour =
+  (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
   try {
     await bleClient.checkBLEstate();
     bleClient.start_ble_scan();
@@ -589,6 +590,9 @@ Future<bool> stopRecordingAndUpload(
         foregroundService: foregroundService);
     await Future.delayed(Duration(seconds: 2));
     await bleClient.blestopUpload();
+    await Future.delayed(Duration(seconds: 4));
+    await bleClient.bleSyncTime();
+    await bleClient.bleStartRecord(12.5, 8, hour);
     await bleClient.disconnect();
     await Future.delayed(Duration(seconds: 30));
     return true;

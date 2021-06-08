@@ -38,12 +38,12 @@ class OverlayView extends StatelessWidget {
                       Row(
                         children: [
                           Spacer(),
-                          IconButton(
-                            icon: Icon(Icons.close_outlined),
-                            onPressed: () {
-                              Loader.appLoader.hideLoader();
-                            },
-                          ),
+                          // IconButton(
+                          //   icon: Icon(Icons.close_outlined),
+                          //   onPressed: () {
+                          //     Loader.appLoader.hideLoader();
+                          //   },
+                          // ),
                         ],
                       ),
                       Loader.appLoader.loaderIconNotifier.value,

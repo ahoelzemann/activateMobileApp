@@ -7,16 +7,18 @@ class Participant {
   final String worn_at;
   final bool bctGroup;
   final String gender;
+  final String agreedOnTerms;
 
   Participant(
       {this.id,
-        this.studienID,
-        this.age,
-        this.bangleID,
-        this.birthday,
-        this.worn_at,
-        this.bctGroup,
-        this.gender});
+      this.studienID,
+      this.age,
+      this.bangleID,
+      this.birthday,
+      this.worn_at,
+      this.bctGroup,
+      this.gender,
+      this.agreedOnTerms});
 
   Map<String, dynamic> toMap() {
     return {
@@ -27,7 +29,8 @@ class Participant {
       'birthday': birthday,
       'worn_at': worn_at,
       'bctGroup': bctGroup,
-      'gender': gender
+      'gender': gender,
+      'agreedOnTerms': agreedOnTerms
     };
   }
 
@@ -40,7 +43,8 @@ class Participant {
       birthday.toString(),
       worn_at.toString(),
       bctGroup.toString(),
-      gender.toString()
+      gender.toString(),
+      agreedOnTerms.toString()
     ];
   }
 
@@ -48,7 +52,7 @@ class Participant {
   // each Participant when using the print statement.
   @override
   String toString() {
-    return 'Participant{id: $id, studienID:$studienID, age: $age, bangleID: $bangleID, birthday: $birthday, worn_at: $worn_at, bctGroup: $bctGroup, gender: $gender }';
+    return 'Participant{id: $id, studienID:$studienID, age: $age, bangleID: $bangleID, birthday: $birthday, worn_at: $worn_at, bctGroup: $bctGroup, gender: $gender , agreedOnTerms: $agreedOnTerms}';
   }
 }
 
@@ -60,6 +64,7 @@ Participant fromStringList(List input) {
       birthday: input[4],
       worn_at: input[5],
       bctGroup: input[6].toLowerCase() == 'true',
-      gender: input[7]);
+      gender: input[7],
+      agreedOnTerms: input[8]);
   return p;
 }
