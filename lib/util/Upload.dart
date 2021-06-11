@@ -81,6 +81,15 @@ class Upload {
     // Completer completer = new Completer();
     // try {
     filePaths = io.Directory(localFilesDirectory).listSync();
+    final port = IsolateNameServer.lookupPortByName('main');
+
+    if (filePaths.length == 0) {
+      if (port != null) {
+        port.send('done');
+      } else {
+        print('port is null');
+      }
+    }
     String result = await client.connect();
     if (result == "session_connected") {
       result = await client.connectSFTP();
@@ -98,7 +107,6 @@ class Upload {
           serverPath = serverFilePath;
           String tempPath = tempDir.path;
           tempPath = tempPath + "/" + serverFileName;
-
           print("Upload file: " + localFilePath);
           print(await client.sftpUpload(
             path: localFilePath,
@@ -109,16 +117,14 @@ class Upload {
           ));
           File(localFilePath).delete();
           print("local file deleted");
+
           if (i == (filePaths.length - 1)) {
             print("if clause reached");
-            await prefs.setBool("uploadInProgress", false);
-            await prefs.setBool("timeNeverSet", false);
+              if (port != null) {
+                port.send('done');
+              } else {
+                print('port is null');
 
-            final port = IsolateNameServer.lookupPortByName('main');
-            if (port != null) {
-              port.send('done');
-            } else {
-              print('port is null');
             }
             // this.client.disconnectSFTP();
             // this.client.disconnect();
@@ -193,7 +199,6 @@ class Upload {
 }
 
 Future<dynamic> uploadActivityDataToServer() async {
-
   Upload uploader = new Upload();
   await uploader.init();
   uploader.uploadFiles();

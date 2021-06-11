@@ -47,17 +47,18 @@ serviceMain() async {
       await ServiceClient.update(serviceData);
       await Future.delayed(Duration(milliseconds: 500));
 
-        try {
-          await BLEManagerAndroid.stopRecordingAndUpload(
-              foregroundServiceClient: ServiceClient,
-              foregroundService: serviceData);
-          await BLEManagerAndroid.syncTimeAndStartRecording();
-          Upload uploader = new Upload();
-          await uploader.init();
-          uploader.uploadFiles();
-        } catch(e, stacktrace) {
-          logError(e, stackTrace: stacktrace);
-        }
+      try {
+        await BLEManagerAndroid.stopRecordingAndUpload(
+            foregroundServiceClient: ServiceClient,
+            foregroundService: serviceData);
+        // await BLEManagerAndroid.syncTimeAndStartRecording();
+        Upload uploader = new Upload();
+        await uploader.init();
+        uploader.uploadFiles();
+      } catch (e, stacktrace) {
+        logError(e, stackTrace: stacktrace);
+      }
+
       await Future.delayed(Duration(seconds: 1));
       await ServiceClient.endExecution(serviceData);
       await ServiceClient.stopService();
@@ -111,8 +112,6 @@ void main() async {
       print("storage service requested");
       await Permission.bluetooth.request();
       print("bluetooth service requested");
-      // await Permission.locationAlways.request();
-      // print("locationAlways requested");
       await Permission.locationWhenInUse.request();
       print("location when in use requested");
     } else if (Platform.isIOS) {
@@ -125,12 +124,14 @@ void main() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
     bool firstRun = prefs.getBool('firstRun');
+    prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
     prefs.setBool('useSecureStorage', useSecureStorage);
     prefs.setBool("uploadInProgress", false);
     if (prefs.getBool('timeNeverSet') == null) {
       prefs.setBool('timeNeverSet', true);
     }
     if (firstRun == null) {
+      prefs.setBool("halfTimeAlreadyFired", false);
       prefs.setBool("agreedOnTerms", false);
       firstRun = true;
       await prefs.setInt("recordingWillStartAt", 7);
@@ -150,8 +151,8 @@ void main() async {
         await storage.write(
             key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
       }
-        else {
-          print("saving server credentials...");
+      else {
+        print("saving server credentials...");
         await prefs.setString('serverAddress', "131.173.80.175");
         await prefs.setString('port', "22");
         await prefs.setString('login', "trac2move_upload");
@@ -170,7 +171,7 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     List<String> participant;
     var instance = await SharedPreferences.getInstance();
     participant = instance.getStringList("participant");
-    bool firstRun = instance.getBool("firstRun");
+    // bool firstRun = instance.getBool("firstRun");
     // bool btState = false;
     // await BLE.checkBLEStatus();
     // if (!firstRun) {
@@ -186,34 +187,17 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
       int currentSteps = prefs.getInt("current_steps");
       await prefs.setInt("last_steps", currentSteps);
       await prefs.setInt("last_active_minutes", currentActiveMinutes);
-      if (Platform.isIOS) {
-        await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
 
-        return 1;
-      } else {
-        bool btState = await SystemShortcuts.checkBluetooth;
-        if (btState) {
-          await BLEManagerAndroid.refresh();
-        } else {
-          await BluetoothEnable.enableBluetooth;
-        }
-        await BLEManagerAndroid.getStepsAndMinutes().timeout(
-            Duration(seconds: 30), onTimeout: () async {
-
-
-          return 1;
-        });
-
-        return 1;
-      }
-    }
-  } catch (e, stacktrace) {
-    print(e);
-    print(stacktrace);
-    logError(e, stackTrace: stacktrace);
-
-    return 3;
+    return 1;
   }
+} catch (
+e, stacktrace) {
+print(e);
+print(stacktrace);
+logError(e, stackTrace: stacktrace);
+
+return 3;
+}
 }
 
 SetFirstPage() {

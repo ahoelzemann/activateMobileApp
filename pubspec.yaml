@@ -53,7 +53,8 @@ dependencies:
   toggle_switch: "^0.1.9"
 #  fl_chart: ^0.36.1
   flutter_isolate: ^2.0.0
-  worker_manager: ^4.0.3
+  isolate_handler: ^1.0.0
+#  worker_manager: ^4.0.3
   url_launcher: ^6.0.6
   flutter:
     sdk: flutter

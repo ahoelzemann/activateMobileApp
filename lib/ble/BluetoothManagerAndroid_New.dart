@@ -10,6 +10,8 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:android_long_task/android_long_task.dart';
 import 'dart:convert' show utf8;
 
+import 'package:trac2move/util/Upload.dart';
+
 class BLE_Client {
   BleManager _bleManager;
 
@@ -149,7 +151,6 @@ class BLE_Client {
     start_ble_scan();
     await waitTillDeviceIsFound(() => _bleManager.stopPeripheralScan());
     StreamSubscription _deviceStateSubscription;
-    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     bool connected = await myDevice.isConnected();
@@ -191,7 +192,7 @@ class BLE_Client {
   }
 
   Future<dynamic> getMinutes() async {
-    await Future.delayed(Duration(milliseconds: 200));
+    // await Future.delayed(Duration(milliseconds: 200));
     Completer completer = new Completer();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     StreamSubscription _responseSubscription;
@@ -235,6 +236,41 @@ class BLE_Client {
     print("Sending  bleSteps command...");
 
     String s = "steps\n";
+    print(Uint8List.fromList(s.codeUnits).toString());
+    _responseSubscription = characTX.monitor().listen((event) async {
+      print(event.toString() + "  //////////////");
+      print(String.fromCharCodes(event));
+      if (event[0] == 115 && event[4] == 115) {
+        String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
+            event.lastIndexOf(13))); //the number between = and \r
+        try {
+          _steps = int.parse(dd.trim());
+        } on FormatException catch (e) {
+          await _responseSubscription.cancel();
+          disconnect();
+        }
+        prefs.setInt("current_steps", _steps);
+        await _responseSubscription.cancel();
+        completer.complete(_steps);
+      }
+    });
+
+    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
+
+    return await completer.future;
+  }
+
+  Future<dynamic> rv() async {
+    await Future.delayed(Duration(milliseconds: 200));
+    Completer completer = new Completer();
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    StreamSubscription _responseSubscription;
+    int _steps = 0;
+    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
+    print("Sending  bleSteps command...");
+
+    String s = "\x10rv()\n";
     print(Uint8List.fromList(s.codeUnits).toString());
     _responseSubscription = characTX.monitor().listen((event) async {
       print(event.toString() + "  //////////////");
@@ -339,6 +375,8 @@ class BLE_Client {
     print("Sending  stop command...");
 
     String s = "\u0010stopUpload();\n";
+    // String s = "\x10stpUp($HZ,$GS,$hour)\n";
+    // \x10stpUp(HZ,GS,hour)\n
     characRX.write(Uint8List.fromList(s.codeUnits), false); //returns void
     print(Uint8List.fromList(s.codeUnits).toString());
     completer.complete(true);
@@ -507,9 +545,9 @@ class BLE_Client {
         try_counter++;
         _currentResult = await _sendNext(fileCount);
       }
-      foregroundService.progress =
-          foregroundService.progress + incrementelSteps;
-      ServiceClient.update(foregroundService);
+      // foregroundService.progress =
+      //     foregroundService.progress + incrementelSteps;
+      // ServiceClient.update(foregroundService);
       String _fileName = _currentResult.keys.first;
       List<int> _currentFile = _currentResult.values.first;
       print(fileCount.toString() +
@@ -530,8 +568,8 @@ class BLE_Client {
           _fileName.toString() +
           " saved to file //////////////////");
     }
-    foregroundService.progress = 100;
-    await ServiceClient.update(foregroundService);
+    // foregroundService.progress = 100;
+    // await ServiceClient.update(foregroundService);
     print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
     // prefs.setBool("uploadInProgress", false);
     completer.complete(_numofFiles);
@@ -572,7 +610,7 @@ class BLE_Client {
 }
 
 Future<dynamic> getStepsAndMinutes() async {
-  await Future.delayed(Duration(seconds: 1));
+  // await Future.delayed(Duration(seconds: 1));
   BLE_Client androidBLEClient = new BLE_Client();
   await androidBLEClient.init();
   try {
@@ -580,7 +618,7 @@ Future<dynamic> getStepsAndMinutes() async {
     await androidBLEClient.connect();
     await androidBLEClient.getMinutes();
     await androidBLEClient.getSteps();
-    await Future.delayed(Duration(seconds: 2));
+    // await Future.delayed(Duration(seconds: 2));
     await androidBLEClient.disconnect();
 
     return true;
@@ -605,7 +643,13 @@ Future<bool> stopRecordingAndUpload(
   try {
     await bleClient.checkBLEstate();
     bleClient.start_ble_scan();
-    await bleClient.connect();
+    try {
+      await bleClient.connect();
+    } catch (e) {
+      await refresh();
+      await bleClient.connect();
+    }
+
     await Future.delayed(Duration(seconds: 6));
     await bleClient.bleStopRecord();
     await Future.delayed(Duration(seconds: 2));
@@ -619,6 +663,46 @@ Future<bool> stopRecordingAndUpload(
     await bleClient.bleStartRecord(12.5, 8, hour);
     await bleClient.disconnect();
     await Future.delayed(Duration(seconds: 30));
+    return true;
+  } catch (e, stacktrace) {
+    logError(e, stackTrace: stacktrace);
+
+    return false;
+  }
+}
+
+Future<bool> stopRecordingUploadAndStart() async {
+
+  // await refresh();
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(seconds: 1));
+
+  await bleClient.init();
+  int hour =
+  (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
+  try {
+    await bleClient.checkBLEstate();
+    bleClient.start_ble_scan();
+    try {
+      await bleClient.connect();
+    } catch (e) {
+      await refresh();
+      await bleClient.connect();
+    }
+
+    await Future.delayed(Duration(seconds: 6));
+    await bleClient.bleStopRecord();
+    await Future.delayed(Duration(seconds: 2));
+    await bleClient.startUpload();
+    await Future.delayed(Duration(seconds: 2));
+    await bleClient.blestopUpload();
+    await Future.delayed(Duration(seconds: 4));
+    await bleClient.bleSyncTime();
+    await bleClient.bleStartRecord(12.5, 8, hour);
+    await bleClient.disconnect();
+    await Future.delayed(Duration(seconds: 30));
+    await uploadActivityDataToServer();
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
@@ -665,8 +749,6 @@ Future<bool> findNearestDevice() async {
 
 Future<bool> createPermission() async {
   new BLE_Client().init();
-  // await Future.delayed(Duration(milliseconds: 500));
-  // bleClient.closeBLE();
 
   return true;
 }

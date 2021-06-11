@@ -25,10 +25,12 @@ import 'package:android_long_task/android_long_task.dart';
 import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
+import 'package:trac2move/screens/FAQ.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
-import 'package:worker_manager/worker_manager.dart';
+
+// import 'package:isolate_handler/isolate_handler.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 
 // Import package
@@ -48,14 +50,20 @@ class LandingScreen extends StatefulWidget {
   _LandingScreenState createState() => _LandingScreenState();
 }
 
-Future<bool> isolate1(String arg) async {
-  await BLEManagerIOS.stopRecordingAndUpload();
+void isolate1(String arg) async {
+// void isolate1(Map<String, dynamic> context) async {
+//   final messenger = HandledIsolate.initialize(context);
+  if (Platform.isIOS) {
+    await BLEManagerIOS.stopRecordingAndUpload();
+  } else {
+    await BLEManagerAndroid.stopRecordingUploadAndStart();
+  }
 
   // await Future.delayed(Duration(minutes: 1));
 
   // reloadPage(globalContext);
 
-  return true;
+  // return true;
 }
 
 void reloadPage(context) async {
@@ -78,94 +86,104 @@ void reloadPage(context) async {
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
-    // SharedPreferences prefs = await SharedPreferences.getInstance();
-    // var isUploading = prefs.getBool("uploadInProgress");
-    // if (isUploading == null || !isUploading) {
-    //   if (Platform.isIOS) {
-    //     await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
-    //   } else {
-    //     await BLEManagerAndroid.getStepsAndMinutes()
-    //         .timeout(Duration(seconds: 30));
-    //   }
-    //   setState(() {});
-    // }
-    // _subscription?.cancel();
-    // AwesomeNotifications().cancel('/NotificationPage');
-    try {
-      _subscription =
-          AwesomeNotifications().actionStream.listen((receivedNotification) {
-        Navigator.of(context).pushNamed('/NotificationPage', arguments: {
-          receivedNotification.id
-        } // your page params. I recommend to you to pass all *receivedNotification* object
-            );
-      });
-    } catch (e) {
-      logError(e);
-    }
-    if (await isbctGroup()) {
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      int currentActiveMinutes = prefs.getInt("current_active_minutes");
-      int currentSteps = prefs.getInt("current_steps");
-      int lastSteps = prefs.getInt("last_steps");
-      int lastActiveMinutes = prefs.getInt("last_active_minutes");
-      BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-      await rules.init(
-          currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-      String halfTimeMsgSteps = "";
-      String halfTimeMsgMinutes = "";
-      String dailyStepsReached = rules.dailyStepsReached();
-      String dailyMinutesReached = rules.dailyMinutesReached();
-      if (rules.halfDayCheck()) {
-        halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-        halfTimeMsgSteps = rules.halfTimeMsgSteps();
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    var isUploading = prefs.getBool("uploadInProgress");
+    if (prefs.getBool("fromIsolate")) {
+      if (isUploading == null || !isUploading) {
+        if (Platform.isIOS) {
+          await BLEManagerIOS.getStepsAndMinutes()
+              .timeout(Duration(seconds: 30));
+        } else {
+          await BLEManagerAndroid.getStepsAndMinutes()
+              .timeout(Duration(seconds: 30));
+        }
+        setState(() {});
       }
-      if (dailyStepsReached.length > 1) {
-        AwesomeNotifications().createNotification(
-            content: NotificationContent(
-                id: 10,
-                channelKey: 'bct_channel',
-                title: 'Tägliches Schrittziel erreicht',
-                body: dailyStepsReached));
-        showOverlay(
-            dailyStepsReached,
-            Icon(
-              Icons.thumb_up_alt,
-              color: Colors.green,
-              size: 50.0,
-            ),
-            withButton: true);
+      try {
+        _subscription =
+            AwesomeNotifications().actionStream.listen((receivedNotification) {
+          Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+            receivedNotification.id
+          } // your page params. I recommend to you to pass all *receivedNotification* object
+              );
+        });
+      } catch (e) {
+        logError(e);
       }
-      if (dailyMinutesReached.length > 1) {
-        AwesomeNotifications().createNotification(
-            content: NotificationContent(
-                id: 10,
-                channelKey: 'bct_channel',
-                title: 'Sie sind sehr aktiv!',
-                body: dailyMinutesReached));
-        showOverlay(
-            dailyMinutesReached,
-            Icon(
-              Icons.thumb_up_alt,
-              color: Colors.green,
-              size: 50.0,
-            ),
-            withButton: true);
-      }
-      if (halfTimeMsgSteps.length > 1) {
-        AwesomeNotifications().createNotification(
-            content: NotificationContent(
-                id: 10,
-                channelKey: 'bct_channel',
-                title: 'Halbzeit, toll gemacht!',
-                body: halfTimeMsgSteps));
-      }
-      if (halfTimeMsgMinutes.length > 1) {
-        AwesomeNotifications().createNotification(
-            content: NotificationContent(
-                id: 10,
-                channelKey: 'bct_channel',
-                title: 'Weiter so!',
-                body: halfTimeMsgMinutes));
+      if (await isbctGroup()) {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        DateTime lastTime =
+            DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+        int currentActiveMinutes = prefs.getInt("current_active_minutes");
+        int currentSteps = prefs.getInt("current_steps");
+        int lastSteps = prefs.getInt("last_steps");
+        int lastActiveMinutes = prefs.getInt("last_active_minutes");
+        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+        await rules.init(
+            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+        String halfTimeMsgSteps = "";
+        String halfTimeMsgMinutes = "";
+        String dailyStepsReached = rules.dailyStepsReached();
+        String dailyMinutesReached = rules.dailyMinutesReached();
+        if (rules.halfDayCheck()) {
+          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+        }
+        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+          await prefs.setString(
+              "lastTimeDailyGoalsShown", DateTime.now().toString());
+          if (dailyStepsReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Tägliches Schrittziel erreicht',
+                    body: dailyStepsReached));
+            showOverlay(
+                dailyStepsReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+          if (dailyMinutesReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Sie sind sehr aktiv!',
+                    body: dailyMinutesReached));
+            showOverlay(
+                dailyMinutesReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+        }
+        if (!prefs.getBool("halfTimeAlreadyFired")) {
+          if (halfTimeMsgSteps.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 3,
+                    channelKey: 'bct_channel',
+                    title: 'Halbzeit, toll gemacht!',
+                    body: halfTimeMsgSteps));
+          }
+          if (halfTimeMsgMinutes.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 4,
+                    channelKey: 'bct_channel',
+                    title: 'Weiter so!',
+                    body: halfTimeMsgMinutes));
+          }
+          prefs.setBool("halfTimeAlreadyFired", true);
+        }
       }
     }
   }
@@ -173,8 +191,10 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onResume() async {
     print("ON RESUME");
-
+    ;
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    DateTime lastTime =
+        DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
     var isUploading = prefs.getBool("uploadInProgress");
     int lastSteps = prefs.getInt("current_steps");
     int lastActiveMinutes = prefs.getInt("current_active_minutes");
@@ -205,53 +225,60 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
           halfTimeMsgSteps = rules.halfTimeMsgSteps();
         }
-        if (dailyStepsReached.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 1,
-                  channelKey: 'bct_channel',
-                  title: 'Tägliches Schrittziel erreicht',
-                  body: dailyStepsReached));
-          showOverlay(
-              dailyStepsReached,
-              Icon(
-                Icons.check_circle_outline,
-                color: Colors.green,
-                size: 50.0,
-              ),
-              withButton: true);
+        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+          await prefs.setString(
+              "lastTimeDailyGoalsShown", DateTime.now().toString());
+          if (dailyStepsReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Tägliches Schrittziel erreicht',
+                    body: dailyStepsReached));
+            showOverlay(
+                dailyStepsReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+          if (dailyMinutesReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Sie sind sehr aktiv!',
+                    body: dailyMinutesReached));
+            showOverlay(
+                dailyMinutesReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
         }
-        if (dailyMinutesReached.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 2,
-                  channelKey: 'bct_channel',
-                  title: 'Sie sind sehr aktiv!',
-                  body: dailyMinutesReached));
-          showOverlay(
-              dailyMinutesReached,
-              Icon(
-                Icons.check_circle_outline,
-                color: Colors.green,
-                size: 50.0,
-              ),
-              withButton: true);
-        }
-        if (halfTimeMsgSteps.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 3,
-                  channelKey: 'bct_channel',
-                  title: 'Halbzeit, toll gemacht!',
-                  body: halfTimeMsgSteps));
-        }
-        if (halfTimeMsgMinutes.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 4,
-                  channelKey: 'bct_channel',
-                  title: 'Weiter so!',
-                  body: halfTimeMsgMinutes));
+        if (!prefs.getBool("halfTimeAlreadyFired")) {
+          if (halfTimeMsgSteps.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 3,
+                    channelKey: 'bct_channel',
+                    title: 'Halbzeit, toll gemacht!',
+                    body: halfTimeMsgSteps));
+          }
+          if (halfTimeMsgMinutes.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 4,
+                    channelKey: 'bct_channel',
+                    title: 'Weiter so!',
+                    body: halfTimeMsgMinutes));
+          }
+          prefs.setBool("halfTimeAlreadyFired", true);
         }
       }
     }
@@ -395,7 +422,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                           return Align(
                                               alignment: Alignment.centerLeft,
                                               child: AutoSizeText(
-                                                  'Es konnte keine Schrittzahl ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                                  'Übertrage Schrittzahl',
                                                   style: TextStyle(
                                                       fontFamily:
                                                           "PlayfairDisplay",
@@ -471,7 +498,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                       return Align(
                                           alignment: Alignment.centerLeft,
                                           child: AutoSizeText(
-                                              'Es konnten keine aktiven Minuten ausgelesen werden. Bitte verbinden Sie sich zunächst mit der Bangle.',
+                                              'Übertrage aktive Minuten.',
                                               style: TextStyle(
                                                   fontFamily: "PlayfairDisplay",
                                                   fontWeight: FontWeight.bold,
@@ -578,7 +605,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                             return Align(
                                                 alignment: Alignment.centerLeft,
                                                 child: AutoSizeText(
-                                                    'Es konnten keine gespeicherten Tagesziele gefunden werden. Bitte definieren Sie diese zunächst',
+                                                    'Tagesziele werden geladen.',
                                                     style: TextStyle(
                                                         fontFamily:
                                                             "PlayfairDisplay",
@@ -624,31 +651,17 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 color: Color.fromRGBO(57, 70, 84, 1.0),
               ),
             ),
-            // ListTile(
-            //     title: Text('Startzeit wählen',
-            //         style: TextStyle(
-            //             fontFamily: "PlayfairDisplay",
-            //             fontWeight: FontWeight.bold,
-            //             color: Colors.black)),
-            //     onTap: () async {
-            //       await scheduleNext();
-            //     }),
 
-            // ListTile(
-            //   title: Text('Push tests',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     AwesomeNotifications().createNotification(
-            //         content: NotificationContent(
-            //             id: 10,
-            //             channelKey: 'basic_channel',
-            //             title: 'Simple Notification',
-            //             body: 'Simple body'));
-            //   },
-            // ),
+            ListTile(
+              title: Text('RV Test',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                // await BLEManagerAndroid.testRV();
+              },
+            ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
@@ -759,6 +772,22 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //   },
             // ),
             ListTile(
+              title: Text('FAQ',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => FAQ(),
+                  ),
+                );
+              },
+            ),
+            ListTile(
               title: Text('Kontakt',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
@@ -798,7 +827,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     } else {
                       return ListTile();
                     }
-                  } else return ListTile();
+                  } else
+                    return ListTile();
                 }),
             FutureBuilder(
                 future: isbctGroup(),
@@ -824,7 +854,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     } else {
                       return ListTile();
                     }
-                  } else return ListTile();
+                  } else
+                    return ListTile();
                 }),
           ],
         ),
@@ -888,7 +919,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     title: 'Tagesziel aktive Minuten',
                     body: endOfTheMessageMinutes));
           }
-
+          await prefs.setBool("halfTimeAlreadyFired", false);
           bool timeNeverSet = prefs.getBool("timeNeverSet");
           showOverlay(
               'Ihre Geräte werden geladen.',
@@ -898,20 +929,35 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
               withButton: false);
           await prefs.setInt("recordingWillStartAt", dateTime.hour);
-          prefs.setBool("uploadInProgress", true);
+          await prefs.setBool("uploadInProgress", true);
+          await prefs.setBool("fromIsolate", true);
           if (Platform.isAndroid) {
-            await BLEManagerAndroid.refresh();
             if (!timeNeverSet) {
-              AppServiceData data = AppServiceData();
+              // AppServiceData data = AppServiceData();
               try {
-                String _result = 'result';
-                var result = await AppClient.execute(data);
-                var resultData = AppServiceData.fromJson(result);
-                // setState(() => _result =
-                //     'finished executing service process ;) -> ${resultData.progress}');
+                final flutterIsolate =
+                    await FlutterIsolate.spawn(isolate1, "");
 
-                prefs.setBool("uploadInProgress", false);
-                reloadPage(context);
+                final receivePort = ReceivePort();
+                final sendPort = receivePort.sendPort;
+                IsolateNameServer.registerPortWithName(sendPort, 'main');
+
+                receivePort.listen((dynamic message) async {
+                  if (message == 'done') {
+                    print('Killing the Isolate');
+                    flutterIsolate.kill();
+                    // isolates.kill("bleExec");
+                    await prefs.setBool("uploadInProgress", false);
+                    await prefs.setBool("timeNeverSet", false);
+                    await prefs.setBool("fromIsolate", false);
+                    hideOverlay();
+                  }
+                });
+                // String _result = 'result';
+                // await AppClient.execute(data);
+
+                // prefs.setBool("uploadInProgress", false);
+                // reloadPage(context);
 
                 return true;
               } catch (e, stacktrace) {
@@ -934,19 +980,31 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             if (!timeNeverSet) {
               try {
                 logError("starting upload");
-                fromIsolate = true;
+                print("before isolate");
+                await prefs.setBool("fromIsolate", true);
+                // final isolates = IsolateHandler();
+                // isolates.spawn<int>(isolate1,
+                //   name: "bleExec",
+                // Executed every time data is received from the spawned isolate.
+                // onReceive: setCounter,
+                // Executed once when spawned isolate is ready for communication.
+                // onInitialized: () => isolates.send(counter, to: "counter")
+                // );
                 final flutterIsolate =
-                    await FlutterIsolate.spawn(await isolate1, "")
-                        as FlutterIsolate;
+                    await FlutterIsolate.spawn(await isolate1, "");
 
                 final receivePort = ReceivePort();
                 final sendPort = receivePort.sendPort;
                 IsolateNameServer.registerPortWithName(sendPort, 'main');
 
-                receivePort.listen((dynamic message) {
+                receivePort.listen((dynamic message) async {
                   if (message == 'done') {
                     print('Killing the Isolate');
                     flutterIsolate.kill();
+                    // isolates.kill("bleExec");
+                    await prefs.setBool("uploadInProgress", false);
+                    await prefs.setBool("timeNeverSet", false);
+                    await prefs.setBool("fromIsolate", false);
                     hideOverlay();
                   }
                 });

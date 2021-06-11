@@ -22,7 +22,7 @@ class BluetoothManager {
 
   bool hasDataLeftOnStream = false;
   bool connected = false;
-
+  bool debug = true;
   BluetoothDevice myDevice;
   List<BluetoothService> services;
   SharedPreferences prefs;
@@ -48,6 +48,7 @@ class BluetoothManager {
 
   Future<dynamic> _findMyDevice() async {
     // Method returns the device or false if the device is not visible
+    Completer completer = new Completer();
     List<ScanResult> result = [];
     flutterBlue.startScan(timeout: Duration(seconds: 4));
     try {
@@ -56,11 +57,13 @@ class BluetoothManager {
           .timeout(Duration(seconds: 4));
       await flutterBlue.stopScan();
       myDevice = result.last.device;
-      return true;
-    } on TimeoutException catch (e) {
+      completer.complete(true);
+      return completer.future;
+    } catch (e) {
       await flutterBlue.stopScan();
 
-      return false;
+      completer.complete(false);
+      return completer.future;
     }
   }
 
@@ -79,10 +82,13 @@ class BluetoothManager {
     Completer completer = new Completer();
     await myDevice.disconnect();
     completer.complete(true);
-    print("Device: " +
-        myDevice.name +
-        " Status: " +
-        BluetoothDeviceState.connected.toString());
+    if (debug) {
+      print("Device: " +
+          myDevice.name +
+          " Status: " +
+          BluetoothDeviceState.connected.toString());
+    }
+
     return completer.future;
   }
 
@@ -311,6 +317,7 @@ class BluetoothManager {
     print("Status:" + myDevice.name + " RX UUID discovered");
 
     print("Sending  start command...");
+    // "\x10stpUp(HZ, GS; hour)\n"
 
     String s = "recStrt(" +
         Hz.toString() +
@@ -498,10 +505,10 @@ class BluetoothManager {
     (await myDevice.discoverServices()).forEach((service) async {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
+
           print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-
           print("Sending  stop command...");
-
+          // \
           String s = "\u0010stopUpload();\n";
           characteristic.write(Uint8List.fromList(s.codeUnits),
               withoutResponse: true); //returns void
@@ -553,7 +560,7 @@ class BluetoothManager {
             concatenatedEvents[11] == 255 &&
             concatenatedEvents[12] == 255 &&
             concatenatedEvents[13] == fileCount) {
-          print("Endsequence altered");
+          // print("Endsequence altered");
           await _characSubscription.cancel();
           _result[_fileName] = _data;
           completer.complete(_result);
@@ -654,6 +661,7 @@ Future<dynamic> syncTimeAndStartRecording() async {
 }
 
 Future<dynamic> stopRecordingAndUpload() async {
+  print("inside bleAdapter");
   Completer completer = new Completer();
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
