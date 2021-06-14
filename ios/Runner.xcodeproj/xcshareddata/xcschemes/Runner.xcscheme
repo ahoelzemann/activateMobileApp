@@ -49,7 +49,8 @@
       debugDocumentVersioning = "YES"
       debugXPCServices = "NO"
       debugServiceExtension = "internal"
-      allowLocationSimulation = "YES">
+      allowLocationSimulation = "YES"
+      launchAutomaticallySubstyle = "1">
       <BuildableProductRunnable
          runnableDebuggingMode = "0">
          <BuildableReference

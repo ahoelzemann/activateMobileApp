@@ -26,9 +26,30 @@ import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
 import 'package:bluetooth_enable/bluetooth_enable.dart';
+import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
+import 'package:trac2move/bct/BCT.dart' as BCT;
+import 'package:trac2move/persistant/Participant.dart';
 
 //this entire function runs in your ForegroundService
+void backgroundFetchHeadlessTask(HeadlessTask task) async {
+  String taskId = task.taskId;
+  bool isTimeout = task.timeout;
+  if (isTimeout) {
+    // This task has exceeded its allowed running-time.
+    // You must stop what you're doing and immediately .finish(taskId)
+    print("[BackgroundFetch] Headless task timed-out: $taskId");
+    BackgroundFetch.finish(taskId);
+    return;
+  }
+  print('[BackgroundFetch] Headless event received.');
+  // Do your work here...
+  BackgroundFetch.finish(taskId);
+}
+
+Future<void> backgroundTaskAndroid() {
+
+}
 @pragma('vm:entry-point')
 serviceMain() async {
   //make sure you add this
@@ -90,6 +111,7 @@ void main() async {
         )
       ]
   );
+
   try {
     bool useSecureStorage = false;
     print("secureStorage done");
@@ -127,10 +149,12 @@ void main() async {
     prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
     prefs.setBool('useSecureStorage', useSecureStorage);
     prefs.setBool("uploadInProgress", false);
+
     if (prefs.getBool('timeNeverSet') == null) {
       prefs.setBool('timeNeverSet', true);
     }
     if (firstRun == null) {
+      prefs.setBool("fromIsolate", false);
       prefs.setBool("halfTimeAlreadyFired", false);
       prefs.setBool("agreedOnTerms", false);
       firstRun = true;
@@ -160,7 +184,110 @@ void main() async {
       }
     }
 
+    int status = await BackgroundFetch.configure(BackgroundFetchConfig(
+        minimumFetchInterval: 60,
+        stopOnTerminate: true,
+        enableHeadless: true,
+        requiresBatteryNotLow: false,
+        requiresCharging: false,
+        requiresStorageNotLow: false,
+        requiresDeviceIdle: false,
+        requiredNetworkType: NetworkType.NONE
+    ), (String taskId) async {  // <-- Event handler
+      // This is the fetch-event callback.
+      DateTime lastTime =
+      DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+      var isUploading = prefs.getBool("uploadInProgress");
+      int lastSteps = prefs.getInt("current_steps");
+      int lastActiveMinutes = prefs.getInt("current_active_minutes");
+      await BLEManagerAndroid.getStepsAndMinutes();
+
+      if (await isbctGroup()) {
+        int currentActiveMinutes = prefs.getInt("current_active_minutes");
+        int currentSteps = prefs.getInt("current_steps");
+        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+        await rules.init(
+            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+        String halfTimeMsgSteps = "";
+        String halfTimeMsgMinutes = "";
+        String dailyStepsReached = rules.dailyStepsReached();
+        String dailyMinutesReached = rules.dailyMinutesReached();
+        if (rules.halfDayCheck()) {
+          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+        }
+        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+          await prefs.setString(
+              "lastTimeDailyGoalsShown", DateTime.now().toString());
+          if (dailyStepsReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Tägliches Schrittziel erreicht',
+                    body: dailyStepsReached));
+            showOverlay(
+                dailyStepsReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+          if (dailyMinutesReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Sie sind sehr aktiv!',
+                    body: dailyMinutesReached));
+            showOverlay(
+                dailyMinutesReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+        }
+        if (!prefs.getBool("halfTimeAlreadyFired")) {
+          if (halfTimeMsgSteps.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 3,
+                    channelKey: 'bct_channel',
+                    title: 'Halbzeit, toll gemacht!',
+                    body: halfTimeMsgSteps));
+          }
+          if (halfTimeMsgMinutes.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 4,
+                    channelKey: 'bct_channel',
+                    title: 'Weiter so!',
+                    body: halfTimeMsgMinutes));
+          }
+          prefs.setBool("halfTimeAlreadyFired", true);
+        }
+      }
+
+
+      print(DateTime.now().toString() + " | [BackgroundFetch] Event received $taskId");
+      // setState(() {
+      //   _events.insert(0, new DateTime.now());
+      // });
+      // IMPORTANT:  You must signal completion of your task or the OS can punish your app
+      // for taking too long in the background.
+      BackgroundFetch.finish(taskId);
+    }, (String taskId) async {  // <-- Task timeout handler.
+      // This task has exceeded its allowed running-time.  You must stop what you're doing and immediately .finish(taskId)
+      print("[BackgroundFetch] TASK TIMEOUT taskId: $taskId");
+      BackgroundFetch.finish(taskId);
+    });
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
+    BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
   }
@@ -252,3 +379,4 @@ openSettingsMenu(settingsName) async {
     resultSettingsOpening = false;
   }
 }
+

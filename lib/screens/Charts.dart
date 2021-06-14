@@ -1,11 +1,6 @@
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-
-// import 'package:fl_chart/fl_chart.dart';
-import 'package:trac2move/screens/LandingScreen.dart';
-import 'package:trac2move/screens/Overlay.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
-import 'package:syncfusion_flutter_charts/sparkcharts.dart';
+import 'package:trac2move/util/DataLoader.dart';
 
 class Charts extends StatefulWidget {
   const Charts({Key key, this.title}) : super(key: key);
@@ -16,44 +11,73 @@ class Charts extends StatefulWidget {
 }
 
 class _Charts extends State<Charts> {
+
   Widget _buildTrackerBarChart() {
-    return Column(children: [
-      SfCartesianChart(
-        borderWidth: 0,
-        plotAreaBorderWidth: 0,
-        title: ChartTitle(text: 'Tägliche Schritte', textStyle: TextStyle(color: Colors.white)),
-        primaryXAxis: CategoryAxis(
-          majorGridLines: MajorGridLines(width: 0), labelStyle: TextStyle(color: Colors.white),
-        ),
-        primaryYAxis: NumericAxis(
-            majorGridLines: MajorGridLines(width: 0),
-            title: AxisTitle(text: ''),
-            minimum: 0,
-            maximum: 8000,
-            majorTickLines: MajorTickLines(size: 0),labelStyle: TextStyle(color: Colors.white)),
-        series: _getTrackerBarSeriesSteps(),
-        tooltipBehavior: TooltipBehavior(enable: true),
-      ),
-    ]);
+    return FutureBuilder(
+        future: getStepsCharts(),
+        builder: (BuildContext context, AsyncSnapshot<List<int>> snapshot) {
+          if (snapshot.hasData) {
+            return Column(children: [
+              SfCartesianChart(
+                borderWidth: 0,
+                plotAreaBorderWidth: 0,
+                title: ChartTitle(
+                    text: 'Tägliche Schritte',
+                    textStyle: TextStyle(color: Colors.white)),
+                primaryXAxis: CategoryAxis(
+                  majorGridLines: MajorGridLines(width: 0),
+                  labelStyle: TextStyle(color: Colors.white),
+                ),
+                primaryYAxis: NumericAxis(
+                    majorGridLines: MajorGridLines(width: 0),
+                    title: AxisTitle(text: ''),
+                    minimum: 0,
+                    maximum: snapshot.data[1].toDouble(),
+                    majorTickLines: MajorTickLines(size: 0),
+                    labelStyle: TextStyle(color: Colors.white)),
+                series: _getTrackerBarSeriesSteps(snapshot.data[0]),
+                tooltipBehavior: TooltipBehavior(enable: true),
+              ),
+            ]);
+          } else {
+            return Container();
+          }
+        });
   }
+
   Widget _buildTrackerColumnChart() {
-    return SfCartesianChart(
-      borderWidth: 0,
-      plotAreaBorderWidth: 0,
-      title: ChartTitle(text:'Aktive Minuten', textStyle: TextStyle(color: Colors.white)),
-      legend: Legend(isVisible: true, textStyle: TextStyle(color: Colors.white)),
-      primaryXAxis: CategoryAxis(majorGridLines: MajorGridLines(width: 0), labelStyle: TextStyle(color: Colors.white)),
-      primaryYAxis: NumericAxis(
-          minimum: 0,
-          maximum: 100,
-          axisLine: AxisLine(width: 0),
-          majorGridLines: MajorGridLines(width: 0),
-          majorTickLines: MajorTickLines(size: 0),
-          labelStyle: TextStyle(color: Colors.white)),
-      series: _getTrackerColumnSeriesMinutes(),
-      tooltipBehavior: TooltipBehavior(enable: true),
-    );
+    return FutureBuilder(
+        future: getActiveMinutesCharts(),
+        builder: (BuildContext context, AsyncSnapshot<List<int>> snapshot) {
+          if (snapshot.hasData) {
+            return SfCartesianChart(
+              borderWidth: 0,
+              plotAreaBorderWidth: 0,
+              title: ChartTitle(
+                  text: 'Aktive Minuten',
+                  textStyle: TextStyle(color: Colors.white)),
+              legend: Legend(
+                  isVisible: true, textStyle: TextStyle(color: Colors.white)),
+              primaryXAxis: CategoryAxis(
+                  majorGridLines: MajorGridLines(width: 0),
+                  labelStyle: TextStyle(color: Colors.white)),
+              primaryYAxis: NumericAxis(
+                  minimum: 0,
+                  maximum: snapshot.data[1].toDouble(),
+                  axisLine: AxisLine(width: 0),
+                  majorGridLines: MajorGridLines(width: 0),
+                  majorTickLines: MajorTickLines(size: 0),
+                  labelStyle: TextStyle(color: Colors.white)),
+              series: _getTrackerColumnSeriesMinutes(snapshot.data),
+              tooltipBehavior: TooltipBehavior(enable: true),
+            );
+          }
+          else {
+            return Container();
+          }
+        });
   }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -70,7 +94,10 @@ class _Charts extends State<Charts> {
           )
         ],
         leading: new IconButton(
-            icon: new Icon(Icons.arrow_back, color: Colors.white,),
+            icon: new Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+            ),
             onPressed: () {
               Navigator.pop(context);
             }),
@@ -108,9 +135,10 @@ class _Charts extends State<Charts> {
   }
 }
 
-List<BarSeries<ChartSampleData, String>> _getTrackerBarSeriesSteps() {
+List<BarSeries<ChartSampleData, String>>
+    _getTrackerBarSeriesSteps(current_steps) {
   final List<ChartSampleData> chartData = <ChartSampleData>[
-    ChartSampleData(x: 'Schritte', y: 5000)
+    ChartSampleData(x: 'Schritte', y: current_steps)
   ];
   return <BarSeries<ChartSampleData, String>>[
     BarSeries<ChartSampleData, String>(
@@ -119,6 +147,7 @@ List<BarSeries<ChartSampleData, String>> _getTrackerBarSeriesSteps() {
       trackColor: const Color.fromRGBO(198, 201, 207, 1),
       color: const Color.fromRGBO(89, 154, 195, 1),
       name: "Schritte",
+
       /// If we enable this property as true,
       /// then we can show the track of series.
 
@@ -130,19 +159,21 @@ List<BarSeries<ChartSampleData, String>> _getTrackerBarSeriesSteps() {
     ),
   ];
 }
-List<ColumnSeries<ChartSampleData, String>> _getTrackerColumnSeriesMinutes() {
+
+List<ColumnSeries<ChartSampleData, String>> _getTrackerColumnSeriesMinutes(active_minutes) {
   final List<ChartSampleData> chartData = <ChartSampleData>[
-    ChartSampleData(x: 'Gesamt', y: 50),
-    ChartSampleData(x: 'Niedrige Intensität', y: 10),
-    ChartSampleData(x: 'Mittlere Intensität', y: 15),
-    ChartSampleData(x: 'Hohe Intensität', y: 25),
+    ChartSampleData(x: 'Gesamt', y: active_minutes[0]),
+    ChartSampleData(x: 'Niedrige Intensität', y: active_minutes[2]),
+    ChartSampleData(x: 'Mittlere Intensität', y: active_minutes[3]),
+    ChartSampleData(x: 'Hohe Intensität', y: active_minutes[4]),
   ];
   return <ColumnSeries<ChartSampleData, String>>[
     ColumnSeries<ChartSampleData, String>(
         dataSource: chartData,
+
         /// We can enable the track for column here.
         isTrackVisible: true,
-   isVisibleInLegend:false,
+        isVisibleInLegend: false,
         trackColor: const Color.fromRGBO(198, 201, 207, 1),
         borderRadius: BorderRadius.circular(15),
         xValueMapper: (ChartSampleData data, _) => data.x,
@@ -151,11 +182,9 @@ List<ColumnSeries<ChartSampleData, String>> _getTrackerColumnSeriesMinutes() {
         dataLabelSettings: DataLabelSettings(
             isVisible: true,
             labelAlignment: ChartDataLabelAlignment.top,
-            textStyle: const TextStyle(fontSize: 10, color: Colors.white))
-        )
+            textStyle: const TextStyle(fontSize: 10, color: Colors.white)))
   ];
 }
-
 
 ///Chart sample data
 class ChartSampleData {

@@ -1,3 +1,5 @@
+import 'package:shared_preferences/shared_preferences.dart';
+
 class Participant {
   final int id;
   final String studienID;
@@ -67,4 +69,12 @@ Participant fromStringList(List input) {
       gender: input[7],
       agreedOnTerms: input[8]);
   return p;
+}
+
+Future<bool> isbctGroup() async {
+  SharedPreferences prefs = await SharedPreferences.getInstance();
+  List<String> participantAsList = prefs.getStringList("participant");
+  Participant p = fromStringList(participantAsList);
+
+  return p.bctGroup;
 }

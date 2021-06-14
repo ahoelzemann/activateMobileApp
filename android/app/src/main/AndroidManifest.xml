@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     package="com.activate.trac2move">
     <uses-permission android:name="android.permission.BLUETOOTH" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
@@ -15,6 +16,7 @@
 <!--    <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>-->
 
     <application
+        tools:replace="android:label"
         android:label="Trac2Move"
         android:icon="@mipmap/ic_launcher">
         <service

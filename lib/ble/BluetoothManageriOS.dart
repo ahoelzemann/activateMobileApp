@@ -70,6 +70,7 @@ class BluetoothManager {
   Future<dynamic> connectToSavedDevice() async {
     if (await _findMyDevice()) {
       await myDevice.connect(autoConnect: true);
+      services = await myDevice.discoverServices();
       Fimber.d(myDevice.name + " Device connected");
       return true;
     } else {
@@ -260,6 +261,57 @@ class BluetoothManager {
     return completer.future;
   }
 
+  Future<dynamic> _rv() async {
+    await Future.delayed(Duration(milliseconds: 200));
+    Completer completer = new Completer();
+
+    BluetoothService service = services.firstWhere(
+        (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
+        orElse: null);
+    BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
+        (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
+        orElse: null);
+    BluetoothCharacteristic characRX = await service.characteristics.firstWhere(
+        (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
+        orElse: null);
+
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    StreamSubscription _responseSubscription;
+    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
+    print("Sending  bleSteps command...");
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
+    String s = "\x10rv()\n";
+    print(Uint8List.fromList(s.codeUnits).toString());
+    _responseSubscription = characTX.value.timeout(Duration(seconds: 3),
+        onTimeout: (timeout) async {
+      _responseSubscription.cancel();
+      completer.complete(false);
+    }).listen((event) async {
+      print(event.toString() + "  //////////////");
+      print(String.fromCharCodes(event));
+      prefs.setInt(
+          "current_steps",
+          event[0] +
+              event[1] * 256 +
+              event[2] * (0xFFFF + 1) +
+              event[3] * (0xFFFFFF + 1));
+      prefs.setInt("current_active_minutes", event[4] + event[5] * 256);
+      prefs.setInt("current_active_minutes_low", event[6] + event[7] * 256);
+      prefs.setInt("current_active_minutes_avg", event[8] + event[9] * 256);
+      prefs.setInt("current_active_minutes_high", event[10] + event[11] * 256);
+
+      await _responseSubscription.cancel();
+      completer.complete(true);
+    });
+
+    characRX.write(Uint8List.fromList(s.codeUnits),
+        withoutResponse: false); //returns void
+
+    return await completer.future;
+  }
+
   Future<dynamic> _syncTime() async {
     await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
@@ -301,19 +353,19 @@ class BluetoothManager {
     BluetoothService service = services.firstWhere(
         (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
         orElse: null);
-    BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
-        (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
-        orElse: null);
+    // BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
+    //     (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
+    //     orElse: null);
     BluetoothCharacteristic characRX = await service.characteristics.firstWhere(
         (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
         orElse: null);
 
     print("Service found and Characteristics initialized");
 
-    if (!characTX.isNotifying) {
-      await Future.delayed(const Duration(milliseconds: 500));
-      await characTX.setNotifyValue(true);
-    }
+    // await characTX.setNotifyValue(false);
+    // await Future.delayed(const Duration(milliseconds: 500));
+    // await characTX.setNotifyValue(true);
+
     print("Status:" + myDevice.name + " RX UUID discovered");
 
     print("Sending  start command...");
@@ -505,7 +557,6 @@ class BluetoothManager {
     (await myDevice.discoverServices()).forEach((service) async {
       for (BluetoothCharacteristic characteristic in service.characteristics) {
         if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-
           print("Status:" + myDevice.name.toString() + " RX UUID discovered");
           print("Sending  stop command...");
           // \
@@ -626,11 +677,13 @@ Future<dynamic> getStepsAndMinutes() async {
   await bleManager.asyncInit();
   try {
     await bleManager.connectToSavedDevice();
-    await bleManager._readSteps();
-    await bleManager._readMinutes();
+    await bleManager._rv();
+    // await bleManager._readSteps();
+    // await bleManager._readMinutes();
     await bleManager.disconnectFromDevice();
     return true;
   } catch (e) {
+    print(e);
     await bleManager.disconnectFromDevice();
     return false;
   }
@@ -654,6 +707,7 @@ Future<dynamic> syncTimeAndStartRecording() async {
     // completer.complete("dynamic");
     // return completer.future;
   } catch (e) {
+    print(e);
     logError(e);
     // completer.complete("false");
     // return completer.future;
@@ -686,6 +740,7 @@ Future<dynamic> stopRecordingAndUpload() async {
     completer.complete(result);
     // return await completer.future;
   } catch (e) {
+    print(e);
     logError(e);
     // result.add(true);
     // completer.complete(result);
@@ -702,6 +757,7 @@ Future<bool> findNearestDevice() async {
 
     return true;
   } catch (e) {
+    print(e);
     logError(e);
 
     return false;
@@ -717,6 +773,7 @@ Future<bool> disconnectFallback() async {
 
     return true;
   } catch (e) {
+    print(e);
     logError(e);
 
     return false;

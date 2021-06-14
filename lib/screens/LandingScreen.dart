@@ -18,7 +18,7 @@ import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
-    as BLEManagerAndroid;
+as BLEManagerAndroid;
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:android_long_task/android_long_task.dart';
@@ -29,6 +29,7 @@ import 'package:trac2move/screens/FAQ.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
+import 'package:background_fetch/background_fetch.dart';
 
 // import 'package:isolate_handler/isolate_handler.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
@@ -75,126 +76,32 @@ void reloadPage(context) async {
   Navigator.pushAndRemoveUntil(
     context,
     MaterialPageRoute(
-      builder: (context) => Stack(
-        children: [LandingScreen(), OverlayView()],
-      ),
+      builder: (context) =>
+          Stack(
+            children: [LandingScreen(), OverlayView()],
+          ),
     ),
-    (e) => false,
+        (e) => false,
   );
 }
 
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    var isUploading = prefs.getBool("uploadInProgress");
-    if (prefs.getBool("fromIsolate")) {
-      if (isUploading == null || !isUploading) {
-        if (Platform.isIOS) {
-          await BLEManagerIOS.getStepsAndMinutes()
-              .timeout(Duration(seconds: 30));
-        } else {
-          await BLEManagerAndroid.getStepsAndMinutes()
-              .timeout(Duration(seconds: 30));
-        }
-        setState(() {});
-      }
-      try {
-        _subscription =
-            AwesomeNotifications().actionStream.listen((receivedNotification) {
-          Navigator.of(context).pushNamed('/NotificationPage', arguments: {
-            receivedNotification.id
-          } // your page params. I recommend to you to pass all *receivedNotification* object
-              );
-        });
-      } catch (e) {
-        logError(e);
-      }
-      if (await isbctGroup()) {
-        SharedPreferences prefs = await SharedPreferences.getInstance();
-        DateTime lastTime =
-            DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-        int currentActiveMinutes = prefs.getInt("current_active_minutes");
-        int currentSteps = prefs.getInt("current_steps");
-        int lastSteps = prefs.getInt("last_steps");
-        int lastActiveMinutes = prefs.getInt("last_active_minutes");
-        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-        await rules.init(
-            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-        String halfTimeMsgSteps = "";
-        String halfTimeMsgMinutes = "";
-        String dailyStepsReached = rules.dailyStepsReached();
-        String dailyMinutesReached = rules.dailyMinutesReached();
-        if (rules.halfDayCheck()) {
-          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-          halfTimeMsgSteps = rules.halfTimeMsgSteps();
-        }
-        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
-          await prefs.setString(
-              "lastTimeDailyGoalsShown", DateTime.now().toString());
-          if (dailyStepsReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Tägliches Schrittziel erreicht',
-                    body: dailyStepsReached));
-            showOverlay(
-                dailyStepsReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-          if (dailyMinutesReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Sie sind sehr aktiv!',
-                    body: dailyMinutesReached));
-            showOverlay(
-                dailyMinutesReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-        }
-        if (!prefs.getBool("halfTimeAlreadyFired")) {
-          if (halfTimeMsgSteps.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 3,
-                    channelKey: 'bct_channel',
-                    title: 'Halbzeit, toll gemacht!',
-                    body: halfTimeMsgSteps));
-          }
-          if (halfTimeMsgMinutes.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 4,
-                    channelKey: 'bct_channel',
-                    title: 'Weiter so!',
-                    body: halfTimeMsgMinutes));
-          }
-          prefs.setBool("halfTimeAlreadyFired", true);
-        }
-      }
-    }
+    BackgroundFetch.start().then((int status) async {
+
+      print('[BackgroundFetch] start success: $status');
+    });
+
+    await loadDataFromBangleAndPushBCTs();
   }
 
   @override
   void onResume() async {
     print("ON RESUME");
-    ;
     SharedPreferences prefs = await SharedPreferences.getInstance();
     DateTime lastTime =
-        DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+    DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
     var isUploading = prefs.getBool("uploadInProgress");
     int lastSteps = prefs.getInt("current_steps");
     int lastActiveMinutes = prefs.getInt("current_active_minutes");
@@ -205,7 +112,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       if (Platform.isIOS) {
         await BLEManagerIOS.getStepsAndMinutes().timeout(Duration(seconds: 30));
       } else {
-        await BLEManagerAndroid.getStepsAndMinutes()
+        await BLEManagerAndroid.getActvityValues()
             .timeout(Duration(seconds: 30));
       }
       setState(() {});
@@ -292,13 +199,15 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   Widget build(BuildContext context) {
     globalContext = context;
-    final Size size = MediaQuery.of(context).size;
+    final Size size = MediaQuery
+        .of(context)
+        .size;
     final icon_width = size.width * 0.2;
     final text_width = size.width - (size.width * 0.35);
     final icon_margins = EdgeInsets.only(
         left: icon_width * 0.3, top: 0.0, bottom: 0.0, right: icon_width * 0.1);
     final GlobalKey<ScaffoldState> _scaffoldKey =
-        new GlobalKey<ScaffoldState>();
+    new GlobalKey<ScaffoldState>();
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
@@ -341,7 +250,10 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             Row(children: [
               Image.asset('assets/images/divider.png',
                   fit: BoxFit.fill,
-                  height: MediaQuery.of(context).size.height * 0.08,
+                  height: MediaQuery
+                      .of(context)
+                      .size
+                      .height * 0.08,
                   width: size.width)
             ]),
             Expanded(
@@ -351,19 +263,25 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                       children: [
                         Row(children: [
                           Container(
-                            height: MediaQuery.of(context).size.height * 0.1,
+                            height: MediaQuery
+                                .of(context)
+                                .size
+                                .height * 0.1,
                             width: icon_width,
                             margin: icon_margins,
                             child: new LayoutBuilder(
                                 builder: (context, constraint) {
-                              return new Icon(Icons.directions_walk_rounded,
-                                  color: Colors.white,
-                                  size: constraint.biggest.height);
-                            }),
+                                  return new Icon(Icons.directions_walk_rounded,
+                                      color: Colors.white,
+                                      size: constraint.biggest.height);
+                                }),
                           ),
                           Container(
                               height:
-                                  MediaQuery.of(context).size.height * 0.133,
+                              MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height * 0.133,
                               width: text_width,
                               padding: const EdgeInsets.symmetric(
                                 vertical: 20.0,
@@ -383,7 +301,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                 text: "Bereits ",
                                                 style: TextStyle(
                                                     fontFamily:
-                                                        "PlayfairDisplay",
+                                                    "PlayfairDisplay",
                                                     fontWeight: FontWeight.w500,
                                                     color: Colors.white),
                                                 children: <TextSpan>[
@@ -391,18 +309,18 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                       text: snapshot.data,
                                                       style: TextStyle(
                                                           fontFamily:
-                                                              "PlayfairDisplay",
+                                                          "PlayfairDisplay",
                                                           fontWeight:
-                                                              FontWeight.bold,
+                                                          FontWeight.bold,
                                                           color: Colors.white)),
                                                   TextSpan(
                                                       text:
-                                                          ' Schritte gelaufen.',
+                                                      ' Schritte gelaufen.',
                                                       style: TextStyle(
                                                           fontFamily:
-                                                              "PlayfairDisplay",
+                                                          "PlayfairDisplay",
                                                           fontWeight:
-                                                              FontWeight.w500,
+                                                          FontWeight.w500,
                                                           color: Colors.white)),
                                                 ],
                                               ),
@@ -425,9 +343,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                   'Übertrage Schrittzahl',
                                                   style: TextStyle(
                                                       fontFamily:
-                                                          "PlayfairDisplay",
+                                                      "PlayfairDisplay",
                                                       fontWeight:
-                                                          FontWeight.bold,
+                                                      FontWeight.bold,
                                                       color: Colors.white),
                                                   textAlign: TextAlign.center,
                                                   textScaleFactor: 1));
@@ -436,19 +354,25 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                         ]),
                         Row(children: [
                           Container(
-                            height: MediaQuery.of(context).size.height * 0.1,
+                            height: MediaQuery
+                                .of(context)
+                                .size
+                                .height * 0.1,
                             width: icon_width,
                             margin: icon_margins,
                             child: new LayoutBuilder(
                                 builder: (context, constraint) {
-                              return new Icon(Ionicons.fitness_outline,
-                                  color: Colors.white,
-                                  size: constraint.biggest.height);
-                            }),
+                                  return new Icon(Ionicons.fitness_outline,
+                                      color: Colors.white,
+                                      size: constraint.biggest.height);
+                                }),
                           ),
                           Container(
                               height:
-                                  MediaQuery.of(context).size.height * 0.133,
+                              MediaQuery
+                                  .of(context)
+                                  .size
+                                  .height * 0.133,
                               width: text_width,
                               padding: const EdgeInsets.symmetric(
                                 vertical: 20.0,
@@ -473,18 +397,18 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                   text: snapshot.data,
                                                   style: TextStyle(
                                                       fontFamily:
-                                                          "PlayfairDisplay",
+                                                      "PlayfairDisplay",
                                                       fontWeight:
-                                                          FontWeight.bold,
+                                                      FontWeight.bold,
                                                       color: Colors.white)),
                                               TextSpan(
                                                   text:
-                                                      ' Minuten aktiv gewesen.',
+                                                  ' Minuten aktiv gewesen.',
                                                   style: TextStyle(
                                                       fontFamily:
-                                                          "PlayfairDisplay",
+                                                      "PlayfairDisplay",
                                                       fontWeight:
-                                                          FontWeight.w500,
+                                                      FontWeight.w500,
                                                       color: Colors.white)),
                                             ],
                                           ),
@@ -518,21 +442,28 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                   children: [
                                     Container(
                                       height:
-                                          MediaQuery.of(context).size.height *
-                                              0.1,
+                                      MediaQuery
+                                          .of(context)
+                                          .size
+                                          .height *
+                                          0.1,
                                       width: icon_width,
                                       margin: icon_margins,
                                       child: new LayoutBuilder(
                                           builder: (context, constraint) {
-                                        return new Icon(EvilIcons.trophy,
-                                            color: Colors.white,
-                                            size: constraint.biggest.height);
-                                      }),
+                                            return new Icon(EvilIcons.trophy,
+                                                color: Colors.white,
+                                                size: constraint.biggest
+                                                    .height);
+                                          }),
                                     ),
                                     Container(
                                       height:
-                                          MediaQuery.of(context).size.height *
-                                              0.133,
+                                      MediaQuery
+                                          .of(context)
+                                          .size
+                                          .height *
+                                          0.133,
                                       width: text_width,
                                       padding: const EdgeInsets.symmetric(
                                         vertical: 20.0,
@@ -551,19 +482,19 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                         .toString(),
                                                     style: TextStyle(
                                                         fontFamily:
-                                                            "PlayfairDisplay",
+                                                        "PlayfairDisplay",
                                                         fontWeight:
-                                                            FontWeight.bold,
+                                                        FontWeight.bold,
                                                         color: Colors.white),
                                                     children: <TextSpan>[
                                                       TextSpan(
                                                           text: ' Schritte\n',
                                                           style: TextStyle(
                                                               fontFamily:
-                                                                  "PlayfairDisplay",
+                                                              "PlayfairDisplay",
                                                               fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
+                                                              FontWeight
+                                                                  .w500,
                                                               color: Colors
                                                                   .white)),
                                                       TextSpan(
@@ -571,21 +502,21 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                               .toString(),
                                                           style: TextStyle(
                                                               fontFamily:
-                                                                  "PlayfairDisplay",
+                                                              "PlayfairDisplay",
                                                               fontWeight:
-                                                                  FontWeight
-                                                                      .bold,
+                                                              FontWeight
+                                                                  .bold,
                                                               color: Colors
                                                                   .white)),
                                                       TextSpan(
                                                           text:
-                                                              ' aktive Minuten',
+                                                          ' aktive Minuten',
                                                           style: TextStyle(
                                                               fontFamily:
-                                                                  "PlayfairDisplay",
+                                                              "PlayfairDisplay",
                                                               fontWeight:
-                                                                  FontWeight
-                                                                      .w500,
+                                                              FontWeight
+                                                                  .w500,
                                                               color: Colors
                                                                   .white)),
                                                     ],
@@ -608,9 +539,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                     'Tagesziele werden geladen.',
                                                     style: TextStyle(
                                                         fontFamily:
-                                                            "PlayfairDisplay",
+                                                        "PlayfairDisplay",
                                                         fontWeight:
-                                                            FontWeight.bold,
+                                                        FontWeight.bold,
                                                         color: Colors.white),
                                                     textAlign: TextAlign.center,
                                                     textScaleFactor: 1));
@@ -652,16 +583,16 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
 
-            ListTile(
-              title: Text('RV Test',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                // await BLEManagerAndroid.testRV();
-              },
-            ),
+            // ListTile(
+            //   title: Text('RV Test',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     await BLEManagerAndroid.testRV();
+            //   },
+            // ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
@@ -882,7 +813,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   Future<dynamic> uploadAndSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     TimeOfDay _time =
-        TimeOfDay(hour: prefs.getInt("recordingWillStartAt"), minute: 0);
+    TimeOfDay(hour: prefs.getInt("recordingWillStartAt"), minute: 0);
     Navigator.of(context).push(showPicker(
         context: context,
         hourLabel: "Stunden",
@@ -936,7 +867,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               // AppServiceData data = AppServiceData();
               try {
                 final flutterIsolate =
-                    await FlutterIsolate.spawn(isolate1, "");
+                await FlutterIsolate.spawn(isolate1, "");
 
                 final receivePort = ReceivePort();
                 final sendPort = receivePort.sendPort;
@@ -991,7 +922,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 // onInitialized: () => isolates.send(counter, to: "counter")
                 // );
                 final flutterIsolate =
-                    await FlutterIsolate.spawn(await isolate1, "");
+                await FlutterIsolate.spawn(await isolate1, "");
 
                 final receivePort = ReceivePort();
                 final sendPort = receivePort.sendPort;
@@ -1141,25 +1072,25 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               }
             })
 
-        // new MaterialButton(
-        //   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-        //   shape: new RoundedRectangleBorder(
-        //     borderRadius: new BorderRadius.circular(50.0),
-        //   ),
-        //   child: new Text(_buttonText),
-        //   textColor: Colors.white,
-        //   color: Colors.green,
-        //   onPressed: () async {
-        //     await uploadAndSchedule();
-        //     // await _uploadAndSchedule(false);
-        //     // if (mounted) {
-        //     //   setState(() {});
-        //     //   hideOverlay();
-        //     // } else
-        //
-        //   },
-        // ),
-        );
+      // new MaterialButton(
+      //   materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+      //   shape: new RoundedRectangleBorder(
+      //     borderRadius: new BorderRadius.circular(50.0),
+      //   ),
+      //   child: new Text(_buttonText),
+      //   textColor: Colors.white,
+      //   color: Colors.green,
+      //   onPressed: () async {
+      //     await uploadAndSchedule();
+      //     // await _uploadAndSchedule(false);
+      //     // if (mounted) {
+      //     //   setState(() {});
+      //     //   hideOverlay();
+      //     // } else
+      //
+      //   },
+      // ),
+    );
   }
 
   DateTime checkIfTimeIsToday(DateTime givenTime) {
@@ -1178,7 +1109,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   Future<List> getGoals() async {
     List<int> result = [];
     return await SharedPreferences.getInstance().then(
-      (value) async {
+          (value) async {
         result.add(value.getInt('steps'));
         result.add(value.getInt('active_minutes'));
         return result;
@@ -1188,7 +1119,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
   Future<String> getActiveMinutes() async {
     return await SharedPreferences.getInstance().then(
-      (value) async {
+          (value) async {
         return value.getInt('current_active_minutes').toString();
         // });
       },
@@ -1197,7 +1128,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
   Future<String> getSteps() async {
     return await SharedPreferences.getInstance().then(
-      (value) async {
+          (value) async {
         // return await BLE.getStepsAndMinutes().then((completer) {
         return value.getInt('current_steps').toString();
         // });
@@ -1213,11 +1144,105 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     return _buttonText;
   }
 
-  Future<bool> isbctGroup() async {
+  Future<void> loadDataFromBangleAndPushBCTs() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    List<String> participantAsList = prefs.getStringList("participant");
-    Participant p = fromStringList(participantAsList);
-
-    return p.bctGroup;
+    var isUploading = prefs.getBool("uploadInProgress");
+    if (prefs.getBool("fromIsolate")) {
+      if (isUploading == null || !isUploading) {
+        if (Platform.isIOS) {
+          await BLEManagerIOS.getStepsAndMinutes()
+              .timeout(Duration(seconds: 30));
+        } else {
+          await BLEManagerAndroid.getActvityValues()
+              .timeout(Duration(seconds: 30));
+        }
+        setState(() {});
+      }
+      try {
+        _subscription =
+            AwesomeNotifications().actionStream.listen((receivedNotification) {
+              Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+                receivedNotification.id
+              } // your page params. I recommend to you to pass all *receivedNotification* object
+              );
+            });
+      } catch (e) {
+        logError(e);
+      }
+      if (await isbctGroup()) {
+        DateTime lastTime =
+        DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+        int currentActiveMinutes = prefs.getInt("current_active_minutes");
+        int currentSteps = prefs.getInt("current_steps");
+        int lastSteps = prefs.getInt("last_steps");
+        int lastActiveMinutes = prefs.getInt("last_active_minutes");
+        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+        await rules.init(
+            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+        String halfTimeMsgSteps = "";
+        String halfTimeMsgMinutes = "";
+        String dailyStepsReached = rules.dailyStepsReached();
+        String dailyMinutesReached = rules.dailyMinutesReached();
+        if (rules.halfDayCheck()) {
+          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+        }
+        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+          await prefs.setString(
+              "lastTimeDailyGoalsShown", DateTime.now().toString());
+          if (dailyStepsReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Tägliches Schrittziel erreicht',
+                    body: dailyStepsReached));
+            showOverlay(
+                dailyStepsReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+          if (dailyMinutesReached.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 10,
+                    channelKey: 'bct_channel',
+                    title: 'Sie sind sehr aktiv!',
+                    body: dailyMinutesReached));
+            showOverlay(
+                dailyMinutesReached,
+                Icon(
+                  Icons.thumb_up_alt,
+                  color: Colors.green,
+                  size: 50.0,
+                ),
+                withButton: true);
+          }
+        }
+        if (!prefs.getBool("halfTimeAlreadyFired")) {
+          if (halfTimeMsgSteps.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 3,
+                    channelKey: 'bct_channel',
+                    title: 'Halbzeit, toll gemacht!',
+                    body: halfTimeMsgSteps));
+          }
+          if (halfTimeMsgMinutes.length > 1) {
+            AwesomeNotifications().createNotification(
+                content: NotificationContent(
+                    id: 4,
+                    channelKey: 'bct_channel',
+                    title: 'Weiter so!',
+                    body: halfTimeMsgMinutes));
+          }
+          prefs.setBool("halfTimeAlreadyFired", true);
+        }
+      }
+    }
   }
 }
