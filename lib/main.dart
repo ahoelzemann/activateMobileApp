@@ -47,50 +47,6 @@ void backgroundFetchHeadlessTask(HeadlessTask task) async {
   BackgroundFetch.finish(taskId);
 }
 
-Future<void> backgroundTaskAndroid() {
-
-}
-@pragma('vm:entry-point')
-serviceMain() async {
-  //make sure you add this
-  WidgetsFlutterBinding.ensureInitialized();
-  //if your use dependency injection you initialize them here
-  //what ever objects you created in your app main function is not accessible here
-
-  //set a callback and define the code you want to execute when your ForegroundService runs
-  try {
-    ServiceClient.setExecutionCallback((initialData) async {
-      //you set initialData when you are calling AppClient.execute()
-      //from your flutter application code and receive it here
-
-      var serviceData = AppServiceData.fromJson(initialData);
-      // SharedPreferences prefs = await SharedPreferences.getInstance();
-      await ServiceClient.update(serviceData);
-      await Future.delayed(Duration(milliseconds: 500));
-
-      try {
-        await BLEManagerAndroid.stopRecordingAndUpload(
-            foregroundServiceClient: ServiceClient,
-            foregroundService: serviceData);
-        // await BLEManagerAndroid.syncTimeAndStartRecording();
-        Upload uploader = new Upload();
-        await uploader.init();
-        uploader.uploadFiles();
-      } catch (e, stacktrace) {
-        logError(e, stackTrace: stacktrace);
-      }
-
-      await Future.delayed(Duration(seconds: 1));
-      await ServiceClient.endExecution(serviceData);
-      await ServiceClient.stopService();
-      hideOverlay();
-    });
-    hideOverlay();
-  } catch (e, stacktrace) {
-    logError(e, stackTrace: stacktrace);
-  }
-}
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
@@ -113,7 +69,7 @@ void main() async {
   );
 
   try {
-    bool useSecureStorage = false;
+    bool useSecureStorage = true;
     print("secureStorage done");
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (!isAllowed) {
@@ -149,10 +105,8 @@ void main() async {
     prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
     prefs.setBool('useSecureStorage', useSecureStorage);
     prefs.setBool("uploadInProgress", false);
+    prefs.setBool("backgroundFetchStarted", false);
 
-    if (prefs.getBool('timeNeverSet') == null) {
-      prefs.setBool('timeNeverSet', true);
-    }
     if (firstRun == null) {
       prefs.setBool("fromIsolate", false);
       prefs.setBool("halfTimeAlreadyFired", false);
@@ -200,7 +154,17 @@ void main() async {
       var isUploading = prefs.getBool("uploadInProgress");
       int lastSteps = prefs.getInt("current_steps");
       int lastActiveMinutes = prefs.getInt("current_active_minutes");
-      await BLEManagerAndroid.getStepsAndMinutes();
+      if (!isUploading) {
+        try {
+          if (Platform.isIOS) {
+            await BLEManagerIOS.getStepsAndMinutes();
+          } else {
+            await BLEManagerAndroid.getStepsAndMinutesBackground();
+          }
+        } catch (e) {
+          await prefs.setBool("uploadInProgress", false);
+        }
+      }
 
       if (await isbctGroup()) {
         int currentActiveMinutes = prefs.getInt("current_active_minutes");
@@ -216,7 +180,7 @@ void main() async {
           halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
           halfTimeMsgSteps = rules.halfTimeMsgSteps();
         }
-        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
           await prefs.setString(
               "lastTimeDailyGoalsShown", DateTime.now().toString());
           if (dailyStepsReached.length > 1) {
@@ -226,30 +190,14 @@ void main() async {
                     channelKey: 'bct_channel',
                     title: 'Tägliches Schrittziel erreicht',
                     body: dailyStepsReached));
-            showOverlay(
-                dailyStepsReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
           }
           if (dailyMinutesReached.length > 1) {
             AwesomeNotifications().createNotification(
                 content: NotificationContent(
-                    id: 10,
+                    id: 11,
                     channelKey: 'bct_channel',
                     title: 'Sie sind sehr aktiv!',
                     body: dailyMinutesReached));
-            showOverlay(
-                dailyMinutesReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
           }
         }
         if (!prefs.getBool("halfTimeAlreadyFired")) {
@@ -272,14 +220,7 @@ void main() async {
           prefs.setBool("halfTimeAlreadyFired", true);
         }
       }
-
-
       print(DateTime.now().toString() + " | [BackgroundFetch] Event received $taskId");
-      // setState(() {
-      //   _events.insert(0, new DateTime.now());
-      // });
-      // IMPORTANT:  You must signal completion of your task or the OS can punish your app
-      // for taking too long in the background.
       BackgroundFetch.finish(taskId);
     }, (String taskId) async {  // <-- Task timeout handler.
       // This task has exceeded its allowed running-time.  You must stop what you're doing and immediately .finish(taskId)
@@ -287,7 +228,7 @@ void main() async {
       BackgroundFetch.finish(taskId);
     });
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
-    BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
+    // BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
   }

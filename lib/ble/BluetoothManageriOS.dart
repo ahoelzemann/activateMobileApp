@@ -9,6 +9,7 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Directory, File, Platform;
 import 'package:trac2move/util/Upload.dart';
+import 'package:flutter/material.dart';
 
 class BluetoothManager {
   static final BluetoothManager _bluetoothManager =
@@ -34,7 +35,7 @@ class BluetoothManager {
   List<dynamic> _downloadedFiles = [];
 
   Future<bool> asyncInit() async {
-    FlutterBlue.BlowItUp();
+    await FlutterBlue.BlowItUp();
     flutterBlue = FlutterBlue.instance;
     await flutterBlue.stopScan();
     for (var device in await flutterBlue.connectedDevices) {
@@ -58,6 +59,7 @@ class BluetoothManager {
       await flutterBlue.stopScan();
       myDevice = result.last.device;
       completer.complete(true);
+      print("device found");
       return completer.future;
     } catch (e) {
       await flutterBlue.stopScan();
@@ -69,7 +71,17 @@ class BluetoothManager {
 
   Future<dynamic> connectToSavedDevice() async {
     if (await _findMyDevice()) {
-      await myDevice.connect(autoConnect: true);
+      try {
+        await myDevice.connect(autoConnect: true, timeout: Duration(seconds: 10));
+      } catch(e) {
+        final port = IsolateNameServer.lookupPortByName('main');
+        if (port != null) {
+          port.send('doneWithError');
+        } else {
+          print('port is null');
+        }
+        return false;
+      }
       services = await myDevice.discoverServices();
       Fimber.d(myDevice.name + " Device connected");
       return true;
@@ -346,38 +358,25 @@ class BluetoothManager {
     return completer.future;
   }
 
-  Future<dynamic> _startRecord(var Hz, var GS, var hour) async {
+  Future<dynamic> stpUp(var HZ, var GS, var hour) async {
     Completer completer = new Completer();
 
     List<BluetoothService> services = await myDevice.discoverServices();
     BluetoothService service = services.firstWhere(
         (element) => (element.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID),
         orElse: null);
-    // BluetoothCharacteristic characTX = await service.characteristics.firstWhere(
-    //     (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_TX),
-    //     orElse: null);
     BluetoothCharacteristic characRX = await service.characteristics.firstWhere(
         (element) => (element.uuid.toString() == UUIDSTR_ISSC_TRANS_RX),
         orElse: null);
 
     print("Service found and Characteristics initialized");
 
-    // await characTX.setNotifyValue(false);
-    // await Future.delayed(const Duration(milliseconds: 500));
-    // await characTX.setNotifyValue(true);
-
     print("Status:" + myDevice.name + " RX UUID discovered");
 
     print("Sending  start command...");
-    // "\x10stpUp(HZ, GS; hour)\n"
 
-    String s = "recStrt(" +
-        Hz.toString() +
-        "," +
-        GS.toString() +
-        "," +
-        hour.toString() +
-        ")\n";
+
+    String s = "\x10stpUp($HZ,$GS,$hour)\n";
     await characRX.write(Uint8List.fromList(s.codeUnits),
         withoutResponse: false);
     print(Uint8List.fromList(s.codeUnits).toString());
@@ -412,7 +411,6 @@ class BluetoothManager {
     for (ScanResult entry in scanResults) {
       if (entry.device.name == savedDevice) {
         deviceIsVisible = true;
-        // print(savedDevice);
         return true;
       }
     }
@@ -470,15 +468,13 @@ class BluetoothManager {
     return completer.future;
   }
 
-  Future<dynamic> startUpload(
-      {foregroundServiceClient, foregroundService}) async {
+  Future<dynamic> startUpload(Map<String, int> timings) async {
     BluetoothCharacteristic characTX;
     int maxtrys = 5;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
     prefs.setBool("uploadInProgress", true);
     int _numofFiles = await _startUploadCommand();
-    int incrementelSteps = 100 ~/ (_numofFiles + 1);
     print("ble start upload command done /////////////");
     int fileCount = 0;
     Completer completer = new Completer();
@@ -502,16 +498,12 @@ class BluetoothManager {
 
             for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
               await Future.delayed(Duration(milliseconds: 500));
-              // updateOverlayText("Datei " +
-              //     (fileCount + 1).toString() +
-              //     "/" +
-              //     (_numofFiles).toString() +
-              //     ".\n"
-              //         "Bitte haben Sie noch etwas Geduld.");
               print(fileCount.toString() + " Start uploading ///////////////");
               int try_counter = 0;
+              DateTime current = DateTime.now();
               Map<String, List<int>> _currentResult =
                   await _sendNext(fileCount, characteristic, characTX);
+              timings["file_" + fileCount.toString()] = DateTime.now().difference(current).inSeconds;
               while (_currentResult.length == 0 && try_counter != maxtrys) {
                 try_counter++;
                 _currentResult =
@@ -537,12 +529,11 @@ class BluetoothManager {
                   "  " +
                   _fileName.toString() +
                   " saved to file //////////////////");
-            } //end of for statement
+            }
 
             print(
                 "DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
-            // prefs.setBool("uploadInProgress", false);
-            completer.complete(_numofFiles);
+            completer.complete(timings);
           }
         });
       }
@@ -675,6 +666,7 @@ class BluetoothManager {
 Future<dynamic> getStepsAndMinutes() async {
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
+  // await Future.delayed(const Duration(milliseconds: 1000));
   try {
     await bleManager.connectToSavedDevice();
     await bleManager._rv();
@@ -684,62 +676,63 @@ Future<dynamic> getStepsAndMinutes() async {
     return true;
   } catch (e) {
     print(e);
-    await bleManager.disconnectFromDevice();
     return false;
   }
 }
 
-Future<dynamic> syncTimeAndStartRecording() async {
-  BluetoothManager bleManager = new BluetoothManager();
-  await bleManager.asyncInit();
-  Completer completer = new Completer();
-  try {
-    await Future.delayed(const Duration(milliseconds: 1500));
-    await bleManager.connectToSavedDevice();
-    await Future.delayed(const Duration(milliseconds: 500));
-    await bleManager._syncTime();
-    await bleManager._startRecord(12.5, 8,
-        (await SharedPreferences.getInstance()).getInt("recordingWillStartAt"));
-    await bleManager.disconnectFromDevice();
-
-    await Future.delayed(const Duration(seconds: 2));
-    // hideOverlay();
-    // completer.complete("dynamic");
-    // return completer.future;
-  } catch (e) {
-    print(e);
-    logError(e);
-    // completer.complete("false");
-    // return completer.future;
-  }
-}
-
 Future<dynamic> stopRecordingAndUpload() async {
-  print("inside bleAdapter");
   Completer completer = new Completer();
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
   List<bool> result = [];
   SharedPreferences prefs = await SharedPreferences.getInstance();
-
+  Map <String, int> timings = {};
+  DateTime start = DateTime.now();
+  DateTime last;
+  DateTime current;
+  int hour = prefs.getInt("recordingWillStartAt");
   try {
     await bleManager.connectToSavedDevice();
-    await bleManager.stopRecord();
-    await bleManager.startUpload();
-    await Future.delayed(const Duration(seconds: 3));
-    await bleManager.stopUpload();
+    // current = DateTime.now();
+    // timings["connectionEstablished"] = start.difference(current).inSeconds;
+    // last = current;
     await Future.delayed(const Duration(milliseconds: 500));
     await bleManager._syncTime();
-    await bleManager._startRecord(
-        12.5, 8, prefs.getInt("recordingWillStartAt"));
+    // current = DateTime.now();
+    // timings["syncTime"] = last.difference(current).inSeconds;
+    // last = current;
+    timings = await bleManager.startUpload(timings);
+    // current = DateTime.now();
+    // timings["startUpload"] = last.difference(current).inSeconds;
+    // last = current;
+    await Future.delayed(const Duration(seconds: 3));
+    await bleManager.stpUp(12.5, 8, hour);
+    // await bleManager.stopUpload();
+    // current = DateTime.now();
+    // timings["stopUpload"] = last.difference(current.subtract(const Duration(seconds: 3))).inSeconds;
+
+    // last = current;
+    // await bleManager._startRecord(
+    //     12.5, 8, prefs.getInt("recordingWillStartAt"));
+    // current = DateTime.now();
+    // timings["stopUpload"] = last.difference(current).inSeconds;
+    // last = current;
     await bleManager.disconnectFromDevice();
     // await Future.delayed(const Duration(seconds: 30));
     await uploadActivityDataToServer();
-
+    // current = DateTime.now();
+    // timings["upload"] = last.difference(current).inSeconds;
+    // last = current;
     result.add(true);
     completer.complete(result);
     // return await completer.future;
   } catch (e) {
+    final port = IsolateNameServer.lookupPortByName('main');
+    if (port != null) {
+      port.send('doneWithError');
+    } else {
+      print('port is null');
+    }
     print(e);
     logError(e);
     // result.add(true);
@@ -757,22 +750,12 @@ Future<bool> findNearestDevice() async {
 
     return true;
   } catch (e) {
-    print(e);
-    logError(e);
-
-    return false;
-  }
-}
-
-Future<bool> disconnectFallback() async {
-  BluetoothManager bleManager = new BluetoothManager();
-  await bleManager.asyncInit();
-
-  try {
-    await bleManager._findNearestDevice();
-
-    return true;
-  } catch (e) {
+    final port = IsolateNameServer.lookupPortByName('main');
+    if (port != null) {
+      port.send('doneWithError');
+    } else {
+      print('port is null');
+    }
     print(e);
     logError(e);
 

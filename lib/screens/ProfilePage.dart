@@ -49,7 +49,7 @@ class MapScreenState extends State<ProfilePage> {
   List<bool> isSelected = [true, false, false];
   bool _status = true;
   TextEditingController studienIDController =
-      new TextEditingController(text: "L-");
+      new TextEditingController(text: "Pilot-");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
   String agreedOnTerms = "not";

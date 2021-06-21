@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:ui';
 
 import 'package:trac2move/util/DataLoader.dart';
@@ -26,7 +27,6 @@ class Upload {
   String studienID;
   String serverFilePath;
 
-  //List<String> testfiles = getTestFilesPaths();
   String localFilePath;
   String serverFileName;
   Directory tempDir;
@@ -41,21 +41,20 @@ class Upload {
       tempDir = await getTemporaryDirectory();
       localFilesDirectory = tempDir.path + "/daily_data/";
 
-      // if (prefs.getBool("useSecureStorage")!) {
-      //   final storage = new FlutterSecureStorage();
-      //   host = utf8
-      //       .decode(base64.decode(await storage.read(key: 'serverAddress')));
-      //   port = int.parse(
-      //       utf8.decode(base64.decode(await storage.read(key: 'port'))));
-      //   login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-      //   pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
-      // } else {
-      host = prefs.getString('serverAddress');
-      port = int.parse(prefs.getString("port"));
-      login = prefs.getString("login");
-      pw = prefs.getString("password");
-      // }
-
+      if (prefs.getBool("useSecureStorage")) {
+        final storage = new FlutterSecureStorage();
+        host = utf8
+            .decode(base64.decode(await storage.read(key: 'serverAddress')));
+        port = int.parse(
+            utf8.decode(base64.decode(await storage.read(key: 'port'))));
+        login = utf8.decode(base64.decode(await storage.read(key: 'login')));
+        pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
+      } else {
+        host = prefs.getString('serverAddress');
+        port = int.parse(prefs.getString("port"));
+        login = prefs.getString("login");
+        pw = prefs.getString("password");
+      }
       client = new SSHClient(
         host: host,
         port: port,

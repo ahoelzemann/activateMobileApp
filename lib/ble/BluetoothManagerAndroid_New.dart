@@ -1,14 +1,13 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'dart:ui';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter_ble_lib/flutter_ble_lib.dart';
-import 'dart:io' show Platform;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/util/Logger.dart';
-import 'package:android_long_task/android_long_task.dart';
-import 'dart:convert' show utf8;
+import 'package:flutter/material.dart';
 
 import 'package:trac2move/util/Upload.dart';
 
@@ -52,8 +51,10 @@ class BLE_Client {
         completer.complete(true);
       } else if (bluetoothState == BluetoothState.POWERED_OFF &&
           !completer.isCompleted) {
-        updateOverlayText("Ihre Bluetoothverbindung ist nicht aktiv. "
-            "Bitte schalten Sie diese an. Anschließend verbinden wir sie mit Ihrer Bangle.js.");
+        showOverlay("Ihre Bluetoothverbindung ist nicht aktiv. "
+            "Bitte schalten Sie diese an. Anschließend verbinden wir sie mit Ihrer Bangle.js.", Icon(Icons.bluetooth, color: Colors.blue, size: 30), withButton: true);
+        // updateOverlayText("Ihre Bluetoothverbindung ist nicht aktiv. "
+        //     "Bitte schalten Sie diese an. Anschließend verbinden wir sie mit Ihrer Bangle.js.");
       }
     });
 
@@ -268,7 +269,7 @@ class BLE_Client {
     StreamSubscription _responseSubscription;
     int _steps = 0;
     print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-    print("Sending  bleSteps command...");
+    print("Sending  rv command...");
 
     String s = "\x10rv()\n";
     print(Uint8List.fromList(s.codeUnits).toString());
@@ -384,7 +385,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> blestpUp(HZ, GS, hour) async {
+  Future<dynamic> stpUp(HZ, GS, hour) async {
     await Future.delayed(Duration(milliseconds: 1000));
     Completer completer = new Completer();
 
@@ -526,8 +527,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> startUpload(
-      {foregroundServiceClient, foregroundService}) async {
+  Future<dynamic> startUpload(Map<String, int> timings) async {
     int maxtrys = 5;
     int _numofFiles = 0;
     prefs.setBool("uploadInProgress", true);
@@ -556,7 +556,10 @@ class BLE_Client {
       await Future.delayed(Duration(milliseconds: 500));
       print(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
+      DateTime current = DateTime.now();
       Map<String, List<int>> _currentResult = await _sendNext(fileCount);
+      timings["file_" + fileCount.toString()] =
+          DateTime.now().difference(current).inSeconds;
       while (_currentResult.length == 0 && try_counter != maxtrys) {
         try_counter++;
         _currentResult = await _sendNext(fileCount);
@@ -588,7 +591,7 @@ class BLE_Client {
     // await ServiceClient.update(foregroundService);
     print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
     // prefs.setBool("uploadInProgress", false);
-    completer.complete(_numofFiles);
+    completer.complete(timings);
 
     return completer.future;
   }
@@ -626,158 +629,93 @@ class BLE_Client {
 }
 
 Future<dynamic> getStepsAndMinutes() async {
-  // await Future.delayed(Duration(seconds: 1));
-  BLE_Client androidBLEClient = new BLE_Client();
-  await androidBLEClient.init();
-  try {
-    await androidBLEClient.checkBLEstate();
-    await androidBLEClient.connect();
-    await androidBLEClient.getMinutes();
-    await androidBLEClient.getSteps();
-    // await Future.delayed(Duration(seconds: 2));
-    await androidBLEClient.disconnect();
-
-    return true;
-  } catch (e) {
-    await androidBLEClient.disconnect();
-
-    return false;
-  }
-}
-
-Future<bool> stopRecordingAndUpload(
-    {foregroundServiceClient, foregroundService}) async {
-  // await refresh();
-  BLE_Client bleClient = new BLE_Client();
-
-  await Future.delayed(Duration(seconds: 1));
-
-  await bleClient.init();
-  int hour =
-      (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
-  try {
-    await bleClient.checkBLEstate();
-    bleClient.start_ble_scan();
-    try {
-      await bleClient.connect();
-    } catch (e) {
-      await refresh();
-      await bleClient.connect();
-    }
-
-    await Future.delayed(Duration(seconds: 6));
-    await bleClient.bleStopRecord();
-    await Future.delayed(Duration(seconds: 2));
-    await bleClient.startUpload(
-        foregroundServiceClient: foregroundServiceClient,
-        foregroundService: foregroundService);
-    await Future.delayed(Duration(seconds: 2));
-    await bleClient.blestopUpload();
-    await Future.delayed(Duration(seconds: 4));
-    await bleClient.bleSyncTime();
-    await bleClient.bleStartRecord(12.5, 8, hour);
-    await bleClient.disconnect();
-    await Future.delayed(Duration(seconds: 30));
-    return true;
-  } catch (e, stacktrace) {
-    logError(e, stackTrace: stacktrace);
-
-    return false;
-  }
-}
-
-Future<bool> stopRecordingUploadAndStart() async {
-  // await refresh();
-  BLE_Client bleClient = new BLE_Client();
-
-  await Future.delayed(Duration(seconds: 1));
-
-  await bleClient.init();
-  int hour =
-      (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
-  try {
-    await bleClient.checkBLEstate();
-    bleClient.start_ble_scan();
-    try {
-      await bleClient.connect();
-    } catch (e) {
-      await refresh();
-      await bleClient.connect();
-    }
-
-    await bleClient.bleSyncTime();
-    await Future.delayed(Duration(seconds: 6));
-    await bleClient.bleStopRecord();
-    await Future.delayed(Duration(seconds: 2));
-    await bleClient.startUpload();
-    await Future.delayed(Duration(seconds: 2));
-    // await bleClient.blestopUpload();
-    await bleClient.blestpUp(12.5, 8, hour);
-    await Future.delayed(Duration(seconds: 4));
-    // await bleClient.bleStartRecord(12.5, 8, hour);
-    await bleClient.disconnect();
-    await Future.delayed(Duration(seconds: 30));
-    await uploadActivityDataToServer();
-    return true;
-  } catch (e, stacktrace) {
-    logError(e, stackTrace: stacktrace);
-
-    return false;
-  }
-}
-
-Future<bool> syncTimeAndStartRecording() async {
-  BLE_Client client = new BLE_Client();
-  int hour =
-      (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
-  await client.init();
-  try {
-    await client.checkBLEstate();
-    await client.connect();
-    await Future.delayed(Duration(seconds: 4));
-    await client.bleSyncTime();
-    await client.bleStartRecord(12.5, 8, hour);
-    await client.disconnect();
-
-    await Future.delayed(Duration(seconds: 1));
-    return true;
-  } catch (e, stacktrace) {
-    logError(e, stackTrace: stacktrace);
-
-    return false;
-  }
-}
-
-Future<dynamic> getActvityValues() async {
-  // await Future.delayed(Duration(seconds: 1));
   BLE_Client androidBLEClient = new BLE_Client();
   await androidBLEClient.init();
   try {
     await androidBLEClient.checkBLEstate();
     await androidBLEClient.connect();
     await androidBLEClient.rv();
-    // await androidBLEClient.getSteps();
-    // await Future.delayed(Duration(seconds: 2));
     await androidBLEClient.disconnect();
 
     return true;
   } catch (e) {
-    await androidBLEClient.disconnect();
-
+    // await androidBLEClient.disconnect();
+    logError(e);
     return false;
   }
 }
 
-Future<bool> findNearestDevice() async {
-  BLE_Client bleClient = new BLE_Client();
-  await Future.delayed(Duration(milliseconds: 1000));
-
+Future<dynamic> getStepsAndMinutesBackground() async {
+  BLE_Client androidBLEClient = new BLE_Client();
+  await androidBLEClient.init();
   try {
-    await bleClient.find_nearest_device();
+    // await androidBLEClient.checkBLEstate();
+    await androidBLEClient.connect();
+    await androidBLEClient.rv();
+    await androidBLEClient.disconnect();
+
+    return true;
+  } catch (e) {
+    // await androidBLEClient.disconnect();
+    logError(e);
+    return false;
+  }
+}
+
+Future<bool> stopRecordingUploadAndStart() async {
+  BLE_Client bleClient = new BLE_Client();
+
+  await Future.delayed(Duration(seconds: 1));
+  Map<String, int> timings = {};
+  DateTime start = DateTime.now();
+  DateTime last;
+  DateTime current;
+
+  await bleClient.init();
+  int hour =
+      (await SharedPreferences.getInstance()).getInt("recordingWillStartAt");
+  try {
+    await bleClient.checkBLEstate();
+    bleClient.start_ble_scan();
+    try {
+      await bleClient.connect();
+    } catch (e) {
+      await refresh();
+      await bleClient.connect();
+    }
+    // current = DateTime.now();
+    // timings["connectionEstablished"] = start.difference(current).inSeconds;
+    // last = current;
+    await bleClient.bleSyncTime();
+    // current = DateTime.now();
+    // timings["syncTime"] = last.difference(current).inSeconds;
+    // last = current;
+    await Future.delayed(Duration(seconds: 2));
+    // timings = await bleClient.startUpload(timings);
+    // current = DateTime.now();
+    // timings["startUpload"] = last.difference(current).inSeconds;
+    // last = current;
+    // await Future.delayed(Duration(seconds: 2));
+    await bleClient.stpUp(12.5, 8, hour);
+    // await Future.delayed(Duration(seconds: 4));
+    // current = DateTime.now();
+    // timings["stopUpload"] = last.difference(current).inSeconds;
+    // last = current;
+    await bleClient.disconnect();
+    // await Future.delayed(Duration(seconds: 1));
+    await uploadActivityDataToServer();
+    // current = DateTime.now();
+    // timings["upload"] = last.difference(current).inSeconds;
+    // last = current;
     return true;
   } catch (e, stacktrace) {
     logError(e, stackTrace: stacktrace);
-
+    final port = IsolateNameServer.lookupPortByName('main');
+    if (port != null) {
+      port.send('doneWithError');
+    } else {
+      print('port is null');
+    }
     return false;
   }
 }
