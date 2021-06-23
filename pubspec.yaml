@@ -49,7 +49,7 @@ dependencies:
   need_resume: ^1.0.6
   battery: ^2.0.2
   day_night_time_picker: ^1.0.2
-  bluetooth_enable: ^0.1.1
+#  bluetooth_enable: ^0.1.1
   toggle_switch: "^0.1.9"
 #  fl_chart: ^0.36.1
   flutter_isolate: ^2.0.0

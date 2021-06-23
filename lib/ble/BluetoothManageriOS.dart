@@ -560,15 +560,6 @@ class BluetoothManager {
                 try_counter++;
                 _currentResult =
                 await _sendNext(fileCount, characteristic, characTX);
-                //   .timeout(Duration(seconds: 35), onTimeout:() {
-                //         final port = IsolateNameServer.lookupPortByName('main');
-                //         if (port != null) {
-                //           port.send('downloadCanceled');
-                //         } else {
-                //           debugPrint('port is null');
-                //         }
-                //       });
-                // }
               }
               if (try_counter == maxtrys && _currentResult.length == 0) {
                 final port = IsolateNameServer.lookupPortByName('main');
@@ -817,6 +808,12 @@ Future<dynamic> stopRecordingAndUpload() async {
     completer.complete(true);
     // return await completer.future;
   } catch (e) {
+    final port = IsolateNameServer.lookupPortByName('main');
+    if (port != null) {
+      port.send('cantConnect');
+    } else {
+      print('port is null');
+    }
     debugPrint(e);
     logError(e);
     // result.add(true);

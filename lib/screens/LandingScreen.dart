@@ -922,23 +922,26 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               final receivePort = ReceivePort();
               final sendPort = receivePort.sendPort;
               IsolateNameServer.registerPortWithName(sendPort, 'main');
-
               receivePort.listen((dynamic message) async {
                 if (message == 'cantConnect') {
                   print("Connection Not Possible - Killing the Isolate.");
                   flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
                   hideOverlay();
                   showOverlay(
                       "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-                      Icon(Icons.bluetooth, size: 40, color: Colors.red),
+                      Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                       withButton: true);
                 }
                 if (message == 'downloadCanceled') {
                   print("Download Canceled - Killing the Isolate.");
                   flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
                   hideOverlay();
-                  showOverlay("Der Upload wurde leider unterbrochen.",
-                      Icon(Icons.upload_file, size: 40, color: Colors.green),
+                  showOverlay("Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                      Icon(Icons.upload_file, size: 30, color: Colors.green),
                       withButton: true);
                 }
                 if (message == 'done') {
@@ -947,6 +950,17 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("uploadInProgress", false);
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
+                }
+                if (message == 'doneWithError') {
+                  print('Killing the Isolate');
+                  flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
+                  hideOverlay();
+                  showOverlay(
+                      "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                      Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                      withButton: true);
                 }
               });
 
@@ -988,7 +1002,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("uploadInProgress", false);
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
-                  showOverlay("Der Upload wurde leider unterbrochen.",
+                  showOverlay("Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
                       Icon(Icons.upload_file, size: 30, color: Colors.green),
                       withButton: true);
                 }
@@ -998,7 +1012,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("uploadInProgress", false);
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
-                } else if (message == 'doneWithError') {
+                }
+                if (message == 'doneWithError') {
                   print('Killing the Isolate');
                   flutterIsolate.kill();
                   await prefs.setBool("uploadInProgress", false);

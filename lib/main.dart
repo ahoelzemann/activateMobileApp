@@ -123,7 +123,7 @@ void main() async {
         await prefs.setString('password', "5aU=txXKoU!");
       }
     }
-
+    bool firstTime = true;
     int status = await BackgroundFetch.configure(BackgroundFetchConfig(
         minimumFetchInterval: 60,
         stopOnTerminate: true,
@@ -132,82 +132,161 @@ void main() async {
         requiresCharging: false,
         requiresStorageNotLow: false,
         requiresDeviceIdle: false,
-        requiredNetworkType: NetworkType.NONE
     ), (String taskId) async {  // <-- Event handler
       // This is the fetch-event callback.
-      DateTime lastTime =
-      DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-      var isUploading = prefs.getBool("uploadInProgress");
-      int lastSteps = prefs.getInt("current_steps");
-      int lastActiveMinutes = prefs.getInt("current_active_minutes");
-      if (!isUploading) {
-        try {
-          if (Platform.isIOS) {
-            await BLEManagerIOS.getStepsAndMinutes();
-          } else {
-            await BLEManagerAndroid.getStepsAndMinutesBackground();
+      if (Platform.isAndroid) {
+        if (!firstTime) {
+          DateTime lastTime =
+          DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+          var isUploading = prefs.getBool("uploadInProgress");
+          int lastSteps = prefs.getInt("current_steps");
+          int lastActiveMinutes = prefs.getInt("current_active_minutes");
+          if (!isUploading) {
+            try {
+              if (Platform.isIOS) {
+                await BLEManagerIOS.getStepsAndMinutes();
+              } else {
+                await BLEManagerAndroid.getStepsAndMinutesBackground();
+              }
+            } catch (e) {
+              await prefs.setBool("uploadInProgress", false);
+            }
           }
-        } catch (e) {
-          await prefs.setBool("uploadInProgress", false);
-        }
-      }
 
-      if (await isbctGroup()) {
-        int currentActiveMinutes = prefs.getInt("current_active_minutes");
-        int currentSteps = prefs.getInt("current_steps");
-        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-        await rules.init(
-            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-        String halfTimeMsgSteps = "";
-        String halfTimeMsgMinutes = "";
-        String dailyStepsReached = rules.dailyStepsReached();
-        String dailyMinutesReached = rules.dailyMinutesReached();
-        if (rules.halfDayCheck()) {
-          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+          if (await isbctGroup()) {
+            int currentActiveMinutes = prefs.getInt("current_active_minutes");
+            int currentSteps = prefs.getInt("current_steps");
+            BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+            await rules.init(
+                currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+            String halfTimeMsgSteps = "";
+            String halfTimeMsgMinutes = "";
+            String dailyStepsReached = rules.dailyStepsReached();
+            String dailyMinutesReached = rules.dailyMinutesReached();
+            if (rules.halfDayCheck()) {
+              halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+              halfTimeMsgSteps = rules.halfTimeMsgSteps();
+            }
+            if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
+              await prefs.setString(
+                  "lastTimeDailyGoalsShown", DateTime.now().toString());
+              if (dailyStepsReached.length > 1) {
+                AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                        id: 10,
+                        channelKey: 'bct_channel',
+                        title: 'Tägliches Schrittziel erreicht',
+                        body: dailyStepsReached));
+              }
+              if (dailyMinutesReached.length > 1) {
+                AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                        id: 11,
+                        channelKey: 'bct_channel',
+                        title: 'Sie sind sehr aktiv!',
+                        body: dailyMinutesReached));
+              }
+            }
+            if (!prefs.getBool("halfTimeAlreadyFired")) {
+              if (halfTimeMsgSteps.length > 1) {
+                AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                        id: 3,
+                        channelKey: 'bct_channel',
+                        title: 'Halbzeit, toll gemacht!',
+                        body: halfTimeMsgSteps));
+              }
+              if (halfTimeMsgMinutes.length > 1) {
+                AwesomeNotifications().createNotification(
+                    content: NotificationContent(
+                        id: 4,
+                        channelKey: 'bct_channel',
+                        title: 'Weiter so!',
+                        body: halfTimeMsgMinutes));
+              }
+              prefs.setBool("halfTimeAlreadyFired", true);
+            }
+          }
+          print(DateTime.now().toString() + " | [BackgroundFetch] Event received $taskId");
+          BackgroundFetch.finish(taskId);
+        } else {
+          firstTime = false;
         }
-        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
-          await prefs.setString(
-              "lastTimeDailyGoalsShown", DateTime.now().toString());
-          if (dailyStepsReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Tägliches Schrittziel erreicht',
-                    body: dailyStepsReached));
-          }
-          if (dailyMinutesReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 11,
-                    channelKey: 'bct_channel',
-                    title: 'Sie sind sehr aktiv!',
-                    body: dailyMinutesReached));
+      } else {
+        DateTime lastTime =
+        DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+        var isUploading = prefs.getBool("uploadInProgress");
+        int lastSteps = prefs.getInt("current_steps");
+        int lastActiveMinutes = prefs.getInt("current_active_minutes");
+        if (!isUploading) {
+          try {
+            if (Platform.isIOS) {
+              await BLEManagerIOS.getStepsAndMinutes();
+            } else {
+              await BLEManagerAndroid.getStepsAndMinutesBackground();
+            }
+          } catch (e) {
+            await prefs.setBool("uploadInProgress", false);
           }
         }
-        if (!prefs.getBool("halfTimeAlreadyFired")) {
-          if (halfTimeMsgSteps.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 3,
-                    channelKey: 'bct_channel',
-                    title: 'Halbzeit, toll gemacht!',
-                    body: halfTimeMsgSteps));
+
+        if (await isbctGroup()) {
+          int currentActiveMinutes = prefs.getInt("current_active_minutes");
+          int currentSteps = prefs.getInt("current_steps");
+          BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+          await rules.init(
+              currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+          String halfTimeMsgSteps = "";
+          String halfTimeMsgMinutes = "";
+          String dailyStepsReached = rules.dailyStepsReached();
+          String dailyMinutesReached = rules.dailyMinutesReached();
+          if (rules.halfDayCheck()) {
+            halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+            halfTimeMsgSteps = rules.halfTimeMsgSteps();
           }
-          if (halfTimeMsgMinutes.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 4,
-                    channelKey: 'bct_channel',
-                    title: 'Weiter so!',
-                    body: halfTimeMsgMinutes));
+          if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
+            await prefs.setString(
+                "lastTimeDailyGoalsShown", DateTime.now().toString());
+            if (dailyStepsReached.length > 1) {
+              AwesomeNotifications().createNotification(
+                  content: NotificationContent(
+                      id: 10,
+                      channelKey: 'bct_channel',
+                      title: 'Tägliches Schrittziel erreicht',
+                      body: dailyStepsReached));
+            }
+            if (dailyMinutesReached.length > 1) {
+              AwesomeNotifications().createNotification(
+                  content: NotificationContent(
+                      id: 11,
+                      channelKey: 'bct_channel',
+                      title: 'Sie sind sehr aktiv!',
+                      body: dailyMinutesReached));
+            }
           }
-          prefs.setBool("halfTimeAlreadyFired", true);
+          if (!prefs.getBool("halfTimeAlreadyFired")) {
+            if (halfTimeMsgSteps.length > 1) {
+              AwesomeNotifications().createNotification(
+                  content: NotificationContent(
+                      id: 3,
+                      channelKey: 'bct_channel',
+                      title: 'Halbzeit, toll gemacht!',
+                      body: halfTimeMsgSteps));
+            }
+            if (halfTimeMsgMinutes.length > 1) {
+              AwesomeNotifications().createNotification(
+                  content: NotificationContent(
+                      id: 4,
+                      channelKey: 'bct_channel',
+                      title: 'Weiter so!',
+                      body: halfTimeMsgMinutes));
+            }
+            prefs.setBool("halfTimeAlreadyFired", true);
+          }
         }
+        print(DateTime.now().toString() + " | [BackgroundFetch] Event received $taskId");
+        BackgroundFetch.finish(taskId);
       }
-      print(DateTime.now().toString() + " | [BackgroundFetch] Event received $taskId");
-      BackgroundFetch.finish(taskId);
     }, (String taskId) async {  // <-- Task timeout handler.
       // This task has exceeded its allowed running-time.  You must stop what you're doing and immediately .finish(taskId)
       print("[BackgroundFetch] TASK TIMEOUT taskId: $taskId");
