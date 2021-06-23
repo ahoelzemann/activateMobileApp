@@ -21,8 +21,6 @@ import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
     as BLEManagerAndroid;
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:android_long_task/android_long_task.dart';
-import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/screens/FAQ.dart';
@@ -41,7 +39,6 @@ import 'package:flutter_isolate/flutter_isolate.dart';
 // var battery = Battery();
 
 StreamSubscription _subscription;
-
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -908,7 +905,6 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     body: endOfTheMessageMinutes));
           }
           await prefs.setBool("halfTimeAlreadyFired", false);
-          bool timeNeverSet = prefs.getBool("timeNeverSet");
           showOverlay(
               'Ihre Geräte werden geladen.',
               SpinKitFadingCircle(
@@ -928,6 +924,23 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               IsolateNameServer.registerPortWithName(sendPort, 'main');
 
               receivePort.listen((dynamic message) async {
+                if (message == 'cantConnect') {
+                  print("Connection Not Possible - Killing the Isolate.");
+                  flutterIsolate.kill();
+                  hideOverlay();
+                  showOverlay(
+                      "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                      Icon(Icons.bluetooth, size: 40, color: Colors.red),
+                      withButton: true);
+                }
+                if (message == 'downloadCanceled') {
+                  print("Download Canceled - Killing the Isolate.");
+                  flutterIsolate.kill();
+                  hideOverlay();
+                  showOverlay("Der Upload wurde leider unterbrochen.",
+                      Icon(Icons.upload_file, size: 40, color: Colors.green),
+                      withButton: true);
+                }
                 if (message == 'done') {
                   print('Killing the Isolate');
                   flutterIsolate.kill();
@@ -958,6 +971,27 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               IsolateNameServer.registerPortWithName(sendPort, 'main');
 
               receivePort.listen((dynamic message) async {
+                if (message == 'cantConnect') {
+                  print("Connection Not Possible - Killing the Isolate.");
+                  flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
+                  hideOverlay();
+                  showOverlay(
+                      "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                      Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                      withButton: true);
+                }
+                if (message == 'downloadCanceled') {
+                  print("Download Canceled - Killing the Isolate.");
+                  flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
+                  hideOverlay();
+                  showOverlay("Der Upload wurde leider unterbrochen.",
+                      Icon(Icons.upload_file, size: 30, color: Colors.green),
+                      withButton: true);
+                }
                 if (message == 'done') {
                   print('Killing the Isolate');
                   flutterIsolate.kill();
@@ -971,8 +1005,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
                   showOverlay(
-                      "Bitte starten Sie den Ladezyklus erneut. Die Verbindung konnte nicht aufgebaut werden.",
-                      Icon(Icons.cancel, color: Colors.red, size: 50),
+                      "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                      Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                       withButton: true);
                 }
               });

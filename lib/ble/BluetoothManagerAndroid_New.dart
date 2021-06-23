@@ -447,7 +447,7 @@ class BLE_Client {
           _currentFile.length.toString() +
           " Done uploading //////////////////");
 
-      Directory tempDir = await getTemporaryDirectory();
+      Directory tempDir = await getApplicationDocumentsDirectory();
       await Directory(tempDir.path + '/daily_data').create(recursive: true);
       String tempPath = tempDir.path + '/daily_data';
       tempPath = tempPath + "/" + _fileName;

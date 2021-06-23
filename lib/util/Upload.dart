@@ -38,7 +38,7 @@ class Upload {
       prefs = await SharedPreferences.getInstance();
       studienID = prefs.getStringList('participant')[1];
       serverFilePath = "activity_data/" + studienID;
-      tempDir = await getTemporaryDirectory();
+      tempDir = await getApplicationDocumentsDirectory();
       localFilesDirectory = tempDir.path + "/daily_data/";
 
       if (prefs.getBool("useSecureStorage")) {
@@ -187,7 +187,7 @@ class Upload {
   Future<void> uploadLogFile(path) async {
     String serverlogfolder = this.serverFilePath + "/logfiles/";
     // File newFile = await File(path).copy('$path/filename.jpg');
-    Directory tempDir = await getTemporaryDirectory();
+    Directory tempDir = await getApplicationDocumentsDirectory();
     String tempPath = tempDir.path;
     int steps = prefs.getInt("steps");
     int minutes = prefs.getInt("active_minutes");

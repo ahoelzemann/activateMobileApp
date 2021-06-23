@@ -8,7 +8,6 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/AppServiceData.dart';
 import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
 as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -25,27 +24,12 @@ import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
-import 'package:bluetooth_enable/bluetooth_enable.dart';
 import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/persistant/Participant.dart';
+import 'package:trac2move/util/GlobalFunctions.dart';
 
-//this entire function runs in your ForegroundService
-void backgroundFetchHeadlessTask(HeadlessTask task) async {
-  String taskId = task.taskId;
-  bool isTimeout = task.timeout;
-  if (isTimeout) {
-    // This task has exceeded its allowed running-time.
-    // You must stop what you're doing and immediately .finish(taskId)
-    print("[BackgroundFetch] Headless task timed-out: $taskId");
-    BackgroundFetch.finish(taskId);
-    return;
-  }
-  print('[BackgroundFetch] Headless event received.');
-  // Do your work here...
-  BackgroundFetch.finish(taskId);
-}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -108,6 +92,8 @@ void main() async {
     prefs.setBool("backgroundFetchStarted", false);
 
     if (firstRun == null) {
+      setGlobalConnectionTimer(0);
+      setLastUploadedFileNumber(-1);
       prefs.setBool("fromIsolate", false);
       prefs.setBool("halfTimeAlreadyFired", false);
       prefs.setBool("agreedOnTerms", false);
