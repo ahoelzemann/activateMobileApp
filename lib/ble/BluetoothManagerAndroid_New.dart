@@ -192,75 +192,6 @@ class BLE_Client {
     print("Disconnected!");
   }
 
-  Future<dynamic> getMinutes() async {
-    // await Future.delayed(Duration(milliseconds: 200));
-    Completer completer = new Completer();
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    StreamSubscription _responseSubscription;
-    int _actMins = 0;
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-    print("Sending  actMins command...");
-
-    String s = "actMins\n";
-    print(Uint8List.fromList(s.codeUnits).toString());
-    _responseSubscription = characTX.monitor().listen((event) async {
-      print(event.toString() + "  //////////////");
-      print(String.fromCharCodes(event));
-      if (event[0] == 97 && event[4] == 105) {
-        String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
-            event.lastIndexOf(13))); //the number between = and \r
-        try {
-          _actMins = int.parse(dd.trim());
-        } on FormatException catch (e) {
-          await _responseSubscription.cancel();
-          disconnect();
-        }
-
-        prefs.setInt("current_active_minutes", _actMins);
-        await _responseSubscription.cancel();
-        completer.complete(_actMins);
-      }
-    });
-    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
-
-    return await completer.future;
-  }
-
-  Future<dynamic> getSteps() async {
-    await Future.delayed(Duration(milliseconds: 200));
-    Completer completer = new Completer();
-
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    StreamSubscription _responseSubscription;
-    int _steps = 0;
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-    print("Sending  bleSteps command...");
-
-    String s = "steps\n";
-    print(Uint8List.fromList(s.codeUnits).toString());
-    _responseSubscription = characTX.monitor().listen((event) async {
-      print(event.toString() + "  //////////////");
-      print(String.fromCharCodes(event));
-      if (event[0] == 115 && event[4] == 115) {
-        String dd = String.fromCharCodes(event.sublist(event.indexOf(61) + 1,
-            event.lastIndexOf(13))); //the number between = and \r
-        try {
-          _steps = int.parse(dd.trim());
-        } on FormatException catch (e) {
-          await _responseSubscription.cancel();
-          disconnect();
-        }
-        prefs.setInt("current_steps", _steps);
-        await _responseSubscription.cancel();
-        completer.complete(_steps);
-      }
-    });
-
-    characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
-
-    return await completer.future;
-  }
-
   Future<dynamic> rv() async {
     await Future.delayed(Duration(milliseconds: 200));
     Completer completer = new Completer();
@@ -296,23 +227,6 @@ class BLE_Client {
     return await completer.future;
   }
 
-  Future<dynamic> bleStopRecord() async {
-    await Future.delayed(Duration(milliseconds: 500));
-    Completer completer = new Completer();
-
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-
-    print("Stop recording...");
-
-    String s = "\u0010recStop();\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), false,
-        transactionId: "stopRecord"); //returns void
-    print(Uint8List.fromList(s.codeUnits).toString());
-    completer.complete(true);
-
-    return completer.future;
-  }
-
   Future<dynamic> bleSyncTime() async {
     await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
@@ -344,49 +258,9 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> bleStartRecord(var Hz, var GS, var hour) async {
-    Completer completer = new Completer();
-
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-
-    print("Sending  start command...");
-
-    await Future.delayed(Duration(milliseconds: 1000));
-    String s = "recStrt(" +
-        Hz.toString() +
-        "," +
-        GS.toString() +
-        "," +
-        hour.toString() +
-        ")\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), false,
-        transactionId: "startRecord"); //returns void
-    print(Uint8List.fromList(s.codeUnits).toString());
-    completer.complete(true);
-
-    return completer.future;
-  }
-
-  Future<dynamic> blestopUpload() async {
-    await Future.delayed(Duration(milliseconds: 1000));
-    Completer completer = new Completer();
-
-    print("Status:" + myDevice.name.toString() + " RX UUID discovered");
-
-    print("Sending  stop command...");
-
-    String s = "\u0010stopUpload();\n";
-    // String s = "\x10stpUp($HZ,$GS,$hour)\n";
-    // \x10stpUp(HZ,GS,hour)\n
-    characRX.write(Uint8List.fromList(s.codeUnits), false); //returns void
-    print(Uint8List.fromList(s.codeUnits).toString());
-    completer.complete(true);
-
-    return completer.future;
-  }
 
   Future<dynamic> stpUp(HZ, GS, hour) async {
-    await Future.delayed(Duration(milliseconds: 1000));
+    await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     print("Status:" + myDevice.name.toString() + " RX UUID discovered");
@@ -527,7 +401,7 @@ class BLE_Client {
     return completer.future;
   }
 
-  Future<dynamic> startUpload(Map<String, int> timings) async {
+  Future<dynamic> startUpload() async {
     int maxtrys = 5;
     int _numofFiles = 0;
     prefs.setBool("uploadInProgress", true);
@@ -539,7 +413,7 @@ class BLE_Client {
     }
 
     logError("StartUpload Command successful.");
-    int incrementelSteps = 100 ~/ (_numofFiles + 1);
+    // int incrementelSteps = 100 ~/ (_numofFiles + 1);
     print("ble start upload command done /////////////");
     int fileCount = 0;
     Completer completer = new Completer();
@@ -553,13 +427,10 @@ class BLE_Client {
         " FILES, THIS WILL TAKE SOME MINUTES ...");
 
     for (fileCount = 0; fileCount < _numofFiles; fileCount++) {
-      await Future.delayed(Duration(milliseconds: 500));
+      // await Future.delayed(Duration(milliseconds: 500));
       print(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
-      DateTime current = DateTime.now();
       Map<String, List<int>> _currentResult = await _sendNext(fileCount);
-      timings["file_" + fileCount.toString()] =
-          DateTime.now().difference(current).inSeconds;
       while (_currentResult.length == 0 && try_counter != maxtrys) {
         try_counter++;
         _currentResult = await _sendNext(fileCount);
@@ -591,7 +462,7 @@ class BLE_Client {
     // await ServiceClient.update(foregroundService);
     print("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
     // prefs.setBool("uploadInProgress", false);
-    completer.complete(timings);
+    completer.complete(true);
 
     return completer.future;
   }
@@ -665,11 +536,11 @@ Future<dynamic> getStepsAndMinutesBackground() async {
 Future<bool> stopRecordingUploadAndStart() async {
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(seconds: 1));
-  Map<String, int> timings = {};
-  DateTime start = DateTime.now();
-  DateTime last;
-  DateTime current;
+  await Future.delayed(Duration(milliseconds: 300));
+  // Map<String, int> timings = {};
+  // DateTime start = DateTime.now();
+  // DateTime last;
+  // DateTime current;
 
   await bleClient.init();
   int hour =
@@ -690,8 +561,8 @@ Future<bool> stopRecordingUploadAndStart() async {
     // current = DateTime.now();
     // timings["syncTime"] = last.difference(current).inSeconds;
     // last = current;
-    await Future.delayed(Duration(seconds: 2));
-    // timings = await bleClient.startUpload(timings);
+    // await Future.delayed(Duration(millisecondsseconds: 2));
+    await bleClient.startUpload();
     // current = DateTime.now();
     // timings["startUpload"] = last.difference(current).inSeconds;
     // last = current;

@@ -25,7 +25,7 @@ class _ConfigurationState extends State<Configuration> {
 
     steps = pref.getInt('steps');
     if (steps == null) {
-      steps = 7000;
+      steps = 3000;
     }
     return steps;
   }

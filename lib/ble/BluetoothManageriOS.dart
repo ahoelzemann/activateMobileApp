@@ -567,9 +567,9 @@ class BluetoothManager {
   Future<dynamic> _sendNext(int fileCount, BluetoothCharacteristic characRX,
       BluetoothCharacteristic characTX) async {
     // int _dataSize;
-    await characTX.setNotifyValue(false);
-    await Future.delayed(const Duration(milliseconds: 500));
-    await characTX.setNotifyValue(true);
+    // await characTX.setNotifyValue(false);
+    // await Future.delayed(const Duration(milliseconds: 00));
+    // await characTX.setNotifyValue(true);
     var lastEvent = [];
     int _logData = 0;
     Map<String, List<int>> _result = {};
@@ -705,7 +705,7 @@ Future<dynamic> stopRecordingAndUpload() async {
     // current = DateTime.now();
     // timings["startUpload"] = last.difference(current).inSeconds;
     // last = current;
-    await Future.delayed(const Duration(seconds: 3));
+    // await Future.delayed(const Duration(seconds: 3));
     await bleManager.stpUp(12.5, 8, hour);
     // await bleManager.stopUpload();
     // current = DateTime.now();
