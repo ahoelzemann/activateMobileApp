@@ -111,11 +111,11 @@ class OverlayView extends StatelessWidget {
   }
 }
 
-void showOverlay(message, icon, {bool withButton}) async {
+void showOverlay(message, icon, {bool withButton, int timer}) async {
   if (withButton != null) {
     showButton = withButton;
   }
-  Loader.appLoader.showLoader();
+  Loader.appLoader.showLoader(timer: timer);
   Loader.appLoader.setText(errorMessage: message);
   Loader.appLoader.setImage(icon);
 }

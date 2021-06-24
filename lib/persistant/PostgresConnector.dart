@@ -37,7 +37,7 @@ class PostgresConnector {
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer $token',
+                    'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';
@@ -57,7 +57,7 @@ class PostgresConnector {
       var response = await http.get(url, headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+        'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
       });
 
       return response;
@@ -74,7 +74,7 @@ class PostgresConnector {
       var response = await http.get(url, headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Bearer $token',
+        'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
       });
 
       return response;
@@ -111,7 +111,7 @@ class PostgresConnector {
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': 'Bearer $token',
+                    'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';

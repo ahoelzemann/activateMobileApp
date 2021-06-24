@@ -637,16 +637,19 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
 
-            // ListTile(
-            //   title: Text('RV Test',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     await BLEManagerAndroid.testRV();
-            //   },
-            // ),
+            ListTile(
+              title: Text('OverlayTest',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                showOverlay(
+                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              },
+            ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
@@ -923,6 +926,16 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               final sendPort = receivePort.sendPort;
               IsolateNameServer.registerPortWithName(sendPort, 'main');
               receivePort.listen((dynamic message) async {
+                if (message is List) {
+                  hideOverlay();
+                  showOverlay(
+                      'Ihre Geräte werden geladen.',
+                      SpinKitFadingCircle(
+                        color: Colors.orange,
+                        size: 50.0,
+                      ),
+                      withButton: false, timer: message[0]);
+                }
                 if (message == 'cantConnect') {
                   print("Connection Not Possible - Killing the Isolate.");
                   flutterIsolate.kill();
@@ -985,6 +998,16 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               IsolateNameServer.registerPortWithName(sendPort, 'main');
 
               receivePort.listen((dynamic message) async {
+                if (message is List) {
+                  hideOverlay();
+                  showOverlay(
+                      'Ihre Geräte werden geladen.',
+                      SpinKitFadingCircle(
+                        color: Colors.orange,
+                        size: 50.0,
+                      ),
+                      withButton: false, timer: message[0]);
+                }
                 if (message == 'cantConnect') {
                   print("Connection Not Possible - Killing the Isolate.");
                   flutterIsolate.kill();

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:flutter/cupertino.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData;
@@ -80,6 +81,14 @@ class Upload {
     final port = IsolateNameServer.lookupPortByName('main');
     List<int> stepsList = await getSteps();
     List<int> minutesList = await getActiveMinutes();
+    // Timer(Duration(minutes: 1), () {
+    //   final port = IsolateNameServer.lookupPortByName('main');
+    //   if (port != null) {
+    //     port.send('done');
+    //   } else {
+    //     debugPrint('port is null');
+    //   }
+    // });
     if (filePaths.length == 0) {
       if (port != null) {
         port.send('done');

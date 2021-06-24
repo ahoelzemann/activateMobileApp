@@ -65,6 +65,7 @@ class BluetoothManager {
           .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult))
           .timeout(Duration(seconds: 4));
       await flutterBlue.stopScan();
+      await Future.delayed(Duration(seconds: 1));
       myDevice = result.firstWhere((element) => (element.device.name == savedDevice)).device;
       completer.complete(true);
       debugPrint("device found");
@@ -348,13 +349,13 @@ class BluetoothManager {
       prefs.setInt(
           "current_steps",
           event[0] +
-              event[1] * 256 +
-              event[2] * (0xFFFF + 1) +
-              event[3] * (0xFFFFFF + 1));
-      prefs.setInt("current_active_minutes", event[4] + event[5] * 256);
-      prefs.setInt("current_active_minutes_low", event[6] + event[7] * 256);
-      prefs.setInt("current_active_minutes_avg", event[8] + event[9] * 256);
-      prefs.setInt("current_active_minutes_high", event[10] + event[11] * 256);
+              (event[1] * 0x100) +
+              (event[2] * 0x10000) +
+              (event[3] * 0x1000000));
+      prefs.setInt("current_active_minutes", event[4] + (event[5] * 0x100));
+      prefs.setInt("current_active_minutes_low", event[6] + (event[7] * 0x100));
+      prefs.setInt("current_active_minutes_avg", event[8] + (event[9] * 0x100));
+      prefs.setInt("current_active_minutes_high", event[10] + (event[11] * 0x100));
 
       await _responseSubscription.cancel();
       completer.complete(true);
@@ -511,6 +512,7 @@ class BluetoothManager {
 
   Future<dynamic> startUpload() async {
     BluetoothCharacteristic characTX;
+    final port = IsolateNameServer.lookupPortByName('main');
     int maxtrys = 1;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
@@ -521,6 +523,17 @@ class BluetoothManager {
     if (fileCount == -1) {
       fileCount = 0;
     }
+    port.send([(_numofFiles+1)*200]);
+    // Timer(Duration(seconds: (_numofFiles+1)*200), () {
+    //   final port = IsolateNameServer.lookupPortByName('main');
+    //   if (port != null) {
+    //     port.send('done');
+    //
+    //   } else {
+    //     debugPrint('port is null');
+    //   }
+    // });
+
     Completer completer = new Completer();
     (await myDevice.discoverServices()).forEach((service) {
       if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
@@ -548,7 +561,7 @@ class BluetoothManager {
               Map<String, List<int>> _currentResult =
                   await _sendNext(fileCount, characteristic, characTX)
                   .timeout(Duration(seconds: 200), onTimeout:() {
-                final port = IsolateNameServer.lookupPortByName('main');
+
                 if (port != null) {
                   port.send('downloadCanceled');
                 } else {
@@ -814,8 +827,8 @@ Future<dynamic> stopRecordingAndUpload() async {
     } else {
       print('port is null');
     }
-    debugPrint(e);
-    logError(e);
+    // debugPrint(e);
+    // logError(e);
     // result.add(true);
     // completer.complete(result);
     // return completer.future;

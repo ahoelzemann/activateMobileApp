@@ -214,13 +214,13 @@ class BLE_Client {
       prefs.setInt(
           "current_steps",
           event[0] +
-              event[1] * 256 +
-              event[2] * (0xFFFF + 1) +
-              event[3] * (0xFFFFFF + 1));
-      prefs.setInt("current_active_minutes", event[4] + event[5] * 256);
-      prefs.setInt("current_active_minutes_low", event[6] + event[7] * 256);
-      prefs.setInt("current_active_minutes_avg", event[8] + event[9] * 256);
-      prefs.setInt("current_active_minutes_high", event[10] + event[11] * 256);
+              (event[1] * 0x100) +
+              (event[2] * 0x10000) +
+              (event[3] * 0x1000000));
+      prefs.setInt("current_active_minutes", event[4] + (event[5] * 0x100));
+      prefs.setInt("current_active_minutes_low", event[6] + (event[7] * 0x100));
+      prefs.setInt("current_active_minutes_avg", event[8] + (event[9] * 0x100));
+      prefs.setInt("current_active_minutes_high", event[10] + (event[11] * 0x100));
 
       completer.complete(true);
       await _responseSubscription.cancel();
@@ -407,6 +407,7 @@ class BLE_Client {
   Future<dynamic> startUpload() async {
     int maxtrys = 1;
     int _numofFiles = 0;
+    final port = IsolateNameServer.lookupPortByName('main');
     prefs.setBool("uploadInProgress", true);
     logError("Sending StartUploadCommand....");
     try {
@@ -414,7 +415,7 @@ class BLE_Client {
     } catch (e) {
       logError(e);
     }
-
+    port.send([(_numofFiles+1)*200]);
     logError("StartUpload Command successful.");
     // int incrementelSteps = 100 ~/ (_numofFiles + 1);
     debugPrint("ble start upload command done /////////////");
@@ -438,7 +439,7 @@ class BLE_Client {
       int try_counter = 0;
       Map<String, List<int>> _currentResult = await _sendNext(fileCount)
           .timeout(Duration(seconds: 200), onTimeout: () async {
-        final port = IsolateNameServer.lookupPortByName('main');
+        // final port = IsolateNameServer.lookupPortByName('main');
         await prefs.setString("uploadFailedAt", DateTime.now().toString());
         if (port != null) {
           port.send('downloadCanceled');

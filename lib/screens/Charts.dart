@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:trac2move/util/DataLoader.dart';
+import 'dart:math';
 
 class Charts extends StatefulWidget {
   const Charts({Key key, this.title}) : super(key: key);
@@ -12,13 +13,12 @@ class Charts extends StatefulWidget {
 
 class _Charts extends State<Charts> {
 
-  Widget _buildTrackerBarChart() {
+  Widget _buildTrackerBarChartSteps() {
     return FutureBuilder(
         future: getStepsCharts(),
         builder: (BuildContext context, AsyncSnapshot<List<int>> snapshot) {
           if (snapshot.hasData) {
-            return Column(children: [
-              SfCartesianChart(
+            return SfCartesianChart(
                 borderWidth: 0,
                 plotAreaBorderWidth: 0,
                 title: ChartTitle(
@@ -37,8 +37,39 @@ class _Charts extends State<Charts> {
                     labelStyle: TextStyle(color: Colors.white)),
                 series: _getTrackerBarSeriesSteps(snapshot.data[0]),
                 tooltipBehavior: TooltipBehavior(enable: true),
-              ),
-            ]);
+              );
+          } else {
+            return Container();
+          }
+        });
+  }
+
+  Widget _buildTrackerBarChartMinutes() {
+    return FutureBuilder(
+        future: getActiveMinutesCharts(),
+        builder: (BuildContext context, AsyncSnapshot<List<int>> snapshot) {
+          if (snapshot.hasData) {
+
+             return SfCartesianChart(
+                borderWidth: 0,
+                plotAreaBorderWidth: 0,
+                title: ChartTitle(
+                    text: 'Aktive Minuten (Gesamt)',
+                    textStyle: TextStyle(color: Colors.white)),
+                primaryXAxis: CategoryAxis(
+                  majorGridLines: MajorGridLines(width: 0),
+                  labelStyle: TextStyle(color: Colors.white),
+                ),
+                primaryYAxis: NumericAxis(
+                    majorGridLines: MajorGridLines(width: 0),
+                    title: AxisTitle(text: ''),
+                    minimum: 0,
+                    maximum: snapshot.data[1].toDouble(),
+                    majorTickLines: MajorTickLines(size: 0),
+                    labelStyle: TextStyle(color: Colors.white)),
+                series: _getTrackerBarSeriesMinutes(snapshot.data[0]),
+                tooltipBehavior: TooltipBehavior(enable: true),
+              );
           } else {
             return Container();
           }
@@ -54,7 +85,7 @@ class _Charts extends State<Charts> {
               borderWidth: 0,
               plotAreaBorderWidth: 0,
               title: ChartTitle(
-                  text: 'Aktive Minuten',
+                  text: 'Aktive Minuten (Intensität)',
                   textStyle: TextStyle(color: Colors.white)),
               legend: Legend(
                   isVisible: true, textStyle: TextStyle(color: Colors.white)),
@@ -62,8 +93,8 @@ class _Charts extends State<Charts> {
                   majorGridLines: MajorGridLines(width: 0),
                   labelStyle: TextStyle(color: Colors.white)),
               primaryYAxis: NumericAxis(
-                  minimum: 0,
-                  maximum: snapshot.data[1].toDouble(),
+                  minimum: 0, //snapshot.data[1].toDouble()
+                  maximum: getChartsMaximum(snapshot.data),
                   axisLine: AxisLine(width: 0),
                   majorGridLines: MajorGridLines(width: 0),
                   majorTickLines: MajorTickLines(size: 0),
@@ -107,18 +138,36 @@ class _Charts extends State<Charts> {
         height: size.height,
         color: Color.fromRGBO(57, 70, 84, 1.0),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: size.width * 0.95,
-                  height: size.height * 0.4,
+                  height: size.height * 0.2,
                   color: Color.fromRGBO(57, 70, 84, 1.0),
-                  child: _buildTrackerBarChart(),
+                  child: _buildTrackerBarChartSteps(),
                 ),
               ],
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Container(
+                  width: size.width * 0.95,
+                  height: size.height * 0.2,
+                  color: Color.fromRGBO(57, 70, 84, 1.0),
+                  child: _buildTrackerBarChartMinutes(),
+                ),
+              ],
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: size.width * 0.95,
@@ -160,9 +209,34 @@ List<BarSeries<ChartSampleData, String>>
   ];
 }
 
+List<BarSeries<ChartSampleData, String>>
+_getTrackerBarSeriesMinutes(current_minutes) {
+  final List<ChartSampleData> chartData = <ChartSampleData>[
+    ChartSampleData(x: 'Minuten', y: current_minutes)
+  ];
+  return <BarSeries<ChartSampleData, String>>[
+    BarSeries<ChartSampleData, String>(
+      dataSource: chartData,
+      borderRadius: BorderRadius.circular(15),
+      trackColor: const Color.fromRGBO(198, 201, 207, 1),
+      color: const Color.fromRGBO(89, 154, 195, 1),
+      name: "Minuten",
+
+      /// If we enable this property as true,
+      /// then we can show the track of series.
+
+      isTrackVisible: true,
+      dataLabelSettings: DataLabelSettings(
+          isVisible: true, labelAlignment: ChartDataLabelAlignment.top),
+      xValueMapper: (ChartSampleData sales, _) => sales.x,
+      yValueMapper: (ChartSampleData sales, _) => sales.y,
+    ),
+  ];
+}
+
 List<ColumnSeries<ChartSampleData, String>> _getTrackerColumnSeriesMinutes(active_minutes) {
   final List<ChartSampleData> chartData = <ChartSampleData>[
-    ChartSampleData(x: 'Gesamt', y: active_minutes[0]),
+    // ChartSampleData(x: 'Gesamt', y: active_minutes[0]),
     ChartSampleData(x: 'Niedrige Intensität', y: active_minutes[2]),
     ChartSampleData(x: 'Mittlere Intensität', y: active_minutes[3]),
     ChartSampleData(x: 'Hohe Intensität', y: active_minutes[4]),
@@ -246,4 +320,18 @@ class ChartSampleData {
 
   /// Holds open value of the datapoint
   final num volume;
+}
+
+double getChartsMaximum(List<int> data){
+  data.removeWhere((value) => value == null);
+  int maximum = 0;
+  data.forEach((element) {
+    if (element == null) {
+      element = 0;
+    }
+    if (element > maximum) {
+      maximum = element;
+    }
+  });
+  return maximum.toDouble();
 }
