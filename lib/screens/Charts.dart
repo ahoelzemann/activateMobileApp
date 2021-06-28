@@ -54,7 +54,7 @@ class _Charts extends State<Charts> {
                 borderWidth: 0,
                 plotAreaBorderWidth: 0,
                 title: ChartTitle(
-                    text: 'Aktive Minuten (Gesamt)',
+                    text: 'Aktive Minuten',
                     textStyle: TextStyle(color: Colors.white)),
                 primaryXAxis: CategoryAxis(
                   majorGridLines: MajorGridLines(width: 0),
@@ -85,7 +85,7 @@ class _Charts extends State<Charts> {
               borderWidth: 0,
               plotAreaBorderWidth: 0,
               title: ChartTitle(
-                  text: 'Aktive Minuten (Intensität)',
+                  text: 'Intensitätsebenen',
                   textStyle: TextStyle(color: Colors.white)),
               legend: Legend(
                   isVisible: true, textStyle: TextStyle(color: Colors.white)),
@@ -153,25 +153,25 @@ class _Charts extends State<Charts> {
                 ),
               ],
             ),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.center,
+            //   crossAxisAlignment: CrossAxisAlignment.center,
+            //   children: [
+            //     Container(
+            //       width: size.width * 0.95,
+            //       height: size.height * 0.2,
+            //       color: Color.fromRGBO(57, 70, 84, 1.0),
+            //       child: _buildTrackerBarChartMinutes(),
+            //     ),
+            //   ],
+            // ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
                   width: size.width * 0.95,
-                  height: size.height * 0.2,
-                  color: Color.fromRGBO(57, 70, 84, 1.0),
-                  child: _buildTrackerBarChartMinutes(),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: size.width * 0.95,
-                  height: size.height * 0.45,
+                  height: size.height * 0.65,
                   color: Color.fromRGBO(57, 70, 84, 1.0),
                   child: _buildTrackerColumnChart(),
                 ),

@@ -60,27 +60,37 @@ class OverlayView extends StatelessWidget {
                                       AsyncSnapshot<bool> snapshot) {
                                     if (snapshot.hasData) {
                                       if (snapshot.data == true) {
-                                        return AlertDialog(
-                                          title: Text(value),
-                                          actions: [
-                                            TextButton(
-                                                onPressed: () {
-                                                  Loader.appLoader.hideLoader();
-                                                },
-                                                child: Text("Weiter"))
-                                          ],
-                                          elevation: 0.0,
-                                          actionsOverflowButtonSpacing: 0.0,
-                                          contentPadding: const EdgeInsets.fromLTRB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                          titlePadding: const EdgeInsets.fromLTRB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                          buttonPadding: const EdgeInsets.fromLTRB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                          insetPadding: const EdgeInsets.fromLTRB(
-                                              0.0, 0.0, 0.0, 0.0),
-                                          actionsPadding: const EdgeInsets.fromLTRB(
-                                              0.0, 0.0, 0.0, 0.0),
+                                        return Container(
+                                          margin: new EdgeInsets.symmetric(
+                                              horizontal: 20.0, vertical: 5.0),
+                                          child: AlertDialog(
+                                            title: Text(value),
+                                            actions: [
+                                              TextButton(
+                                                  onPressed: () {
+                                                    Loader.appLoader
+                                                        .hideLoader();
+                                                  },
+                                                  child: Text("Weiter"))
+                                            ],
+                                            elevation: 0.0,
+                                            actionsOverflowButtonSpacing: 0.0,
+                                            contentPadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    0.0, 0.0, 0.0, 0.0),
+                                            titlePadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    0.0, 0.0, 0.0, 0.0),
+                                            buttonPadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    0.0, 0.0, 0.0, 0.0),
+                                            insetPadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    0.0, 0.0, 0.0, 0.0),
+                                            actionsPadding:
+                                                const EdgeInsets.fromLTRB(
+                                                    0.0, 0.0, 0.0, 0.0),
+                                          ),
                                         );
                                       } else {
                                         return Text(value);
@@ -88,7 +98,6 @@ class OverlayView extends StatelessWidget {
                                     } else {
                                       return Container();
                                     }
-
                                   });
                             },
                             valueListenable:
@@ -136,8 +145,7 @@ void updateOverlayIcon(icon) {
 Future<bool> isBCT() {
   if (showButton == null) {
     return Future<bool>.value(false);
-  }
-  else if (showButton == true) {
+  } else if (showButton == true) {
     return Future<bool>.value(true);
   } else
     return Future<bool>.value(false);

@@ -54,6 +54,10 @@ class BluetoothManager {
 
   //Utility methods
 
+  Future<dynamic> deviceIsAvailable() async {
+
+}
+
   Future<dynamic> _findMyDevice() async {
     // Method returns the device or false if the device is not visible
     Completer completer = new Completer();
@@ -79,6 +83,7 @@ class BluetoothManager {
   }
 
   Future<dynamic> connectToSavedDevice() async {
+    Completer completer = new Completer();
     if (await _findMyDevice()) {
       Future<bool> returnValue;
       await myDevice.connect(autoConnect: false).timeout(Duration(seconds: 10),
@@ -100,8 +105,11 @@ class BluetoothManager {
       }).then((data) {
         if (returnValue == null) {
           debugPrint('connection successful');
-          returnValue = Future.value(true);
+          completer.complete(true);
+
+          return completer.future;
         }
+
       });
       // try {
       //   await myDevice
@@ -195,124 +203,6 @@ class BluetoothManager {
       }
     });
 
-    return completer.future;
-  }
-
-  Future<dynamic> _readSteps() async {
-    BluetoothCharacteristic charactx;
-    Completer completer = new Completer();
-    String cmd = "";
-    StreamSubscription bleSubscription;
-    (await myDevice.discoverServices()).forEach((service) {
-      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-        service.characteristics.forEach((characteristic) {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-            charactx = characteristic;
-          }
-        });
-        service.characteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-            debugPrint("Status:" + myDevice.name + " RX UUID discovered");
-            // resultLen = _result.length;
-            debugPrint("Sending  bleSteps command...");
-
-            cmd = "steps\n";
-            debugPrint(Uint8List.fromList(cmd.codeUnits).toString());
-            await charactx.setNotifyValue(false);
-            await Future.delayed(const Duration(milliseconds: 500));
-            await charactx.setNotifyValue(true);
-            bleSubscription = charactx.value
-                .take(2)
-                .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
-              bleSubscription.cancel();
-              completer.complete(false);
-            }).listen(
-              (event) async {
-                debugPrint("Event: " + String.fromCharCodes(event));
-                if (event[0] == 115 && event[4] == 115) {
-                  String dd = String.fromCharCodes(event.sublist(
-                      event.indexOf(61) + 1,
-                      event.lastIndexOf(13))); //the number between = and \r
-                  prefs.setInt("current_steps", int.parse(dd.trim()));
-                  debugPrint("number of steps: " + dd.trim().toString());
-                  await bleSubscription.cancel();
-                  completer.complete(true);
-                }
-              },
-              onError: (err) {
-                debugPrint('Error!: $err');
-              },
-              cancelOnError: true,
-              onDone: () async {
-                completer.complete(true);
-              },
-            );
-            await characteristic.write(Uint8List.fromList(cmd.codeUnits),
-                withoutResponse: false); //returns void
-
-          }
-        });
-      }
-    });
-    return completer.future;
-  }
-
-  Future<dynamic> _readMinutes() async {
-    BluetoothCharacteristic charactx;
-    Completer completer = new Completer();
-    String cmd = "";
-    StreamSubscription bleSubscription;
-    (await myDevice.discoverServices()).forEach((service) {
-      if (service.uuid.toString() == ISSC_PROPRIETARY_SERVICE_UUID) {
-        service.characteristics.forEach((characteristic) {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_TX) {
-            charactx = characteristic;
-          }
-        });
-        service.characteristics.forEach((characteristic) async {
-          if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-            debugPrint("Status:" + myDevice.name + " RX UUID discovered");
-            debugPrint("Sending  actMins command...");
-
-            cmd = "actMins\n";
-            debugPrint(Uint8List.fromList(cmd.codeUnits).toString());
-            await charactx.setNotifyValue(false);
-            await Future.delayed(const Duration(milliseconds: 500));
-            await charactx.setNotifyValue(true);
-            bleSubscription = charactx.value
-                .take(2)
-                .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
-              bleSubscription.cancel();
-              completer.complete(false);
-            }).listen(
-              (event) async {
-                // debugPrint(event.toString() + "  //////////////");
-                debugPrint("Event: " + String.fromCharCodes(event));
-                if (event[0] == 97 && event[4] == 105) {
-                  String dd = String.fromCharCodes(event.sublist(
-                      event.indexOf(61) + 1,
-                      event.lastIndexOf(13))); //the number between = and \r
-                  prefs.setInt("current_active_minutes", int.parse(dd.trim()));
-                  debugPrint(
-                      "number of activeMinutes: " + dd.trim().toString());
-                  await bleSubscription?.cancel();
-                  completer.complete(true);
-                }
-              },
-              onError: (err) {
-                debugPrint('Error!: $err');
-              },
-              cancelOnError: true,
-              onDone: () async {
-                completer.complete(true);
-              },
-            );
-            await characteristic.write(Uint8List.fromList(cmd.codeUnits),
-                withoutResponse: false);
-          }
-        });
-      }
-    });
     return completer.future;
   }
 
@@ -461,7 +351,6 @@ class BluetoothManager {
 
   Future<dynamic> _startUploadCommand() async {
     await Future.delayed(const Duration(milliseconds: 500));
-    int noOfFiles;
     BluetoothCharacteristic charactx;
     Completer completer = new Completer();
     String cmd = "";
@@ -523,16 +412,7 @@ class BluetoothManager {
     if (fileCount == -1) {
       fileCount = 0;
     }
-    port.send([(_numofFiles+1)*200]);
-    // Timer(Duration(seconds: (_numofFiles+1)*200), () {
-    //   final port = IsolateNameServer.lookupPortByName('main');
-    //   if (port != null) {
-    //     port.send('done');
-    //
-    //   } else {
-    //     debugPrint('port is null');
-    //   }
-    // });
+    port.send([(_numofFiles+3)*200]);
 
     Completer completer = new Completer();
     (await myDevice.discoverServices()).forEach((service) {
@@ -560,7 +440,7 @@ class BluetoothManager {
               int try_counter = 0;
               Map<String, List<int>> _currentResult =
                   await _sendNext(fileCount, characteristic, characTX)
-                  .timeout(Duration(seconds: 200), onTimeout:() {
+                  .timeout(Duration(seconds: 400), onTimeout:() {
 
                 if (port != null) {
                   port.send('downloadCanceled');
@@ -617,36 +497,10 @@ class BluetoothManager {
     return completer.future;
   }
 
-  Future<dynamic> stopUpload() async {
-    await Future.delayed(Duration(milliseconds: 1000));
-    Completer completer = new Completer();
 
-    (await myDevice.discoverServices()).forEach((service) async {
-      for (BluetoothCharacteristic characteristic in service.characteristics) {
-        if (characteristic.uuid.toString() == UUIDSTR_ISSC_TRANS_RX) {
-          debugPrint(
-              "Status:" + myDevice.name.toString() + " RX UUID discovered");
-          debugPrint("Sending  stop command...");
-          // \
-          String s = "\u0010stopUpload();\n";
-          characteristic.write(Uint8List.fromList(s.codeUnits),
-              withoutResponse: true); //returns void
-          debugPrint(Uint8List.fromList(s.codeUnits).toString());
-          await Future.delayed(Duration(milliseconds: 500));
-          completer.complete(true);
-        }
-      }
-    });
-
-    return completer.future;
-  }
 
   Future<dynamic> _sendNext(int fileCount, BluetoothCharacteristic characRX,
       BluetoothCharacteristic characTX) async {
-    // int _dataSize;
-    // await characTX.setNotifyValue(false);
-    // await Future.delayed(const Duration(milliseconds: 00));
-    // await characTX.setNotifyValue(true);
 
     var lastEvent = [];
     int _logData = 0;
@@ -657,17 +511,6 @@ class BluetoothManager {
     String s;
 
     StreamSubscription _characSubscription;
-    // Timer(Duration(seconds:2),(){
-    //   debugPrint("CONNECTION TIMEOUT: 200 Seconds");
-    //   final port = IsolateNameServer.lookupPortByName('main');
-    //   if (port != null) {
-    //     port.send('downloadCanceled');
-    //   } else {
-    //     debugPrint('port is null');
-    //   }
-    //   // _characSubscription.cancel();
-    //   // completer.complete(false);
-    // });
     _characSubscription = characTX.value.timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
       debugPrint("TIMEOUT FIRED");
@@ -773,6 +616,8 @@ Future<dynamic> getStepsAndMinutes() async {
 Future<dynamic> stopRecordingAndUpload() async {
   await amIAllowedToConnect();
   Completer completer = new Completer();
+  Upload uploader = new Upload();
+  await uploader.init();
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
   // List<bool> result = [];
@@ -785,6 +630,13 @@ Future<dynamic> stopRecordingAndUpload() async {
   try {
 
     await bleManager.connectToSavedDevice();
+    // var deviceConnection =
+    // .connect(device).listen((s) {
+    //   if(s == BluetoothDeviceState.connected) {
+    //     // device is connected, do something
+    //   }
+    // });
+
     // current = DateTime.now();
     // timings["connectionEstablished"] = start.difference(current).inSeconds;
     // last = current;
@@ -812,7 +664,12 @@ Future<dynamic> stopRecordingAndUpload() async {
     await bleManager.disconnectFromDevice();
     // await Future.delayed(const Duration(seconds: 30));
     await setLastUploadedFileNumber(-1);
-    await uploadActivityDataToServer();
+    // await uploadActivityDataToServer();
+    if (uploader.client == null) {
+      uploader = new Upload();
+      await uploader.init();
+    }
+    uploader.uploadFiles();
     // await setGlobalConnectionTimer(0);
     // current = DateTime.now();
     // timings["upload"] = last.difference(current).inSeconds;
@@ -855,4 +712,6 @@ Future<bool> findNearestDevice() async {
 
     return false;
   }
+
+
 }

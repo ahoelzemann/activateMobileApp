@@ -2,7 +2,6 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'dart:ui';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:trac2move/screens/Overlay.dart';
@@ -100,13 +99,32 @@ class Contact extends StatelessWidget {
                                       "Hölderlinstraße 3\n"
                                       "57076 Siegen\n\n"
                                       "Alexander Hölzemann\n"
-                                      "alexander.hoelzemann(at)\nuni-siegen.de",
+                                      "alexander.hoelzemann(at)\nuni-siegen.de\n\n",
+                                  style: TextStyle(
+                                      fontFamily: "PlayfairDisplay",
+                                      fontWeight: FontWeight.w500,
+                                      color: Colors.black)),
+                              TextSpan(
+                                text:
+                                'Bei inhaltlichen Fragen wenden Sie sich bitte an:\n\n',
+                                style: TextStyle(
+                                    fontFamily: "PlayfairDisplay",
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black),
+                              ),
+                              TextSpan(
+                                  text: "Universität Vechta\n"
+                                      "Driverstraße 22\n"
+                                      "49377 Vechta\n\n"
+                                      "Team ActiVAtE_Prevention\n"
+                                      "activate-prevention@uni-vechta.de",
                                   style: TextStyle(
                                       fontFamily: "PlayfairDisplay",
                                       fontWeight: FontWeight.w500,
                                       color: Colors.black)),
                             ],
                           ),
+
                           textAlign: TextAlign.justify)),
                 ),
               ),
@@ -136,7 +154,7 @@ _displayDialog(BuildContext context) async {
               child: new Text('Senden'),
               onPressed: () {
                 var password = Text(_textFieldController.text);
-                if (password.data == '') {
+                if (password.data == 'activatePrevention') {
                   Navigator.pop(context);
                   Navigator.pop(context);
                   Navigator.push(

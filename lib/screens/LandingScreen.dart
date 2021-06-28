@@ -4,7 +4,6 @@ import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:need_resume/need_resume.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:ui';
 import 'package:day_night_time_picker/day_night_time_picker.dart';
 import 'package:trac2move/persistant/Participant.dart';
@@ -22,14 +21,10 @@ import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:trac2move/util/Logger.dart';
-import 'package:trac2move/util/Upload.dart';
 import 'package:trac2move/screens/FAQ.dart';
 import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
-import 'package:background_fetch/background_fetch.dart';
-
-// import 'package:isolate_handler/isolate_handler.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 
 // Import package
@@ -277,7 +272,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 content: NotificationContent(
                     id: 4,
                     channelKey: 'bct_channel',
-                    title: 'Weiter so!',
+                    title: 'Toll, weiter so!',
                     body: halfTimeMsgMinutes));
           }
           prefs.setBool("halfTimeAlreadyFired", true);
@@ -637,19 +632,19 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
 
-            ListTile(
-              title: Text('OverlayTest',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                showOverlay(
-                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-                    withButton: true);
-              },
-            ),
+            // ListTile(
+            //   title: Text('OverlayTest',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     showOverlay(
+            //         "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+            //         Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+            //         withButton: true);
+            //   },
+            // ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
@@ -759,6 +754,61 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //     ));
             //   },
             // ),
+
+            FutureBuilder(
+                future: isbctGroup(),
+                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data == true) {
+                      return ListTile(
+                        title: Text('Grafiken',
+                            style: TextStyle(
+                                fontFamily: "PlayfairDisplay",
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Charts(),
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return ListTile();
+                    }
+                  } else
+                    return ListTile();
+                }),
+            FutureBuilder(
+                future: isbctGroup(),
+                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+                  if (snapshot.hasData) {
+                    if (snapshot.data == true) {
+                      return ListTile(
+                        title: Text('Tagesziele Bearbeiten',
+                            style: TextStyle(
+                                fontFamily: "PlayfairDisplay",
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black)),
+                        onTap: () {
+                          Navigator.pop(context);
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => Configuration(),
+                            ),
+                          );
+                        },
+                      );
+                    } else {
+                      return ListTile();
+                    }
+                  } else
+                    return ListTile();
+                }),
             ListTile(
               title: Text('FAQ',
                   style: TextStyle(
@@ -791,81 +841,11 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 );
               },
             ),
-            FutureBuilder(
-                future: isbctGroup(),
-                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                  if (snapshot.hasData) {
-                    if (snapshot.data == true) {
-                      return ListTile(
-                        title: Text('Tagesziele Bearbeiten',
-                            style: TextStyle(
-                                fontFamily: "PlayfairDisplay",
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => Configuration(),
-                            ),
-                          );
-                        },
-                      );
-                    } else {
-                      return ListTile();
-                    }
-                  } else
-                    return ListTile();
-                }),
-            FutureBuilder(
-                future: isbctGroup(),
-                builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                  if (snapshot.hasData) {
-                    if (snapshot.data == true) {
-                      return ListTile(
-                        title: Text('Grafiken',
-                            style: TextStyle(
-                                fontFamily: "PlayfairDisplay",
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black)),
-                        onTap: () {
-                          Navigator.pop(context);
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => Charts(),
-                            ),
-                          );
-                        },
-                      );
-                    } else {
-                      return ListTile();
-                    }
-                  } else
-                    return ListTile();
-                }),
           ],
         ),
       ),
     );
   }
-
-  // Future<bool> timeToUpload() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   DateTime now = DateTime.now();
-  //   DateTime recordingWillStartAt;
-  //   bool timeNeverSet = prefs.getBool('timeNeverSet');
-  //   if (timeNeverSet) {
-  //     return timeNeverSet;
-  //   } else {
-  //     recordingWillStartAt =
-  //         DateTime.parse(prefs.getString("recordingWillStartAtString"));
-  //     return (now.isAfter(recordingWillStartAt.add(_activeHours))
-  //         ? true
-  //         : false);
-  //   }
-  // }
 
   Future<dynamic> uploadAndSchedule() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -934,7 +914,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                         color: Colors.orange,
                         size: 50.0,
                       ),
-                      withButton: false, timer: message[0]);
+                      withButton: false,
+                      timer: message[0]);
                 }
                 if (message == 'cantConnect') {
                   print("Connection Not Possible - Killing the Isolate.");
@@ -953,7 +934,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("uploadInProgress", false);
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
-                  showOverlay("Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                  showOverlay(
+                      "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
                       Icon(Icons.upload_file, size: 30, color: Colors.green),
                       withButton: true);
                 }
@@ -1006,7 +988,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                         color: Colors.orange,
                         size: 50.0,
                       ),
-                      withButton: false, timer: message[0]);
+                      withButton: false,
+                      timer: message[0]);
                 }
                 if (message == 'cantConnect') {
                   print("Connection Not Possible - Killing the Isolate.");
@@ -1025,7 +1008,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   await prefs.setBool("uploadInProgress", false);
                   await prefs.setBool("fromIsolate", false);
                   hideOverlay();
-                  showOverlay("Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                  showOverlay(
+                      "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
                       Icon(Icons.upload_file, size: 30, color: Colors.green),
                       withButton: true);
                 }

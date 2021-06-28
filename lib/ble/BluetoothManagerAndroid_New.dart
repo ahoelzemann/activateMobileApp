@@ -415,7 +415,7 @@ class BLE_Client {
     } catch (e) {
       logError(e);
     }
-    port.send([(_numofFiles+1)*200]);
+    port.send([(_numofFiles+3)*200]);
     logError("StartUpload Command successful.");
     // int incrementelSteps = 100 ~/ (_numofFiles + 1);
     debugPrint("ble start upload command done /////////////");
@@ -434,12 +434,10 @@ class BLE_Client {
         " FILES, THIS WILL TAKE SOME MINUTES ...");
 
     for (; fileCount < _numofFiles; fileCount++) {
-      // await Future.delayed(Duration(milliseconds: 500));
       debugPrint(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
       Map<String, List<int>> _currentResult = await _sendNext(fileCount)
           .timeout(Duration(seconds: 200), onTimeout: () async {
-        // final port = IsolateNameServer.lookupPortByName('main');
         await prefs.setString("uploadFailedAt", DateTime.now().toString());
         if (port != null) {
           port.send('downloadCanceled');
