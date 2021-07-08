@@ -52,6 +52,7 @@ dependencies:
 #  bluetooth_enable: ^0.1.1
   toggle_switch: "^0.1.9"
 #  fl_chart: ^0.36.1
+  connectivity_plus: ^1.0.4
   flutter_isolate: ^2.0.0
 #  isolate_handler: ^1.0.0
 #  worker_manager: ^4.0.3

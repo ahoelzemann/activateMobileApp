@@ -405,6 +405,7 @@ class BluetoothManager {
     int maxtrys = 1;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
+    DateTime now = DateTime.now();
     prefs.setBool("uploadInProgress", true);
     int _numofFiles = await _startUploadCommand();
     debugPrint("ble start upload command done /////////////");
@@ -476,6 +477,12 @@ class BluetoothManager {
               await Directory(tempDir.path + '/daily_data')
                   .create(recursive: true);
               String tempPath = tempDir.path + '/daily_data';
+              if (_fileName == "d20statusmsgs.bin") {
+                String year = now.year.toString();
+                String month = now.month.toString();
+                String day = now.day.toString();
+                _fileName = "d20statusmsgs" +year+month+day + ".bin";
+              }
               tempPath = tempPath + "/" + _fileName;
               writeToFile(_currentFile, tempPath);
               _downloadedFiles.add(_currentResult);
@@ -670,6 +677,9 @@ Future<dynamic> stopRecordingAndUpload() async {
       await uploader.init();
     }
     uploader.uploadFiles();
+    // .onError((e, _) {
+    // print(e.toString());
+    // }
     // await setGlobalConnectionTimer(0);
     // current = DateTime.now();
     // timings["upload"] = last.difference(current).inSeconds;

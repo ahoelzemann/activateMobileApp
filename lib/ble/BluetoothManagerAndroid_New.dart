@@ -232,7 +232,7 @@ class BLE_Client {
   }
 
   Future<dynamic> bleSyncTime() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    // await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
@@ -263,7 +263,7 @@ class BLE_Client {
   }
 
   Future<dynamic> stpUp(HZ, GS, hour) async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 300));
     Completer completer = new Completer();
 
     debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
@@ -282,7 +282,7 @@ class BLE_Client {
 
   Future<dynamic> startUploadCommand() async {
     try {
-      await Future.delayed(Duration(milliseconds: 1000));
+      await Future.delayed(Duration(milliseconds: 400));
       Completer completer = new Completer();
       StreamSubscription _responseSubscription;
 
@@ -405,6 +405,7 @@ class BLE_Client {
   }
 
   Future<dynamic> startUpload() async {
+    DateTime now = DateTime.now();
     int maxtrys = 1;
     int _numofFiles = 0;
     final port = IsolateNameServer.lookupPortByName('main');
@@ -461,6 +462,12 @@ class BLE_Client {
       Directory tempDir = await getApplicationDocumentsDirectory();
       await Directory(tempDir.path + '/daily_data').create(recursive: true);
       String tempPath = tempDir.path + '/daily_data';
+      if (_fileName == "d20statusmsgs.bin") {
+        String year = now.year.toString();
+        String month = now.month.toString();
+        String day = now.day.toString();
+        _fileName = "d20statusmsgs" +year+month+day + ".bin";
+      }
       tempPath = tempPath + "/" + _fileName;
       writeToFile(_currentFile, tempPath);
       // _downloadedFiles.add(_currentResult);
@@ -553,7 +560,7 @@ Future<bool> stopRecordingUploadAndStart() async {
   await amIAllowedToConnect();
   BLE_Client bleClient = new BLE_Client();
 
-  await Future.delayed(Duration(milliseconds: 500));
+  // await Future.delayed(Duration(milliseconds: 500));
 
   await bleClient.init();
   int hour =

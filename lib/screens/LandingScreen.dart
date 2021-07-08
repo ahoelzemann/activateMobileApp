@@ -26,6 +26,7 @@ import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // Import package
 // import 'package:battery/battery.dart';
@@ -392,9 +393,11 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                 19,
                                                 18,
                                                 15,
-                                                12
+                                                12,
+                                                10,
+                                                8
                                               ],
-                                              minFontSize: 12,
+                                              minFontSize: 8,
                                               maxFontSize: 20,
                                             ),
                                           );
@@ -469,8 +472,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                             ],
                                           ),
                                           textAlign: TextAlign.left,
-                                          presetFontSizes: [20, 19, 18, 15, 12],
-                                          minFontSize: 12,
+                                          presetFontSizes: [20, 19, 18, 15, 12, 10, 8],
+                                          minFontSize: 8,
                                           maxFontSize: 20,
                                         ),
                                       );
@@ -576,7 +579,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                                     19,
                                                     18,
                                                     15,
-                                                    12
+                                                    12,
+                                                    10,
+                                                    8
                                                   ],
                                                   minFontSize: 8,
                                                   maxFontSize: 20,
@@ -1071,7 +1076,13 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         textColor: Colors.white,
         color: Colors.green,
         onPressed: () async {
-          await uploadAndSchedule();
+          var connectivityResult = await (Connectivity().checkConnectivity());
+          if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+            await uploadAndSchedule();
+          } else {
+            showOverlay("Bitte stellen Sie sicher, dass eine Internetverbindung besteht und starten Sie dann den Ladezyklus erneut.", Icon(Icons.wifi_off,  color: Colors.green, size: 50), withButton: true);
+          }
+
         },
       ),
     );

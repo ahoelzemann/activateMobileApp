@@ -49,10 +49,13 @@ class MapScreenState extends State<ProfilePage> {
   List<bool> isSelected = [true, false, false];
   bool _status = true;
   TextEditingController studienIDController =
-      new TextEditingController(text: "P-");
+      new TextEditingController(text: "A");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
   String agreedOnTerms = "not";
+
+  int initialIndex = 2;
+
   String gender = "d";
   bool bctGroup = true;
   final FocusNode myFocusNode = FocusNode();
@@ -233,7 +236,7 @@ class MapScreenState extends State<ProfilePage> {
                                 ToggleSwitch(
                                   minWidth: 50.0,
                                   minHeight: 35.0,
-                                  initialLabelIndex: 2,
+                                  initialLabelIndex: initialIndex,
                                   cornerRadius: 20.0,
                                   activeFgColor: Colors.white,
                                   inactiveBgColor: Colors.grey,
@@ -258,7 +261,8 @@ class MapScreenState extends State<ProfilePage> {
                                     } else if (index == 2) {
                                       gender = "d";
                                     }
-                                    print('switched to: $index');
+                                    initialIndex = index;
+                                    // print('switched to: $index');
                                   },
                                 ),
                               ],
