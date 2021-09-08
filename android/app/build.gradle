@@ -40,10 +40,10 @@ android {
 
     defaultConfig {
         applicationId "com.activate.trac2move"
-        minSdkVersion 22
+        minSdkVersion 23
         targetSdkVersion 30
-        versionCode 47
-        versionName "2.2.5"
+        versionCode 54
+        versionName "3.0.2"
     }
     signingConfigs {
         release {
@@ -57,9 +57,9 @@ android {
         release {
             signingConfig signingConfigs.release
             minifyEnabled false
-            useProguard true
+//            useProguard true
             shrinkResources false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 }

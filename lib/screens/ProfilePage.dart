@@ -50,12 +50,14 @@ class MapScreenState extends State<ProfilePage> {
   bool _status = true;
   TextEditingController studienIDController =
       new TextEditingController(text: "A");
+  TextEditingController bangleIDController =
+  new TextEditingController(text: "");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
   String agreedOnTerms = "not";
 
   int initialIndex = 2;
-
+  bool showBangleID = false;
   String gender = "d";
   bool bctGroup = true;
   final FocusNode myFocusNode = FocusNode();
@@ -117,6 +119,8 @@ class MapScreenState extends State<ProfilePage> {
       SharedPreferences msp = await SharedPreferences.getInstance();
       List<String> participant = msp.getStringList('participant');
       studienIDController = new TextEditingController(text: participant[1]);
+      // showBangleID = true;
+      bangleIDController.text = participant[3];
       setState(() {
         List<String> datestring = participant[4].split(".");
         int day = int.parse(datestring[0]);
@@ -204,7 +208,43 @@ class MapScreenState extends State<ProfilePage> {
                               ],
                             ),
                           ),
-                          Padding(
+                          bangleIDController.text.length > 1 ? Row(children: [Padding(
+                            padding: EdgeInsets.only(
+                                left: 25.0, right: 25.0, top: 25.0),
+                            child: new Row(
+                              mainAxisSize: MainAxisSize.max,
+                              children: <Widget>[
+                                new Column(
+                                  mainAxisAlignment: MainAxisAlignment.start,
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: <Widget>[
+                                    new Text(
+                                      'Bangle-ID',
+                                      style: TextStyle(
+                                          fontSize: 16.0,
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                            Padding(
+                              padding: EdgeInsets.only(
+                                  left: 25.0, right: 25.0, top: 2.0),
+                              child: new Row(
+                                mainAxisSize: MainAxisSize.max,
+                                children: <Widget>[
+                                  new Flexible(
+                                    child: new TextFormField(
+                                        enabled: true,
+                                        autofocus: false,
+                                        controller: bangleIDController),
+                                  ),
+                                ],
+                              ),
+                            )],) : Container()
+                          ,Padding(
                             padding: EdgeInsets.only(
                                 left: 25.0, right: 25.0, top: 25.0),
                             child: new Row(
@@ -588,13 +628,13 @@ class MapScreenState extends State<ProfilePage> {
                     hideOverlay();
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
-                    String bangle_name = prefs.getString("Devicename");
+                    // String bangle_name = prefs.getString("Devicename");
                     if (createUser) {
                       Future<String> result = _saveUserOnServer(
                           ageToSave,
                           selectedDate,
                           studienIDController.text,
-                          bangle_name,
+                          prefs.getString("Devicename"),
                           radioButtonItem,
                           bctGroup,
                           gender,
@@ -608,7 +648,7 @@ class MapScreenState extends State<ProfilePage> {
                               ageToSave,
                               selectedDate,
                               studienIDController.text,
-                              bangle_name,
+                              prefs.getString("Devicename"),
                               radioButtonItem,
                               bctGroup,
                               gender,
@@ -621,7 +661,7 @@ class MapScreenState extends State<ProfilePage> {
                           ageToSave,
                           selectedDate,
                           studienIDController.text,
-                          bangle_name,
+                          bangleIDController.text,
                           radioButtonItem,
                           bctGroup,
                           gender,
@@ -635,7 +675,7 @@ class MapScreenState extends State<ProfilePage> {
                               ageToSave,
                               selectedDate,
                               studienIDController.text,
-                              bangle_name,
+                              bangleIDController.text,
                               radioButtonItem,
                               bctGroup,
                               gender,

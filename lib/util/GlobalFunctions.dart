@@ -1,6 +1,7 @@
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
+
 Future<int> getGlobalConnectionTimer() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -62,3 +63,5 @@ Future<dynamic> amIAllowedToConnect() async {
   }
   return completer.future;
 }
+
+

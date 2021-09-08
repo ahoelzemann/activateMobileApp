@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Logger.dart';
-
+import 'package:trac2move/util/DataLoader.dart';
 
 // ToDo : Clean up function and implement exceptions
 class PostgresConnector {
@@ -12,11 +12,11 @@ class PostgresConnector {
 
   final url = 'https://activate-db.uni-vechta.de:443/api/';
 
-  Future<String> postParticipant(
-      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
+  Future<String> postParticipant(String studienID, int age, String birthday,
+      String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
       Future.delayed(Duration(seconds: 1), () async {
         try {
-          var url = Uri.parse(this.url+'participants');
+          var url = Uri.parse(this.url + 'participants');
           Map data = {
             'studienid': studienID,
             'age': age,
@@ -37,7 +37,8 @@ class PostgresConnector {
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
+                    'Authorization': 'Basic ' + base64Encode(
+                        utf8.encode('proband:activate_prevention2021%'))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';
@@ -47,7 +48,6 @@ class PostgresConnector {
           logError(e, stackTrace: stacktrace);
           return 'Studienteilnehmer konnte nicht gespeichert werden';
         }
-
       });
 
   Future<dynamic> getParticipants() async {
@@ -57,11 +57,12 @@ class PostgresConnector {
       var response = await http.get(url, headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
+        'Authorization': 'Basic ' +
+            base64Encode(utf8.encode('proband:activate_prevention2021%'))
       });
 
       return response;
-    }  catch (e, stacktrace) {
+    } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
       return false;
     }
@@ -69,28 +70,29 @@ class PostgresConnector {
 
   Future<dynamic> getOneParticipant(String studienID) async {
     try {
-      var url = Uri.parse(this.url+'participants?studienid=eq.$studienID');
+      var url = Uri.parse(this.url + 'participants?studienid=eq.$studienID');
 
       var response = await http.get(url, headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
+        'Authorization': 'Basic ' +
+            base64Encode(utf8.encode('proband:activate_prevention2021%'))
       });
 
       return response;
-    }  catch (e, stacktrace) {
+    } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
       return false;
     }
-
   }
-  Future<String> patchParticipant(
-      String studienID, int age, String birthday, String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
+
+  Future<String> patchParticipant(String studienID, int age, String birthday,
+      String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
       Future.delayed(Duration(seconds: 1), () async {
         try {
           SharedPreferences prefs = await SharedPreferences.getInstance();
           List<String> currentParticipant = prefs.getStringList("participant");
-          var url = this.url+'participants';
+          var url = this.url + 'participants';
           Map data = {
             'studienid': studienID,
             'age': age,
@@ -99,19 +101,21 @@ class PostgresConnector {
             'worn_at': worn_at,
             'bctgroup': bctGroup.toString(),
             'gender': gender,
-            'agreedonterms' :agreedOnTerms
+            'agreedonterms': agreedOnTerms
           };
 
           var body = json.encode(data);
           return getOneParticipant(currentParticipant[1]).then((res) async {
             if (res.body.length > 2) {
-              var id = res.body.split('\"')[2].replaceAll(",","").replaceAll(":", "");
+              var id = res.body.split('\"')[2].replaceAll(",", "").replaceAll(
+                  ":", "");
               var uri = Uri.parse(url + "?id=eq.$id");
               await http.patch(uri,
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
-                    'Authorization': 'Basic ' + base64Encode(utf8.encode('proband:activate_prevention2021%'))
+                    'Authorization': 'Basic ' + base64Encode(
+                        utf8.encode('proband:activate_prevention2021%'))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';
@@ -119,11 +123,55 @@ class PostgresConnector {
               return 'Studienteilnehmer nicht vorhanden';
             }
           });
-        }  catch (e, stacktrace) {
+        } catch (e, stacktrace) {
           logError(e, stackTrace: stacktrace);
           return 'Kommunikation mit dem Server nicht möglich';
         }
+      });
 
+  Future<String> saveStepsandMinutes() =>
+      Future.delayed(Duration(seconds: 1), () async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        List participant = prefs.getStringList("participant");
+        String studienID = participant[1];
+        List<int> stepsList = await getSteps();
+        List<int> minutesList = await getActiveMinutes();
+        int stepsDone = stepsList[0];
+        int stepsGoal = stepsList[1];
+        int activeMinutesDone = minutesList[0];
+        int activeMinutesGoal = minutesList[1];
+        int activeMinutesLow = minutesList[2];
+        int activeMinutesAvg = minutesList[3];
+        int activeMinutesHigh = minutesList[4];
+        try {
+          var url = Uri.parse(this.url + 'stepsandminutes');
+          Map data = {
+            'studienid': studienID,
+            'date': DateTime.now().toString(),
+            'steps': stepsDone,
+            'steps_goal': stepsGoal,
+            'minutes': activeMinutesDone,
+            'minutes_goal': activeMinutesGoal,
+            'low': activeMinutesLow,
+            'moderate': activeMinutesAvg,
+            'vigorous': activeMinutesHigh
+          };
+
+          var body = json.encode(data);
+
+          var result = await http.post(url,
+              headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': 'Basic ' + base64Encode(
+                    utf8.encode('proband:activate_prevention2021%'))
+              },
+              body: body);
+          return 'Schritte/Minuten erfolgreich gespeichert';
+        } catch (e, stacktrace) {
+          logError(e, stackTrace: stacktrace);
+          return 'Schritte/Minuten nicht erfolgreich gespeichert';
+        }
       });
 }
 

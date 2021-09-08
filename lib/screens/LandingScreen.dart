@@ -69,9 +69,10 @@ void reloadPage(context) async {
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
+
     SharedPreferences prefs = await SharedPreferences.getInstance();
     var isUploading = prefs.getBool("uploadInProgress");
-    if (prefs.getBool("fromIsolate")) {
+    // if (prefs.getBool("fromIsolate")) {
       if (isUploading == null || !isUploading) {
         await prefs.setBool("uploadInProgress", true);
         try {
@@ -175,8 +176,6 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           prefs.setBool("halfTimeAlreadyFired", true);
         }
       }
-    }
-    await loadDataFromBangleAndPushBCTs();
   }
 
   @override
@@ -284,7 +283,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
   @override
   void onPause() {
-    // Implement your code inside here
+
   }
 
   @override
@@ -638,16 +637,17 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             ),
 
             // ListTile(
-            //   title: Text('OverlayTest',
+            //   title: Text('RV test',
             //       style: TextStyle(
             //           fontFamily: "PlayfairDisplay",
             //           fontWeight: FontWeight.bold,
             //           color: Colors.black)),
             //   onTap: () async {
-            //     showOverlay(
-            //         "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-            //         Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-            //         withButton: true);
+            //     if (Platform.isIOS) {
+            //
+            //     } else {
+            //       await BLEManagerAndroid.deleteTest();
+            //     }
             //   },
             // ),
             // ListTile(
@@ -815,7 +815,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     return ListTile();
                 }),
             ListTile(
-              title: Text('FAQ',
+              title: Text('Häufig gestellte Fragen',
                   style: TextStyle(
                       fontFamily: "PlayfairDisplay",
                       fontWeight: FontWeight.bold,
@@ -867,6 +867,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
+
           if (await isbctGroup()) {
             int currentActiveMinutes = prefs.getInt("current_active_minutes");
             int currentSteps = prefs.getInt("current_steps");
@@ -894,7 +895,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           }
           await prefs.setBool("halfTimeAlreadyFired", false);
           showOverlay(
-              'Ihre Geräte werden geladen.',
+              'Ihre Daten werden übertragen.',
               SpinKitFadingCircle(
                 color: Colors.orange,
                 size: 50.0,
@@ -914,7 +915,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 if (message is List) {
                   hideOverlay();
                   showOverlay(
-                      'Ihre Geräte werden geladen.',
+                      'Ihre Daten werden übertragen.',
                       SpinKitFadingCircle(
                         color: Colors.orange,
                         size: 50.0,
@@ -988,7 +989,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 if (message is List) {
                   hideOverlay();
                   showOverlay(
-                      'Ihre Geräte werden geladen.',
+                      'Ihre Daten werden übertragen.',
                       SpinKitFadingCircle(
                         color: Colors.orange,
                         size: 50.0,
@@ -1146,5 +1147,5 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     return p.bctGroup;
   }
 
-  Future<void> loadDataFromBangleAndPushBCTs() async {}
+  // Future<void> loadDataFromBangleAndPushBCTs() async {}
 }

@@ -5,7 +5,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData;
-import 'package:ssh/ssh.dart';
+import 'package:ssh2/ssh2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'dart:typed_data';
@@ -76,7 +76,8 @@ class Upload {
         buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
   }
 
-  void uploadFiles() async {
+  Future<dynamic> uploadFiles() async {
+    Completer completer = new Completer();
     if (client == null) {
       await init();
     }
@@ -119,81 +120,64 @@ class Upload {
         ".txt";
     File file = File(stepsAndMinutesFilePath);
     await file.writeAsString(stepsText + "\n" + activeMinutesText);
-    await client.connect().then((result) async {
-      if (result == null) {
-        await Future.delayed(const Duration(seconds: 10));
-        await client.connect();
-      } else {
-        if (result == "session_connected") {
-          result = await client.connectSFTP();
-          if (result == "sftp_connected") {
-            try {
-              print(await client.sftpMkdir(serverFilePath));
-            } catch (e) {
-              print('Folder already exists');
-            }
-            print(await client.sftpUpload(
-              path: stepsAndMinutesFilePath,
-              toPath: serverFilePath,
-              callback: (progress) {
-                print(progress); // read upload progress
-              },
-            ));
-            for (int i = 0; i < filePaths.length; i++) {
-              // Future.forEach(filePaths, (filepath) async {
-              localFilePath = filePaths[i].path;
-              serverFileName = localFilePath.split("/").last;
-              serverPath = serverFilePath;
-              String tempPath = tempDir.path;
-              tempPath = tempPath + "/" + serverFileName;
-              print("Upload file: " + localFilePath);
-              print(await client.sftpUpload(
-                path: localFilePath,
-                toPath: serverPath,
-                callback: (progress) {
-                  print(progress); // read upload progress
-                },
-              ));
-              File(localFilePath).delete();
-              print("local file deleted");
+    String result = await client.connect();
+    if (result == "session_connected") {
+      result = await client.connectSFTP();
+      if (result == "sftp_connected") {
+        // // if (result == null) {
+        // //   await Future.delayed(const Duration(seconds: 10));
+        // //   await client.connect();
+        // } else {
+        // await client.connectSFTP();
+        try {
+          print(await client.sftpMkdir(serverFilePath));
+        } catch (e) {
+          print('Folder already exists');
+        }
+        print(await client.sftpUpload(
+          path: stepsAndMinutesFilePath,
+          toPath: serverFilePath,
+          callback: (progress) {
+            print(progress); // read upload progress
+          },
+        ));
+        for (int i = 0; i < filePaths.length; i++) {
+          // Future.forEach(filePaths, (filepath) async {
+          localFilePath = filePaths[i].path;
+          serverFileName = localFilePath.split("/").last;
+          // serverPath = serverFilePath;
+          // String tempPath = tempDir.path;
+          // tempPath = tempPath + "/" + serverFileName;
+          // print("Upload file: " + localFilePath);
+          print(await client.sftpUpload(
+            path: localFilePath,
+            toPath: serverFilePath,
+            callback: (progress) {
+              print(progress); // read upload progress
+            },
+          ));
+          File(localFilePath).delete();
+          print("local file deleted");
 
-              if (i == (filePaths.length - 1)) {
-                print("if clause reached");
-                if (port != null) {
-                  port.send('done');
-                } else {
-                  print('port is null');
-                }
-                // this.client.disconnectSFTP();
-                // this.client.disconnect();
-                // completer.complete(true);
-                // break;
-              } else {
-                continue;
-              }
+          if (i == (filePaths.length - 1)) {
+
+            // print(await client.disconnectSFTP());
+            // client.disconnect();
+            print("if clause reached");
+            if (port != null) {
+              port.send('done');
+            } else {
+              print('port is null');
             }
-            //         print(await client.disconnectSFTP());
-            //         client.disconnect();
-            //         completer.complete(true);
-            //       } catch (e, stacktrace) {
-            //         logError(e, stackTrace: stacktrace);
-            //       }
-            //
-            //       print(await client.disconnectSFTP());
-            //       client.disconnect();
-            //       completer.complete(true);
-            //     }
-            //   }
-            // } catch (e, stacktrace) {
-            //   logError(e, stackTrace: stacktrace);
-            //   print('Error: ${e.code}\nError Message: ${e.message}');
+            // completer.complete(true);
+            // return completer.future;
+            // break;
+          } else {
+            continue;
           }
         }
       }
-    });
-    // ).timeout(Duration(seconds: 4), onTimeout: () {
-    //
-    // });
+    }
   }
 
   Future<void> uploadLogFile(path) async {
@@ -240,5 +224,11 @@ class Upload {
 Future<dynamic> uploadActivityDataToServer() async {
   Upload uploader = new Upload();
   await uploader.init();
-  uploader.uploadFiles();
+  await uploader.uploadFiles();
+  // final port = IsolateNameServer.lookupPortByName('main');
+  // if (port != null) {
+  //   port.send('done');
+  // } else {
+  //   print('port is null');
+  // }
 }
