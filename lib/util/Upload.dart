@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:ui';
 
-import 'package:flutter/cupertino.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart' show ByteData;
