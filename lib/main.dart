@@ -159,7 +159,7 @@ void main() async {
               if (Platform.isIOS) {
                 await BLEManagerIOS.getStepsAndMinutes();
               } else {
-                await BLEManagerAndroid.getStepsAndMinutesBackground();
+                await BLEManagerAndroid.getStepsAndMinutes();
               }
             } catch (e) {
               await prefs.setBool("uploadInProgress", false);
@@ -237,7 +237,7 @@ void main() async {
             if (Platform.isIOS) {
               await BLEManagerIOS.getStepsAndMinutes();
             } else {
-              await BLEManagerAndroid.getStepsAndMinutesBackground();
+              await BLEManagerAndroid.getStepsAndMinutes();
             }
           } catch (e) {
             await prefs.setBool("uploadInProgress", false);

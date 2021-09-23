@@ -2,6 +2,7 @@ import 'dart:isolate';
 
 import 'package:auto_size_text/auto_size_text.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:need_resume/need_resume.dart';
 import 'dart:ui';
@@ -156,7 +157,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 withButton: true);
           }
         }
-        if (!prefs.getBool("halfTimeAlreadyFired")) {
+        if (prefs.getBool("halfTimeAlreadyFired") != null && !prefs.getBool("halfTimeAlreadyFired")) {
           if (halfTimeMsgSteps.length > 1) {
             AwesomeNotifications().createNotification(
                 content: NotificationContent(
@@ -258,7 +259,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 withButton: true);
           }
         }
-        if (!prefs.getBool("halfTimeAlreadyFired")) {
+        if (prefs.getBool("halfTimeAlreadyFired") != null && !prefs.getBool("halfTimeAlreadyFired")) {
           if (halfTimeMsgSteps.length > 1) {
             AwesomeNotifications().createNotification(
                 content: NotificationContent(
@@ -867,8 +868,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         is24HrFormat: true,
         value: _time,
         onChange: (dateTime) async {
-
-          if (await isbctGroup()) {
+          bool isBCT = await isbctGroup();
+          if (isBCT) {
             int currentActiveMinutes = prefs.getInt("current_active_minutes");
             int currentSteps = prefs.getInt("current_steps");
             int lastSteps = prefs.getInt("last_steps");
@@ -911,6 +912,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               final receivePort = ReceivePort();
               final sendPort = receivePort.sendPort;
               IsolateNameServer.registerPortWithName(sendPort, 'main');
+
               receivePort.listen((dynamic message) async {
                 if (message is List) {
                   hideOverlay();
@@ -977,7 +979,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
             try {
               logError("starting upload");
-              print("before isolate");
+              // print("before isolate");
               await prefs.setBool("fromIsolate", true);
               final flutterIsolate = await FlutterIsolate.spawn(isolate1, "");
 

@@ -42,8 +42,8 @@ android {
         applicationId "com.activate.trac2move"
         minSdkVersion 23
         targetSdkVersion 30
-        versionCode 54
-        versionName "3.0.2"
+        versionCode 55
+        versionName "3.0.3"
     }
     signingConfigs {
         release {

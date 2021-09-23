@@ -51,7 +51,7 @@ class MapScreenState extends State<ProfilePage> {
   TextEditingController studienIDController =
       new TextEditingController(text: "A");
   TextEditingController bangleIDController =
-  new TextEditingController(text: "");
+      new TextEditingController(text: "");
   DateTime selectedDate = DateTime(2000, 1);
   int ageToSave = 0;
   String agreedOnTerms = "not";
@@ -208,43 +208,48 @@ class MapScreenState extends State<ProfilePage> {
                               ],
                             ),
                           ),
-                          bangleIDController.text.length > 1 ? Row(children: [Padding(
-                            padding: EdgeInsets.only(
-                                left: 25.0, right: 25.0, top: 25.0),
-                            child: new Row(
-                              mainAxisSize: MainAxisSize.max,
-                              children: <Widget>[
-                                new Column(
-                                  mainAxisAlignment: MainAxisAlignment.start,
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: <Widget>[
-                                    new Text(
-                                      'Bangle-ID',
-                                      style: TextStyle(
-                                          fontSize: 16.0,
-                                          fontWeight: FontWeight.bold),
-                                    ),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          ),
-                            Padding(
-                              padding: EdgeInsets.only(
-                                  left: 25.0, right: 25.0, top: 2.0),
-                              child: new Row(
-                                mainAxisSize: MainAxisSize.max,
-                                children: <Widget>[
-                                  new Flexible(
-                                    child: new TextFormField(
-                                        enabled: true,
-                                        autofocus: false,
-                                        controller: bangleIDController),
+                          bangleIDController.text.length > 1
+                              ? Padding(
+                                  padding: EdgeInsets.only(
+                                      left: 25.0, right: 25.0, top: 25.0),
+                                  child: new Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: <Widget>[
+                                      new Column(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.start,
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: <Widget>[
+                                          new Text(
+                                            'Bangle-ID',
+                                            style: TextStyle(
+                                                fontSize: 16.0,
+                                                fontWeight: FontWeight.bold),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
                                   ),
-                                ],
-                              ),
-                            )],) : Container()
-                          ,Padding(
+                                )
+                              : Container(),
+                          bangleIDController.text.length > 1
+                              ? Padding(
+                                  padding: EdgeInsets.only(
+                                      left: 25.0, right: 25.0, top: 2.0),
+                                  child: new Row(
+                                    mainAxisSize: MainAxisSize.max,
+                                    children: <Widget>[
+                                      new Flexible(
+                                        child: new TextFormField(
+                                            enabled: true,
+                                            autofocus: false,
+                                            controller: bangleIDController),
+                                      ),
+                                    ],
+                                  ),
+                                )
+                              : Container(),
+                          Padding(
                             padding: EdgeInsets.only(
                                 left: 25.0, right: 25.0, top: 25.0),
                             child: new Row(
@@ -524,27 +529,28 @@ class MapScreenState extends State<ProfilePage> {
                                                   value: false,
                                                   onChanged: (value) {},
                                                 );
-                                              }
-                                              else if (snapshot.data == "both") {
+                                              } else if (snapshot.data ==
+                                                  "both") {
                                                 return CupertinoSwitch(
                                                   value: true,
                                                   onChanged: (value) {},
                                                 );
-                                              }
-                                              else if (snapshot.data == "sick" || snapshot.data == "data") {
+                                              } else if (snapshot.data ==
+                                                      "sick" ||
+                                                  snapshot.data == "data") {
                                                 return CupertinoSwitch(
                                                   activeColor: Colors.blue,
                                                   value: true,
                                                   onChanged: (value) {},
                                                 );
-                                              } else if (snapshot.data == "none") {
+                                              } else if (snapshot.data ==
+                                                  "none") {
                                                 return CupertinoSwitch(
                                                   activeColor: Colors.yellow,
                                                   value: true,
                                                   onChanged: (value) {},
                                                 );
-                                              }
-                                              else {
+                                              } else {
                                                 return CupertinoSwitch(
                                                   value: false,
                                                   onChanged: (value) {},
@@ -624,7 +630,7 @@ class MapScreenState extends State<ProfilePage> {
                           color: Colors.blue,
                           size: 50.0,
                         ));
-                      await BLEManagerIOS.findNearestDevice();
+                    await BLEManagerIOS.findNearestDevice();
                     hideOverlay();
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
@@ -696,7 +702,6 @@ class MapScreenState extends State<ProfilePage> {
       ),
     );
   }
-
 
   Widget _getEditIcon() {
     return new GestureDetector(
@@ -860,6 +865,12 @@ Future<String> _patchUserOnServer(
     bool bctGroup,
     String gender,
     String agreedOnTerms) {
+  if (!bangleID.contains("Bangle.js ")) {
+    if (bangleID.contains(" ")) {
+      bangleID.replaceAll(" ", "");
+    }
+    bangleID = "Bangle.js " + bangleID;
+  }
   String date = convertDate(birthday);
 
   PostgresConnector postgresconnector = new PostgresConnector();
