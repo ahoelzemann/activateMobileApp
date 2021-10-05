@@ -3,16 +3,13 @@ import 'dart:ui';
 
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:flutter/services.dart' show ByteData;
-import 'package:ssh2/ssh2.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:ssh/ssh.dart';
 
-import 'dart:typed_data';
+// import 'package:ssh2/ssh2.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:io' as io;
 import 'package:trac2move/util/Logger.dart';
 
 class Upload {
@@ -69,21 +66,12 @@ class Upload {
     }
   }
 
-  Future<void> writeToFile(ByteData data, String path) {
-    final buffer = data.buffer;
-    return new File(path).writeAsBytes(
-        buffer.asUint8List(data.offsetInBytes, data.lengthInBytes));
-  }
-
   Future<dynamic> uploadFiles() async {
-    Completer completer = new Completer();
     if (client == null) {
       await init();
     }
-    filePaths = io.Directory(localFilesDirectory).listSync();
+    filePaths = Directory(localFilesDirectory).listSync();
     final port = IsolateNameServer.lookupPortByName('main');
-    List<int> stepsList = await getSteps();
-    List<int> minutesList = await getActiveMinutes();
     if (filePaths.length == 0) {
       if (port != null) {
         port.send('done');
@@ -91,86 +79,45 @@ class Upload {
         print('port is null');
       }
     }
-    DateTime now = DateTime.now();
-    String stepsText = "Total: " +
-        stepsList[0].toString() +
-        ";DailyGoal: " +
-        stepsList[1].toString();
-    String activeMinutesText = "Total: " +
-        minutesList[0].toString() +
-        ";DailyGoal: " +
-        minutesList[1].toString() +
-        ";low: " +
-        minutesList[2].toString() +
-        ";avg: " +
-        minutesList[3].toString() +
-        ";high: " +
-        minutesList[4].toString();
-    String path = "";
-    List<String> pathList = filePaths[0].path.split("/");
-    for (int i = 1; i < pathList.length - 1; i++) {
-      path = path + "/" + pathList[i];
-    }
-    String stepsAndMinutesFilePath = path +
-        "/steps_minutes" +
-        now.year.toString() +
-        now.month.toString() +
-        now.day.toString() +
-        ".txt";
-    File file = File(stepsAndMinutesFilePath);
-    await file.writeAsString(stepsText + "\n" + activeMinutesText);
     String result = await client.connect();
     if (result == "session_connected") {
       result = await client.connectSFTP();
       if (result == "sftp_connected") {
-        // // if (result == null) {
-        // //   await Future.delayed(const Duration(seconds: 10));
-        // //   await client.connect();
-        // } else {
-        // await client.connectSFTP();
         try {
           print(await client.sftpMkdir(serverFilePath));
         } catch (e) {
           print('Folder already exists');
         }
-        print(await client.sftpUpload(
-          path: stepsAndMinutesFilePath,
-          toPath: serverFilePath,
-          callback: (progress) {
-            print(progress); // read upload progress
-          },
-        ));
         for (int i = 0; i < filePaths.length; i++) {
-          // Future.forEach(filePaths, (filepath) async {
           localFilePath = filePaths[i].path;
           serverFileName = localFilePath.split("/").last;
-          // serverPath = serverFilePath;
-          // String tempPath = tempDir.path;
-          // tempPath = tempPath + "/" + serverFileName;
-          // print("Upload file: " + localFilePath);
-          print(await client.sftpUpload(
+          print("File : " + i.toString() + " ; Path: " + localFilePath);
+          print(await client
+              .sftpUpload(
             path: localFilePath,
             toPath: serverFilePath,
             callback: (progress) {
               print(progress); // read upload progress
             },
-          ));
-          File(localFilePath).delete();
-          print("local file deleted");
+          )
+              .onError((error, stackTrace) {
+            print(error);
+
+            return 'failed';
+          }).then((value) {
+            // File(localFilePath).delete();
+            // print("local file deleted");
+
+            return 'success';
+          }));
 
           if (i == (filePaths.length - 1)) {
-
-            // print(await client.disconnectSFTP());
-            // client.disconnect();
             print("if clause reached");
             if (port != null) {
               port.send('done');
             } else {
               print('port is null');
             }
-            // completer.complete(true);
-            // return completer.future;
-            // break;
           } else {
             continue;
           }
@@ -196,7 +143,6 @@ class Upload {
             } catch (e) {
               print('Folder already exists');
             }
-            // print("File exists: " + path.existsSync().toString());
             print(
               await client.sftpUpload(
                   path: path,
@@ -215,7 +161,6 @@ class Upload {
       }
     } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
-      // print('Error: ${e.code}\nError Message: ${e.message}');
     }
   }
 }
@@ -224,10 +169,5 @@ Future<dynamic> uploadActivityDataToServer() async {
   Upload uploader = new Upload();
   await uploader.init();
   await uploader.uploadFiles();
-  // final port = IsolateNameServer.lookupPortByName('main');
-  // if (port != null) {
-  //   port.send('done');
-  // } else {
-  //   print('port is null');
-  // }
+
 }

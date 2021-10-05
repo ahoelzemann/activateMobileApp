@@ -28,12 +28,8 @@ import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-
-// Import package
-// import 'package:battery/battery.dart';
-
-// Instantiate it
-// var battery = Battery();
+import 'package:trac2move/util/Upload_V2.dart';
+import 'package:trac2move/util/FtpUpload.dart';
 
 StreamSubscription _subscription;
 
@@ -50,11 +46,21 @@ void isolate1(String arg) async {
   }
 }
 
+void isolate2(String arg) async {
+  // FtpUpload uploader = new FtpUpload();
+  // await uploader.init();
+  // await uploader.uploadFiles();
+
+  // if (Platform.isIOS) {
+  await uploadActivityDataToServer();
+  // } else {
+  //   await uploadActivityDataToServer();
+  // }
+}
+
+
 void reloadPage(context) async {
   hideOverlay();
-  // if (mounted) {
-  //   setState(() {hideOverlay();});
-  // } else {
   Navigator.pop(context);
   Navigator.pushAndRemoveUntil(
     context,
@@ -72,6 +78,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   void onReady() async {
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool uploadSuccessful;
+    if(prefs.getBool("uploadSuccessful") == null) {
+      uploadSuccessful = true;
+    } else {
+      uploadSuccessful = prefs.getBool("uploadSuccessful");
+    }
     var isUploading = prefs.getBool("uploadInProgress");
     // if (prefs.getBool("fromIsolate")) {
       if (isUploading == null || !isUploading) {
@@ -177,19 +189,33 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           prefs.setBool("halfTimeAlreadyFired", true);
         }
       }
+    if (!uploadSuccessful) {
+      showOverlay(
+          "Der gestrige Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+          Icon(
+            Icons.upload_file,
+            color: Colors.orange,
+            size: 50.0,
+          ),
+          withButton: true, buttonType: 'upload');
+    }
   }
 
   @override
   void onResume() async {
     // print("ON RESUME");
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool uploadSuccessful;
+    if(prefs.getBool("uploadSuccessful") == null) {
+      uploadSuccessful = true;
+    } else {
+      uploadSuccessful = prefs.getBool("uploadSuccessful");
+    }
     DateTime lastTime =
         DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
     var isUploading = prefs.getBool("uploadInProgress");
     int lastSteps = prefs.getInt("current_steps");
     int lastActiveMinutes = prefs.getInt("current_active_minutes");
-    // int desiredSteps = prefs.getInt("steps");
-    // int desiredMinutes = prefs.getInt("active_minutes");
     if (isUploading == null || !isUploading) {
       await prefs.setBool("uploadInProgress", true);
       try {
@@ -279,6 +305,16 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           prefs.setBool("halfTimeAlreadyFired", true);
         }
       }
+    }
+    if (!uploadSuccessful) {
+      showOverlay(
+          "Der gestrige Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+          Icon(
+            Icons.upload_file,
+            color: Colors.orange,
+            size: 50.0,
+          ),
+          withButton: true, buttonType: 'upload');
     }
   }
 
@@ -637,20 +673,34 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
 
-            // ListTile(
-            //   title: Text('RV test',
-            //       style: TextStyle(
-            //           fontFamily: "PlayfairDisplay",
-            //           fontWeight: FontWeight.bold,
-            //           color: Colors.black)),
-            //   onTap: () async {
-            //     if (Platform.isIOS) {
-            //
-            //     } else {
-            //       await BLEManagerAndroid.deleteTest();
-            //     }
-            //   },
-            // ),
+            ListTile(
+              title: Text('Upload test',
+                  style: TextStyle(
+                      fontFamily: "PlayfairDisplay",
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black)),
+              onTap: () async {
+                if (Platform.isIOS) {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  final flutterIsolate = await FlutterIsolate.spawn(isolate2, "");
+                  final receivePort = ReceivePort();
+                  final sendPort = receivePort.sendPort;
+                  IsolateNameServer.registerPortWithName(sendPort, 'main');
+
+                  receivePort.listen((dynamic message) async {
+                    if (message == 'done') {
+                      print('Killing the Isolate');
+                      flutterIsolate.kill();
+                      await prefs.setBool("uploadInProgress", false);
+                      await prefs.setBool("fromIsolate", false);
+                      // hideOverlay();
+                    }
+                  });
+                } else {
+                  // await BLEManagerAndroid.deleteTest();
+                }
+              },
+            ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
@@ -988,6 +1038,13 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               IsolateNameServer.registerPortWithName(sendPort, 'main');
 
               receivePort.listen((dynamic message) async {
+                if (message == 'done') {
+                  print('Killing the Isolate');
+                  flutterIsolate.kill();
+                  await prefs.setBool("uploadInProgress", false);
+                  await prefs.setBool("fromIsolate", false);
+                  hideOverlay();
+                }
                 if (message is List) {
                   hideOverlay();
                   showOverlay(
@@ -1020,13 +1077,6 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                       "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
                       Icon(Icons.upload_file, size: 30, color: Colors.green),
                       withButton: true);
-                }
-                if (message == 'done') {
-                  print('Killing the Isolate');
-                  flutterIsolate.kill();
-                  await prefs.setBool("uploadInProgress", false);
-                  await prefs.setBool("fromIsolate", false);
-                  hideOverlay();
                 }
                 if (message == 'doneWithError') {
                   print('Killing the Isolate');

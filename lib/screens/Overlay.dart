@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:trac2move/screens/Loader.dart';
+import 'package:trac2move/util/Upload_V2.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 
 bool showButton = false;
 
@@ -65,14 +67,7 @@ class OverlayView extends StatelessWidget {
                                               horizontal: 20.0, vertical: 5.0),
                                           child: AlertDialog(
                                             title: Text(value),
-                                            actions: [
-                                              TextButton(
-                                                  onPressed: () {
-                                                    Loader.appLoader
-                                                        .hideLoader();
-                                                  },
-                                                  child: Text("Weiter"))
-                                            ],
+                                            actions: Loader.appLoader.button,
                                             elevation: 0.0,
                                             actionsOverflowButtonSpacing: 0.0,
                                             contentPadding:
@@ -120,10 +115,38 @@ class OverlayView extends StatelessWidget {
   }
 }
 
-void showOverlay(message, icon, {bool withButton, int timer}) async {
+void showOverlay(message, icon, {bool withButton, int timer, String buttonType}) async {
   if (withButton != null) {
     showButton = withButton;
   }
+
+  if (buttonType == null) {
+    Loader.appLoader.button = [
+      TextButton(
+          onPressed: () {
+            Loader.appLoader.hideLoader();
+          },
+          child: Text("Weiter"))
+    ];
+  } else {
+    Loader.appLoader.button = [
+      TextButton(
+          onPressed: () async{
+            Loader.appLoader.hideLoader();
+            showOverlay(
+                'Ihre Daten werden übertragen.',
+                SpinKitFadingCircle(
+                  color: Colors.orange,
+                  size: 50.0,
+                ),
+                withButton: false);
+            await uploadActivityDataToServerOverlay();
+            Loader.appLoader.hideLoader();
+          },
+          child: Text("Dateien jetzt hochladen"))
+    ];
+  }
+
   Loader.appLoader.showLoader(timer: timer);
   Loader.appLoader.setText(errorMessage: message);
   Loader.appLoader.setImage(icon);
@@ -131,7 +154,6 @@ void showOverlay(message, icon, {bool withButton, int timer}) async {
 
 void hideOverlay() async {
   Loader.appLoader.hideLoader();
-  // await Future.delayed(Duration(seconds: 5));
 }
 
 void updateOverlayText(text) {

@@ -11,7 +11,7 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:flutter/material.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 
-import 'package:trac2move/util/Upload.dart';
+import 'package:trac2move/util/Upload_V2.dart';
 
 class BLE_Client {
   BleManager _bleManager;
@@ -597,7 +597,7 @@ Future<bool> stopRecordingUploadAndStart() async {
     await Future.delayed(const Duration(milliseconds: 200));
     await bleClient.stpUp(12.5, 8, hour);
     await Future.delayed(const Duration(milliseconds: 500));
-    await bleClient.cleanFlash();
+    // await bleClient.cleanFlash();
     await Future.delayed(const Duration(milliseconds: 500));
     await bleClient.disconnect();
     await Future.delayed(const Duration(seconds: 5));

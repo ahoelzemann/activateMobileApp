@@ -12,6 +12,9 @@ class PostgresConnector {
 
   final url = 'https://activate-db.uni-vechta.de:443/api/';
 
+  final postgresUser = 'proband';
+  final postgresPassword = 'activate_prevention2021%';
+
   Future<String> postParticipant(String studienID, int age, String birthday,
       String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
       Future.delayed(Duration(seconds: 1), () async {
@@ -38,7 +41,7 @@ class PostgresConnector {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'Authorization': 'Basic ' + base64Encode(
-                        utf8.encode('proband:activate_prevention2021%'))
+                        utf8.encode(postgresUser+':'+postgresPassword))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';
@@ -58,7 +61,7 @@ class PostgresConnector {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Basic ' +
-            base64Encode(utf8.encode('proband:activate_prevention2021%'))
+            base64Encode(utf8.encode(postgresUser+':'+postgresPassword))
       });
 
       return response;
@@ -76,7 +79,7 @@ class PostgresConnector {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
         'Authorization': 'Basic ' +
-            base64Encode(utf8.encode('proband:activate_prevention2021%'))
+            base64Encode(utf8.encode(postgresUser+':'+postgresPassword))
       });
 
       return response;
@@ -107,15 +110,14 @@ class PostgresConnector {
           var body = json.encode(data);
           return getOneParticipant(currentParticipant[1]).then((res) async {
             if (res.body.length > 2) {
-              var id = res.body.split('\"')[2].replaceAll(",", "").replaceAll(
-                  ":", "");
+              var id = res.body.split('\"')[2].replaceAll(",", "").replaceAll(":", "");
               var uri = Uri.parse(url + "?id=eq.$id");
               await http.patch(uri,
                   headers: {
                     'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'Authorization': 'Basic ' + base64Encode(
-                        utf8.encode('proband:activate_prevention2021%'))
+                        utf8.encode(postgresUser+':'+postgresPassword))
                   },
                   body: body);
               return 'Studienteilnehmer erfolgreich gespeichert';
@@ -164,7 +166,7 @@ class PostgresConnector {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'Authorization': 'Basic ' + base64Encode(
-                    utf8.encode('proband:activate_prevention2021%'))
+                    utf8.encode(postgresUser+':'+postgresPassword))
               },
               body: body);
           return 'Schritte/Minuten erfolgreich gespeichert';

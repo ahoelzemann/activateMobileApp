@@ -1,11 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:trac2move/screens/Overlay.dart';
 
 class Loader {
   static final Loader appLoader = Loader();
   Timer fallBackTimer;
+  var button = [
+    TextButton(
+        onPressed: () {
+          Loader.appLoader.hideLoader();
+        },
+        child: Text("Weiter"))
+  ];
   ValueNotifier<bool> loaderShowingNotifier = ValueNotifier(false);
   ValueNotifier<String> loaderTextNotifier = ValueNotifier('error message');
   ValueNotifier<Container> loaderIconNotifier = ValueNotifier(Container(

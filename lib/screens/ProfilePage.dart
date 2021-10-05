@@ -623,19 +623,18 @@ class MapScreenState extends State<ProfilePage> {
                       },
                     );
                   } else {
-                    showOverlay(
-                        "Wir suchen Ihre Bangle.js",
-                        Icon(
-                          Icons.watch,
-                          color: Colors.blue,
-                          size: 50.0,
-                        ));
-                    await BLEManagerIOS.findNearestDevice();
-                    hideOverlay();
                     SharedPreferences prefs =
                         await SharedPreferences.getInstance();
-                    // String bangle_name = prefs.getString("Devicename");
                     if (createUser) {
+                      showOverlay(
+                          "Wir suchen Ihre Bangle.js",
+                          Icon(
+                            Icons.watch,
+                            color: Colors.blue,
+                            size: 50.0,
+                          ));
+                      await BLEManagerIOS.findNearestDevice();
+                      hideOverlay();
                       Future<String> result = _saveUserOnServer(
                           ageToSave,
                           selectedDate,
@@ -663,7 +662,7 @@ class MapScreenState extends State<ProfilePage> {
                         }
                       });
                     } else {
-                      Future<String> result = _patchUserOnServer(
+                      await _patchUserOnServer(
                           ageToSave,
                           selectedDate,
                           studienIDController.text,
@@ -672,23 +671,17 @@ class MapScreenState extends State<ProfilePage> {
                           bctGroup,
                           gender,
                           agreedOnTerms);
-                      result.then((value) {
-                        if (value == "Studienteilnehmer bereits vorhanden") {
-                          showAlertDialogAlreadyExists(context,
-                              value != null ? value : 'Verbinde zu Server');
-                        } else {
-                          _saveLocalUser(
-                              ageToSave,
-                              selectedDate,
-                              studienIDController.text,
-                              bangleIDController.text,
-                              radioButtonItem,
-                              bctGroup,
-                              gender,
-                              agreedOnTerms);
-                          showAlertDialogConfirmation(context);
-                        }
-                      });
+
+                      await _saveLocalUser(
+                          ageToSave,
+                          selectedDate,
+                          studienIDController.text,
+                          bangleIDController.text,
+                          radioButtonItem,
+                          bctGroup,
+                          gender,
+                          agreedOnTerms);
+                      showAlertDialogConfirmation(context);
                     }
                   }
                 },

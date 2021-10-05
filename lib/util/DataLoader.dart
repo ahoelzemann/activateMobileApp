@@ -28,6 +28,7 @@ class mySharedPreferences {
         value.setStringList("participant", temp);
         value.setInt('steps', steps);
         value.setInt('active_minutes', active_minutes);
+        value.setString("Devicename", p.bangleID);
 
         return true;
       });

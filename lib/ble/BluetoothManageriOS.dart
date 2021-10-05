@@ -10,10 +10,16 @@ import 'package:fimber/fimber.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io' show Directory, File, Platform;
-import 'package:trac2move/util/Upload.dart';
+import 'package:trac2move/util/Upload_V2.dart';
 import 'package:flutter/material.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
+import 'package:flutter_isolate/flutter_isolate.dart';
+import 'dart:isolate';
+
+void uploadIsolate(String arg) async {
+  uploadActivityDataToServer();
+}
 
 class BluetoothManager {
   static final BluetoothManager _bluetoothManager =
@@ -103,8 +109,6 @@ class BluetoothManager {
     Completer completer = new Completer();
     if (await _findMyDevice()) {
       Future<bool> returnValue;
-      // services = null;
-      // await Future.delayed(Duration(seconds: 1));
       await myDevice.connect(autoConnect: false).timeout(Duration(seconds: 10),
           onTimeout: () {
         debugPrint('timeout occured');
@@ -266,7 +270,7 @@ class BluetoothManager {
       debugPrint(event.toString() + "  //////////////");
 
       if (event.length > 0) {
-        // do something
+        // Todo: React to given back time
 
         await _responseSubscription.cancel();
         completer.complete(true);
@@ -553,10 +557,7 @@ Future<dynamic> getStepsAndMinutes() async {
 
 Future<dynamic> stopRecordingAndUpload() async {
 
-  Completer completer = new Completer();
   print("init objects");
-  Upload uploader = new Upload();
-  await uploader.init();
   PostgresConnector postgresconnector = new PostgresConnector();
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
@@ -577,9 +578,8 @@ Future<dynamic> stopRecordingAndUpload() async {
     await bleManager.disconnectFromDevice();
     await setLastUploadedFileNumber(-1);
     await postgresconnector.saveStepsandMinutes();
-    await Future.delayed(const Duration(seconds: 4));
-    await uploader.uploadFiles();
-    completer.complete(true);
+    await uploadActivityDataToServer();
+
   } catch (e) {
     final port = IsolateNameServer.lookupPortByName('main');
     if (port != null) {
