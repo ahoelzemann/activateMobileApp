@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:ui';
 
+import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssh/ssh.dart';
@@ -12,6 +13,18 @@ import 'dart:io';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:trac2move/util/Logger.dart';
 
+Future<dynamic> checkForSavedFiles() async {
+  Completer completer = new Completer();
+
+  List filePaths = Directory((await getApplicationDocumentsDirectory()).path + "/daily_data/").listSync();
+  if (filePaths.length > 0) {
+    completer.complete(filePaths);
+  }
+  else completer.complete([]);
+
+  return completer.future;
+}
+
 class Upload {
   SharedPreferences prefs;
   String host;
@@ -19,11 +32,10 @@ class Upload {
   String login;
   String pw;
   bool ble_status;
-  var filePaths;
+  List filePaths;
   SSHClient client;
   String studienID;
 
-  Directory tempDir;
   String localFilesDirectory;
   String serverPath;
   String serverFilePath;
@@ -32,8 +44,7 @@ class Upload {
     try {
       prefs = await SharedPreferences.getInstance();
       studienID = prefs.getStringList('participant')[1];
-      tempDir = await getApplicationDocumentsDirectory();
-      localFilesDirectory = tempDir.path + "/daily_data/";
+      localFilesDirectory = (await getApplicationDocumentsDirectory()).path + "/daily_data/";
       serverFilePath = "activity_data/" + studienID;
       host = "131.173.80.175";
       port = 22;
@@ -104,9 +115,20 @@ class Upload {
 
   Future<dynamic> uploadFiles(
       {String uploadStrategy = 'one', int repetitions = 5}) async {
+
+    final port = IsolateNameServer.lookupPortByName('main');
     if (uploadStrategy == 'one') {
-      filePaths = Directory(localFilesDirectory).listSync();
-      final port = IsolateNameServer.lookupPortByName('main');
+      try {
+        filePaths = Directory(localFilesDirectory).listSync();
+      } catch(e, stackTrace) {
+        print(stackTrace);
+        if (port != null) {
+          port.send('done');
+        } else {
+          return false;
+        }
+
+      }
       if (filePaths.length == 0) {
         if (port != null) {
           port.send('done');
@@ -114,7 +136,7 @@ class Upload {
           print('port is null');
         }
       }
-      for (int i = 0; i < filePaths.length - 1; i++) {
+      for (int i = 0; i < filePaths.length; i++) {
         String result;
         int repetition = 0;
         result = await uploadOneFile(i, filePaths[i].path, serverFilePath)
@@ -146,7 +168,8 @@ class Upload {
           callback: (progress) {
             print(progress); // read upload progress
           });
-      // File(localFilePath).delete();
+      File(localFilePath).delete();
+      print("file deleted");
       return 'success';
     } catch (error, stackTrace) {
       print(stackTrace);
@@ -229,4 +252,17 @@ Future<dynamic> uploadActivityDataToServerOverlay() async {
   await prefs.setBool("uploadSuccessful", true);
 
   return true;
+}
+
+Future<dynamic> uploadAlreadyStoredFiles() async{
+  List savedFiles = await checkForSavedFiles();
+
+  if (savedFiles.length > 0) {
+    await uploadActivityDataToServer();
+
+    return true;
+  }
+  else {
+    return false;
+  }
 }

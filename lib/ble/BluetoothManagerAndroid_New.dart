@@ -25,6 +25,7 @@ class BLE_Client {
   Characteristic characTX;
   Characteristic characRX;
   SharedPreferences prefs;
+  bool banglePrefix = false;
   bool deviceIsVisible = false;
   String ISSC_PROPRIETARY_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
   String UUIDSTR_ISSC_TRANS_TX =
@@ -159,8 +160,8 @@ class BLE_Client {
             myDevice = scanResult.peripheral;
             _bleManager.stopPeripheralScan();
             var values = scanResult.advertisementData.manufacturerData;
-            prefs.setInt(
-                "current_steps", values.elementAt(2) + (values.elementAt(3) << 8));
+            prefs.setInt("current_steps",
+                values.elementAt(2) + (values.elementAt(3) << 8));
             prefs.setInt("current_active_minutes",
                 values.elementAt(4) + (values.elementAt(5) << 8));
             prefs.setInt("current_active_minutes_low",
@@ -261,16 +262,37 @@ class BLE_Client {
   Future<dynamic> stpUp(HZ, GS, hour) async {
     await Future.delayed(Duration(milliseconds: 300));
     Completer completer = new Completer();
+    StreamSubscription _responseSubscription;
 
     debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
 
     debugPrint("Sending  stop command...");
+    String dt = "";
+    String cmd = "";
+    if (banglePrefix) {
+      cmd = "\x10Bangle";
+      characRX.write(Uint8List.fromList(cmd.codeUnits), false);
+      cmd = ".stpUp($HZ,$GS,$hour)\n";
+    } else {
+      cmd = "stpUp($HZ,$GS,$hour)\n";
+    }
 
-    // String s = "\u0010stopUpload();\n";
-    String s = "\x10stpUp($HZ,$GS,$hour)\n";
-    // \x10stpUp(HZ,GS,hour)\n
-    characRX.write(Uint8List.fromList(s.codeUnits), false); //returns void
-    debugPrint(Uint8List.fromList(s.codeUnits).toString());
+    _responseSubscription = characTX.monitor().timeout(Duration(seconds: 3),
+        onTimeout: (timeout) async {
+          _responseSubscription.cancel();
+          completer.complete(false);
+        }).listen((event) async {
+      debugPrint(event.toString() + "  //////////////");
+      await Future.delayed(Duration(milliseconds: 500));
+      if (event.length > 0) {
+        dt += String.fromCharCodes(event);
+        await _responseSubscription.cancel();
+        completer.complete(dt);
+      }
+    });
+
+    characRX.write(Uint8List.fromList(cmd.codeUnits), false); //returns void
+    debugPrint(Uint8List.fromList(cmd.codeUnits).toString());
     completer.complete(true);
 
     return completer.future;
@@ -322,6 +344,50 @@ class BLE_Client {
       int numOfFiles = 0;
       _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
           onTimeout: (timeout) async {
+        if (dt.contains("Uncaught")) {
+          banglePrefix = true;
+          await _responseSubscription.cancel();
+          completer.complete(await _bangleStartUploadCommand());
+        } else {
+          if (dt.length == 0) {
+            numOfFiles = 0;
+          } else {
+            dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+            numOfFiles = int.parse(dt);
+          }
+          await _responseSubscription.cancel();
+          completer.complete(numOfFiles);
+        }
+      }).listen((event) async {
+        debugPrint(event.toString() + "  //////////////");
+        debugPrint(String.fromCharCodes(event));
+        dt += String.fromCharCodes(event);
+      });
+      await characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
+
+      return completer.future;
+    } catch (error) {
+      logError(error);
+    }
+  }
+
+  Future<dynamic> _bangleStartUploadCommand() async {
+    try {
+      // await Future.delayed(Duration(seconds: 5));
+      Completer completer = new Completer();
+      StreamSubscription _responseSubscription;
+
+      debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
+
+      debugPrint("Sending  start command...");
+
+      String s = "Bangle.";
+      await characRX.write(Uint8List.fromList(s.codeUnits), false);
+      s= "startUpload()\n";
+      String dt = "";
+      int numOfFiles = 0;
+      _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
+          onTimeout: (timeout) async {
         if (dt.length == 0) {
           numOfFiles = 0;
         } else {
@@ -335,7 +401,7 @@ class BLE_Client {
         debugPrint(String.fromCharCodes(event));
         dt += String.fromCharCodes(event);
       });
-      characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
+      await characRX.write(Uint8List.fromList(s.codeUnits), true); //returns void
 
       return completer.future;
     } catch (error) {
@@ -350,7 +416,7 @@ class BLE_Client {
     String _fileName;
     Completer completer = new Completer();
     var lastEvent = [];
-    String s;
+    String cmd;
     StreamSubscription _characSubscription;
     _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
@@ -380,53 +446,50 @@ class BLE_Client {
           completer.complete(_result);
         }
       }
-      // if (_logData == 1) {
-        //check end of a file
-        if (_dataSize >= 15 &&
-            event[0] == 255 &&
-            event[1] == 255 &&
-            event[2] == 255 &&
-            event[3] == 255 &&
-            event[4] == 255 &&
-            event[5] == 0 &&
-            event[6] == 0 &&
-            event[7] == 0 &&
-            event[8] == 0 &&
-            event[9] == 0 &&
-            event[10] == 0 &&
-            event[11] == 255 &&
-            event[12] == 255 &&
-            event[13] == fileCount) {
-          if (_characSubscription != null) {
-            await _characSubscription.cancel();
-          }
-          _result[_fileName] = _data;
-          completer.complete(_result);
-        } else if (_dataSize == 17) {
-          if (event[13] == 46 &&
-              event[14] == 98 &&
-              event[15] == 105 &&
-              event[16] == 110) {
-            _fileName = String.fromCharCodes(event);
-            // _logData = 1;
-          }
-          // }
-        } else {
-          for (int i = 0; i < _dataSize; i++) {
-            _data.add(event[i]);
-          }
+      if (_dataSize >= 15 &&
+          event[0] == 255 &&
+          event[1] == 255 &&
+          event[2] == 255 &&
+          event[3] == 255 &&
+          event[4] == 255 &&
+          event[5] == 0 &&
+          event[6] == 0 &&
+          event[7] == 0 &&
+          event[8] == 0 &&
+          event[9] == 0 &&
+          event[10] == 0 &&
+          event[11] == 255 &&
+          event[12] == 255 &&
+          event[13] == fileCount) {
+        if (_characSubscription != null) {
+          await _characSubscription.cancel();
         }
-      // }
-      // if (_characSubscription != null) {
-      //   await _characSubscription.cancel();
-      // }
+        _result[_fileName] = _data;
+        completer.complete(_result);
+      } else if (_dataSize == 17) {
+        if (event[13] == 46 &&
+            event[14] == 98 &&
+            event[15] == 105 &&
+            event[16] == 110) {
+          _fileName = String.fromCharCodes(event);
+        }
+        // }
+      } else {
+        for (int i = 0; i < _dataSize; i++) {
+          _data.add(event[i]);
+        }
+      }
       lastEvent = event;
-      // completer.complete(_result);
     });
+    if (banglePrefix) {
+      cmd = "\u0010Bangle.";
+      characRX.write(Uint8List.fromList(cmd.codeUnits), false);
+      cmd = "sendNext(" + fileCount.toString() + ")\n";
+    }
+    cmd = "\u0010sendNext(" + fileCount.toString() + ")\n";
+    characRX.write(Uint8List.fromList(cmd.codeUnits), true);
+    debugPrint(cmd);
 
-    s = "\u0010sendNext(" + fileCount.toString() + ")\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), true);
-    debugPrint(s);
     return completer.future;
   }
 
@@ -596,9 +659,9 @@ Future<bool> stopRecordingUploadAndStart() async {
     await bleClient.startUpload();
     await Future.delayed(const Duration(milliseconds: 200));
     await bleClient.stpUp(12.5, 8, hour);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 200));
     // await bleClient.cleanFlash();
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 200));
     await bleClient.disconnect();
     await Future.delayed(const Duration(seconds: 5));
     await setLastUploadedFileNumber(-1);

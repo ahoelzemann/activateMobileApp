@@ -85,7 +85,7 @@ class PostgresConnector {
       return response;
     } catch (e, stacktrace) {
       logError(e, stackTrace: stacktrace);
-      return false;
+      return "false";
     }
   }
 

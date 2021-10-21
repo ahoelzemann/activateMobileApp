@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:ffi';
+// import 'dart:ffi';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:flutter/foundation.dart';
@@ -9,13 +9,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fimber/fimber.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/Overlay.dart';
-import 'dart:io' show Directory, File, Platform;
+import 'dart:io' show Directory, File;
 import 'package:trac2move/util/Upload_V2.dart';
 import 'package:flutter/material.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
-import 'package:flutter_isolate/flutter_isolate.dart';
-import 'dart:isolate';
 
 void uploadIsolate(String arg) async {
   uploadActivityDataToServer();
@@ -41,6 +39,7 @@ class BluetoothManager {
   BluetoothCharacteristic characTX;
   BluetoothCharacteristic characRX;
   bool deviceIsVisible = false;
+  bool banglePrefix = false;
   String ISSC_PROPRIETARY_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
   String UUIDSTR_ISSC_TRANS_TX =
       "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; //get data from bangle
@@ -259,8 +258,13 @@ class BluetoothManager {
     Completer completer = new Completer();
 
     debugPrint("Sending  stpUp command...");
-
-    String s = "stpUp($HZ,$GS,$hour)\n";
+    String cmd = "";
+    String dt = "";
+    if (banglePrefix) {
+      cmd = "Bangle.stpUp($HZ,$GS,$hour)\n";
+    } else {
+      cmd = "stpUp($HZ,$GS,$hour)\n";
+    }
     StreamSubscription _responseSubscription;
     _responseSubscription = characTX.value.timeout(Duration(seconds: 3),
         onTimeout: (timeout) async {
@@ -268,33 +272,17 @@ class BluetoothManager {
       completer.complete(false);
     }).listen((event) async {
       debugPrint(event.toString() + "  //////////////");
-
+      await Future.delayed(Duration(milliseconds: 500));
       if (event.length > 0) {
-        // Todo: React to given back time
-
+        dt += String.fromCharCodes(event);
         await _responseSubscription.cancel();
-        completer.complete(true);
+        completer.complete(dt);
       }
     });
 
-    await characRX.write(Uint8List.fromList(s.codeUnits),
+    await characRX.write(Uint8List.fromList(cmd.codeUnits),
         withoutResponse: false);
-    debugPrint(Uint8List.fromList(s.codeUnits).toString());
-    // completer.complete(true);
-
-    return completer.future;
-  }
-
-  Future<dynamic> stopRecord() async {
-    Completer completer = new Completer();
-
-    debugPrint("Stop recording...");
-
-    String s = "\u0010recStop();\n";
-    await characRX.write(Uint8List.fromList(s.codeUnits),
-        withoutResponse: true); //returns void
-    debugPrint(Uint8List.fromList(s.codeUnits).toString());
-    completer.complete(true);
+    debugPrint(Uint8List.fromList(cmd.codeUnits).toString());
 
     return completer.future;
   }
@@ -311,15 +299,58 @@ class BluetoothManager {
   }
 
   Future<dynamic> _startUploadCommand() async {
+    // await Future.delayed(const Duration(milliseconds: 500));
+    Completer completer = new Completer();
+    String cmd = "";
+    StreamSubscription bleSubscription;
+    debugPrint("Sending  start Upload command...");
+    await Future.delayed(const Duration(seconds: 5));
+    cmd = "startUpload()\n";
+    String dt = "";
+    int numOfFiles = 0;
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
+    bleSubscription = characTX.value.timeout(Duration(seconds: 2),
+        onTimeout: (timeout) async {
+      if (dt.contains("Uncaught")) {
+        banglePrefix = true;
+        await bleSubscription.cancel();
+        completer.complete(await _bangleStartUploadCommand());
+      } else {
+        if (dt.length == 0) {
+          numOfFiles = 0;
+        } else {
+          dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
+          numOfFiles = int.parse(dt);
+        }
+        await bleSubscription.cancel();
+        completer.complete(numOfFiles);
+      }
+    }).listen((event) async {
+      dt += String.fromCharCodes(event);
+      debugPrint(event.toString() + "  //////////////");
+      debugPrint(dt);
+    });
+
+    await characRX.write(Uint8List.fromList(cmd.codeUnits),
+        withoutResponse: false);
+    return completer.future;
+  }
+
+  Future<dynamic> _bangleStartUploadCommand() async {
     await Future.delayed(const Duration(milliseconds: 500));
     Completer completer = new Completer();
     String cmd = "";
     StreamSubscription bleSubscription;
     debugPrint("Sending  start Upload command...");
     await Future.delayed(const Duration(seconds: 2));
-    cmd = "startUpload()\n";
+    cmd = "Bangle.startUpload()\n";
     String dt = "";
     int numOfFiles = 0;
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
     bleSubscription = characTX.value.timeout(Duration(seconds: 2),
         onTimeout: (timeout) async {
       if (dt.length == 0) {
@@ -331,9 +362,9 @@ class BluetoothManager {
       await bleSubscription.cancel();
       completer.complete(numOfFiles);
     }).listen((event) async {
-      debugPrint(event.toString() + "  //////////////");
-      debugPrint(String.fromCharCodes(event));
       dt += String.fromCharCodes(event);
+      debugPrint(event.toString() + "  //////////////");
+      debugPrint(dt);
     });
 
     await characRX.write(Uint8List.fromList(cmd.codeUnits),
@@ -430,14 +461,14 @@ class BluetoothManager {
 
   Future<dynamic> _sendNext(int fileCount) async {
     var lastEvent = [];
-    int _logData = 0;
+    // int _logData = 0;
     Map<String, List<int>> _result = {};
     List<int> _data = [];
     String _fileName;
     Completer completer = new Completer();
-    String s;
-    int _dataSize = 0;
-
+    String cmd;
+    // int _dataSize = 0;
+    // String dt = "";
     StreamSubscription _characSubscription;
     await characTX.setNotifyValue(true);
     _characSubscription = characTX.value.timeout(Duration(seconds: 30),
@@ -503,8 +534,12 @@ class BluetoothManager {
       }
       lastEvent = event;
     });
-    s = "\u0010sendNext(" + fileCount.toString() + ")\n";
-    characRX.write(Uint8List.fromList(s.codeUnits), withoutResponse: false);
+    if (banglePrefix) {
+      cmd = "\u0010Bangle.sendNext(" + fileCount.toString() + ")\n";
+    } else {
+      cmd = "\u0010sendNext(" + fileCount.toString() + ")\n";
+    }
+    characRX.write(Uint8List.fromList(cmd.codeUnits), withoutResponse: false);
     return completer.future;
   }
 
@@ -547,7 +582,6 @@ class BluetoothManager {
 }
 
 Future<dynamic> getStepsAndMinutes() async {
-
   BluetoothManager bleManager = new BluetoothManager();
   await bleManager.asyncInit();
   await bleManager._findMyDevice();
@@ -556,7 +590,6 @@ Future<dynamic> getStepsAndMinutes() async {
 }
 
 Future<dynamic> stopRecordingAndUpload() async {
-
   print("init objects");
   PostgresConnector postgresconnector = new PostgresConnector();
   BluetoothManager bleManager = new BluetoothManager();
@@ -579,7 +612,6 @@ Future<dynamic> stopRecordingAndUpload() async {
     await setLastUploadedFileNumber(-1);
     await postgresconnector.saveStepsandMinutes();
     await uploadActivityDataToServer();
-
   } catch (e) {
     final port = IsolateNameServer.lookupPortByName('main');
     if (port != null) {

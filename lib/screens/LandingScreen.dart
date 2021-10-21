@@ -46,17 +46,17 @@ void isolate1(String arg) async {
   }
 }
 
-void isolate2(String arg) async {
-  // FtpUpload uploader = new FtpUpload();
-  // await uploader.init();
-  // await uploader.uploadFiles();
-
-  // if (Platform.isIOS) {
-  await uploadActivityDataToServer();
-  // } else {
-  //   await uploadActivityDataToServer();
-  // }
-}
+// void isolate2(String arg) async {
+//   // FtpUpload uploader = new FtpUpload();
+//   // await uploader.init();
+//   // await uploader.uploadFiles();
+//
+//   // if (Platform.isIOS) {
+//   await uploadActivityDataToServer();
+//   // } else {
+//   //   await uploadActivityDataToServer();
+//   // }
+// }
 
 
 void reloadPage(context) async {
@@ -84,6 +84,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     } else {
       uploadSuccessful = prefs.getBool("uploadSuccessful");
     }
+    // uploadSuccessful = false;
     var isUploading = prefs.getBool("uploadInProgress");
     // if (prefs.getBool("fromIsolate")) {
       if (isUploading == null || !isUploading) {
@@ -191,7 +192,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       }
     if (!uploadSuccessful) {
       showOverlay(
-          "Der gestrige Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+          "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
           Icon(
             Icons.upload_file,
             color: Colors.orange,
@@ -211,6 +212,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     } else {
       uploadSuccessful = prefs.getBool("uploadSuccessful");
     }
+    // uploadSuccessful = false;
     DateTime lastTime =
         DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
     var isUploading = prefs.getBool("uploadInProgress");
@@ -308,7 +310,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     }
     if (!uploadSuccessful) {
       showOverlay(
-          "Der gestrige Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+          "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
           Icon(
             Icons.upload_file,
             color: Colors.orange,
@@ -673,34 +675,34 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               ),
             ),
 
-            ListTile(
-              title: Text('Upload test',
-                  style: TextStyle(
-                      fontFamily: "PlayfairDisplay",
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black)),
-              onTap: () async {
-                if (Platform.isIOS) {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  final flutterIsolate = await FlutterIsolate.spawn(isolate2, "");
-                  final receivePort = ReceivePort();
-                  final sendPort = receivePort.sendPort;
-                  IsolateNameServer.registerPortWithName(sendPort, 'main');
-
-                  receivePort.listen((dynamic message) async {
-                    if (message == 'done') {
-                      print('Killing the Isolate');
-                      flutterIsolate.kill();
-                      await prefs.setBool("uploadInProgress", false);
-                      await prefs.setBool("fromIsolate", false);
-                      // hideOverlay();
-                    }
-                  });
-                } else {
-                  // await BLEManagerAndroid.deleteTest();
-                }
-              },
-            ),
+            // ListTile(
+            //   title: Text('Upload test',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     if (Platform.isIOS) {
+            //       SharedPreferences prefs = await SharedPreferences.getInstance();
+            //       final flutterIsolate = await FlutterIsolate.spawn(isolate2, "");
+            //       final receivePort = ReceivePort();
+            //       final sendPort = receivePort.sendPort;
+            //       IsolateNameServer.registerPortWithName(sendPort, 'main');
+            //
+            //       receivePort.listen((dynamic message) async {
+            //         if (message == 'done') {
+            //           print('Killing the Isolate');
+            //           flutterIsolate.kill();
+            //           await prefs.setBool("uploadInProgress", false);
+            //           await prefs.setBool("fromIsolate", false);
+            //           // hideOverlay();
+            //         }
+            //       });
+            //     } else {
+            //       // await BLEManagerAndroid.deleteTest();
+            //     }
+            //   },
+            // ),
             // ListTile(
             //   title: Text('DEBUGGING ONLY: Upload LogFile',
             //       style: TextStyle(
