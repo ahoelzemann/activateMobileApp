@@ -168,7 +168,7 @@ class Upload {
           callback: (progress) {
             print(progress); // read upload progress
           });
-      File(localFilePath).delete();
+      // File(localFilePath).delete();
       print("file deleted");
       return 'success';
     } catch (error, stackTrace) {
@@ -226,7 +226,7 @@ Future<dynamic> uploadActivityDataToServer() async {
       await uploader.connect();
       print('connected');
       await uploader.uploadFiles();
-      await uploader.client.disconnect();
+      uploader.client.disconnect();
       await prefs.setBool("uploadSuccessful", true);
       if (port != null) {
         port.send('done');

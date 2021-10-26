@@ -27,6 +27,7 @@ class BLE_Client {
   SharedPreferences prefs;
   bool banglePrefix = false;
   bool deviceIsVisible = false;
+  StreamSubscription _bleSubscription;
   String ISSC_PROPRIETARY_SERVICE_UUID = "6e400001-b5a3-f393-e0a9-e50e24dcca9e";
   String UUIDSTR_ISSC_TRANS_TX =
       "6e400003-b5a3-f393-e0a9-e50e24dcca9e"; //get data from bangle
@@ -68,7 +69,7 @@ class BLE_Client {
   }
 
   Future<dynamic> find_nearest_device() async {
-    StreamSubscription _bleSubscription;
+    // StreamSubscription _bleSubscription;
     Completer completer = new Completer();
     Map<String, int> bangles = {};
     updateOverlayText(
@@ -130,13 +131,13 @@ class BLE_Client {
   Future<dynamic> isStillSending() async {
     Completer completer = new Completer();
 
-    StreamSubscription _responseSubscription;
+    // StreamSubscription _bleSubscription;
 
-    _responseSubscription = characTX
+    _bleSubscription = characTX
         .monitor()
         .timeout(Duration(milliseconds: 1000), onTimeout: (timeout) async {
       print("not Sending");
-      _responseSubscription.cancel();
+      _bleSubscription.cancel();
       // myDevice.disconnect();
       // await Future.delayed(Duration(milliseconds: 500));
       // myDevice.connect();
@@ -154,7 +155,7 @@ class BLE_Client {
     String savedDevice = prefs.getString("Devicename");
 
     debugPrint("Ble start scan");
-    _scanSubscription = _bleManager.startPeripheralScan().listen(
+    _scanSubscription = _bleManager.startPeripheralScan(scanMode: 2).listen(
         (scanResult) async {
           if (scanResult.peripheral.name == savedDevice) {
             myDevice = scanResult.peripheral;
@@ -169,7 +170,7 @@ class BLE_Client {
             prefs.setInt("current_active_minutes_avg", values.elementAt(8));
             prefs.setInt("current_active_minutes_high", values.elementAt(9));
             debugPrint("Device found: " + myDevice.toString());
-            await _scanSubscription.cancel();
+            _scanSubscription.cancel();
             completer.complete(true);
           }
         },
@@ -179,14 +180,36 @@ class BLE_Client {
         cancelOnError: true,
         onDone: () async {
           completer.complete(true);
+          // return true;
         });
 
     return completer.future;
   }
 
-  Future<dynamic> connect() async {
+  Future<dynamic> _onTimeout() {
+    print("timeout while searching for the device");
+
+    Completer completer = new Completer();
+    _bleManager.stopPeripheralScan();
+    // refresh();
+    completer.complete(false);
+
+    return completer.future;
+  }
+
+  Future<dynamic> connect({retries: 5}) async {
     start_ble_scan();
-    await waitTillDeviceIsFound(() => _bleManager.stopPeripheralScan());
+    for (int i = 0; i < retries; i++) {
+      bool deviceFound = await waitTillDeviceIsFound(() => _bleManager.stopPeripheralScan()).timeout(const Duration (seconds: 30), onTimeout: _onTimeout);
+      if (deviceFound) {
+        break;
+      }
+      // else {
+      //   print('waiting for 30 seconds')
+      //   await Future.delayed(Duration(seconds: 30));
+      // }
+    }
+
     StreamSubscription _deviceStateSubscription;
     Completer completer = new Completer();
 
@@ -221,6 +244,8 @@ class BLE_Client {
   Future<dynamic> disconnect() async {
     if (await myDevice.isConnected()) {
       debugPrint("DISCONNECTING...");
+      // (await characRX.monitor().listen((event) => pass)).cancel();
+      await _bleSubscription.cancel();
       await myDevice.disconnectOrCancelConnection();
     } else {
       await _bleManager.destroyClient();
@@ -262,7 +287,7 @@ class BLE_Client {
   Future<dynamic> stpUp(HZ, GS, hour) async {
     await Future.delayed(Duration(milliseconds: 300));
     Completer completer = new Completer();
-    StreamSubscription _responseSubscription;
+    // StreamSubscription _bleSubscription;
 
     debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
 
@@ -277,17 +302,19 @@ class BLE_Client {
       cmd = "stpUp($HZ,$GS,$hour)\n";
     }
 
-    _responseSubscription = characTX.monitor().timeout(Duration(seconds: 3),
+    _bleSubscription = characTX.monitor().timeout(Duration(seconds: 3),
         onTimeout: (timeout) async {
-          _responseSubscription.cancel();
+          _bleSubscription.cancel();
           completer.complete(false);
         }).listen((event) async {
       debugPrint(event.toString() + "  //////////////");
       await Future.delayed(Duration(milliseconds: 500));
       if (event.length > 0) {
         dt += String.fromCharCodes(event);
-        await _responseSubscription.cancel();
-        completer.complete(dt);
+        await _bleSubscription.cancel();
+        if (!completer.isCompleted) {
+          completer.complete(dt);
+        }
       }
     });
 
@@ -333,7 +360,7 @@ class BLE_Client {
     try {
       await Future.delayed(Duration(milliseconds: 400));
       Completer completer = new Completer();
-      StreamSubscription _responseSubscription;
+      // StreamSubscription _bleSubscription;
 
       debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
 
@@ -342,11 +369,11 @@ class BLE_Client {
       String s = "startUpload()\n";
       String dt = "";
       int numOfFiles = 0;
-      _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
+      _bleSubscription = characTX.monitor().timeout(Duration(seconds: 2),
           onTimeout: (timeout) async {
         if (dt.contains("Uncaught")) {
           banglePrefix = true;
-          await _responseSubscription.cancel();
+          await _bleSubscription.cancel();
           completer.complete(await _bangleStartUploadCommand());
         } else {
           if (dt.length == 0) {
@@ -355,7 +382,7 @@ class BLE_Client {
             dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
             numOfFiles = int.parse(dt);
           }
-          await _responseSubscription.cancel();
+          await _bleSubscription.cancel();
           completer.complete(numOfFiles);
         }
       }).listen((event) async {
@@ -375,7 +402,7 @@ class BLE_Client {
     try {
       // await Future.delayed(Duration(seconds: 5));
       Completer completer = new Completer();
-      StreamSubscription _responseSubscription;
+      // StreamSubscription _bleSubscription;
 
       debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
 
@@ -386,7 +413,7 @@ class BLE_Client {
       s= "startUpload()\n";
       String dt = "";
       int numOfFiles = 0;
-      _responseSubscription = characTX.monitor().timeout(Duration(seconds: 2),
+      _bleSubscription = characTX.monitor().timeout(Duration(seconds: 2),
           onTimeout: (timeout) async {
         if (dt.length == 0) {
           numOfFiles = 0;
@@ -394,7 +421,7 @@ class BLE_Client {
           dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
           numOfFiles = int.parse(dt);
         }
-        await _responseSubscription.cancel();
+        await _bleSubscription.cancel();
         completer.complete(numOfFiles);
       }).listen((event) async {
         debugPrint(event.toString() + "  //////////////");
@@ -417,10 +444,10 @@ class BLE_Client {
     Completer completer = new Completer();
     var lastEvent = [];
     String cmd;
-    StreamSubscription _characSubscription;
-    _characSubscription = characTX.monitor().timeout(Duration(seconds: 30),
+    // StreamSubscription _bleSubscription;
+    _bleSubscription = characTX.monitor().timeout(Duration(seconds: 30),
         onTimeout: (timeout) async {
-      await _characSubscription.cancel();
+      await _bleSubscription.cancel();
       completer.complete(_result);
     }).listen((event) async {
       int _dataSize = event.length;
@@ -441,7 +468,7 @@ class BLE_Client {
             concatenatedEvents[12] == 255 &&
             concatenatedEvents[13] == fileCount) {
           debugPrint("Endsequence altered");
-          await _characSubscription.cancel();
+          await _bleSubscription.cancel();
           _result[_fileName] = _data;
           completer.complete(_result);
         }
@@ -461,8 +488,8 @@ class BLE_Client {
           event[11] == 255 &&
           event[12] == 255 &&
           event[13] == fileCount) {
-        if (_characSubscription != null) {
-          await _characSubscription.cancel();
+        if (_bleSubscription != null) {
+          await _bleSubscription.cancel();
         }
         _result[_fileName] = _data;
         completer.complete(_result);
@@ -579,7 +606,7 @@ class BLE_Client {
     var completer = new Completer();
     check() {
       if (!(myDevice == null)) {
-        completer.complete();
+        completer.complete(true);
       } else {
         new Timer(pollInterval, check);
       }
@@ -601,47 +628,30 @@ class BLE_Client {
   }
 }
 
-Future<dynamic> getStepsAndMinutes() async {
+Future<dynamic> getStepsAndMinutes({retries: 5}) async {
   BLE_Client bleClient = new BLE_Client();
+  await bleClient.init();
+  // Completer completer = new Completer();
 
-  try {
-    await bleClient.init();
-    await bleClient.start_ble_scan();
-
-    return true;
-  } catch (e) {
-    // await androidBLEClient.disconnect();
-    logError(e);
-    return false;
+  bleClient.start_ble_scan();
+  for (int i = 0; i < retries; i++) {
+    bool deviceFound = await bleClient.waitTillDeviceIsFound(() => bleClient._bleManager.stopPeripheralScan()).timeout(const Duration (seconds: 10), onTimeout: bleClient._onTimeout);
+    if (deviceFound) {
+      break;
+    }
   }
-}
 
-// Future<dynamic> getStepsAndMinutesBackground() async {
-//   SharedPreferences prefs = await SharedPreferences.getInstance();
-//   await prefs.setBool("btOccupied", true);
-//   BLE_Client bleTester = new BLE_Client();
-//   BLE_Client bleClient = new BLE_Client();
-//   await bleTester.init();
-//   try {
-//     // await androidBLEClient.checkBLEstate();
-//     await bleTester.connect();
-//     await bleTester.checkBLEstate();
-//     await bleTester.isStillSending();
-//     await bleTester.disconnect();
-//     bleTester = null;
-//     await bleClient.init();
-//     await bleClient.connect();
-//     await bleClient.rv();
-//     await bleClient.disconnect();
-//     await setGlobalConnectionTimer(0);
-//     await prefs.setBool("btOccupied", false);
-//     return true;
-//   } catch (e) {
-//     // await androidBLEClient.disconnect();
-//     logError(e);
-//     return false;
-//   }
-// }
+  // try {
+  //   await bleClient.init();
+  //   bool result = await bleClient.start_ble_scan().timeout(const Duration(seconds:5), onTimeout: bleClient._onTimeout());
+  //
+  //
+  //   return true;
+  // } catch (e) {
+  //   logError(e);
+  //   return false;
+  // }
+}
 
 Future<bool> stopRecordingUploadAndStart() async {
   PostgresConnector postgresconnector = new PostgresConnector();
@@ -685,18 +695,6 @@ Future<bool> stopRecordingUploadAndStart() async {
     }
     return false;
   }
-}
-
-Future<bool> deleteTest() async {
-  BLE_Client bleClient = new BLE_Client();
-  await bleClient.init();
-  await bleClient.connect();
-
-  await bleClient.cleanFlash();
-
-  await bleClient.disconnect();
-
-  return true;
 }
 
 Future<bool> createPermission() async {

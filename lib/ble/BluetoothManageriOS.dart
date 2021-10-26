@@ -63,18 +63,38 @@ class BluetoothManager {
     return true;
   }
 
+  // Future<dynamic> _onTimeout() {
+  //   print("timeout while searching for the device");
+  //
+  //   List<ScanResult> result = [];
+  //   Completer completer = new Completer();
+  //   // _bleManager.stopPeripheralScan();
+  //   completer.complete(false);
+  //
+  //   return completer.future;
+  // }
+
   Future<dynamic> _findMyDevice() async {
     // Method returns the device or false if the device is not visible
     Completer completer = new Completer();
-    List<ScanResult> result = [];
+    List<ScanResult> result;
     String savedDevice = prefs.getString("Devicename");
-    flutterBlue.startScan(timeout: Duration(seconds: 4));
+    flutterBlue.startScan();
 
     try {
-      result = await flutterBlue.scanResults
-          .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult))
-          .timeout(Duration(seconds: 4));
-      await flutterBlue.stopScan();
+      for(int i = 0; i < 5; i++) {
+        result = await flutterBlue.scanResults
+            .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult)).timeout(Duration(seconds: 4), onTimeout: () async {
+          await flutterBlue.stopScan();
+          await Future.delayed(Duration(seconds: 30));
+          return [];
+        });
+        if (result.length > 0) {
+          break;
+        }
+      }
+
+      flutterBlue.stopScan();
       myDevice = result
           .firstWhere((element) => (element.device.name == savedDevice))
           .device;
@@ -106,7 +126,8 @@ class BluetoothManager {
 
   Future<dynamic> connectToSavedDevice() async {
     Completer completer = new Completer();
-    if (await _findMyDevice()) {
+    bool deviceFound = await _findMyDevice();
+    if (deviceFound) {
       Future<bool> returnValue;
       await myDevice.connect(autoConnect: false).timeout(Duration(seconds: 10),
           onTimeout: () {

@@ -28,8 +28,6 @@ import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:trac2move/util/Upload_V2.dart';
-import 'package:trac2move/util/FtpUpload.dart';
 
 StreamSubscription _subscription;
 
@@ -45,19 +43,6 @@ void isolate1(String arg) async {
     await BLEManagerAndroid.stopRecordingUploadAndStart();
   }
 }
-
-// void isolate2(String arg) async {
-//   // FtpUpload uploader = new FtpUpload();
-//   // await uploader.init();
-//   // await uploader.uploadFiles();
-//
-//   // if (Platform.isIOS) {
-//   await uploadActivityDataToServer();
-//   // } else {
-//   //   await uploadActivityDataToServer();
-//   // }
-// }
-
 
 void reloadPage(context) async {
   hideOverlay();
@@ -76,120 +61,125 @@ void reloadPage(context) async {
 class _LandingScreenState extends ResumableState<LandingScreen> {
   @override
   void onReady() async {
-
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool btBusy;
+    try {
+      btBusy = prefs.getBool("btBusy");
+    } catch (e) {
+      btBusy = true;
+      prefs.setBool("btBusy", btBusy);
+    }
     bool uploadSuccessful;
-    if(prefs.getBool("uploadSuccessful") == null) {
+    if (prefs.getBool("uploadSuccessful") == null) {
       uploadSuccessful = true;
     } else {
       uploadSuccessful = prefs.getBool("uploadSuccessful");
     }
-    // uploadSuccessful = false;
     var isUploading = prefs.getBool("uploadInProgress");
-    // if (prefs.getBool("fromIsolate")) {
-      if (isUploading == null || !isUploading) {
-        await prefs.setBool("uploadInProgress", true);
-        try {
-          if (Platform.isIOS) {
-            await BLEManagerIOS.getStepsAndMinutes();
-          } else {
-            await BLEManagerAndroid.getStepsAndMinutes();
-          }
-        } catch (e) {
-          await prefs.setBool("uploadInProgress", false);
-        }
-        if (mounted) {
-          setState(() {
-            // hideOverlay();
-          });
-          await prefs.setBool("uploadInProgress", false);
-        }
-      }
+    if (isUploading == null || !isUploading) {
+      await prefs.setBool("uploadInProgress", true);
       try {
-        _subscription =
-            AwesomeNotifications().actionStream.listen((receivedNotification) {
-          Navigator.of(context).pushNamed('/NotificationPage', arguments: {
-            receivedNotification.id
-          } // your page params. I recommend to you to pass all *receivedNotification* object
-              );
-        });
+        if (Platform.isIOS) {
+          await BLEManagerIOS.getStepsAndMinutes();
+        } else {
+          await BLEManagerAndroid.getStepsAndMinutes();
+        }
       } catch (e) {
-        logError(e);
+        await prefs.setBool("uploadInProgress", false);
       }
-      if (await isbctGroup()) {
-        DateTime lastTime =
-            DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-        int currentActiveMinutes = prefs.getInt("current_active_minutes");
-        int currentSteps = prefs.getInt("current_steps");
-        int lastSteps = prefs.getInt("last_steps");
-        int lastActiveMinutes = prefs.getInt("last_active_minutes");
-        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-        await rules.init(
-            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-        String halfTimeMsgSteps = "";
-        String halfTimeMsgMinutes = "";
-        String dailyStepsReached = rules.dailyStepsReached();
-        String dailyMinutesReached = rules.dailyMinutesReached();
-        if (rules.halfDayCheck()) {
-          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-          halfTimeMsgSteps = rules.halfTimeMsgSteps();
+      if (mounted) {
+        setState(() {
+          // hideOverlay();
+        });
+        await prefs.setBool("uploadInProgress", false);
+      }
+    }
+    try {
+      _subscription =
+          AwesomeNotifications().actionStream.listen((receivedNotification) {
+        Navigator.of(context).pushNamed('/NotificationPage', arguments: {
+          receivedNotification.id
+        } // your page params. I recommend to you to pass all *receivedNotification* object
+            );
+      });
+    } catch (e) {
+      logError(e);
+    }
+    if (await isbctGroup()) {
+      DateTime lastTime =
+          DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
+      int currentActiveMinutes = prefs.getInt("current_active_minutes");
+      int currentSteps = prefs.getInt("current_steps");
+      int lastSteps = prefs.getInt("last_steps");
+      int lastActiveMinutes = prefs.getInt("last_active_minutes");
+      BCT.BCTRuleSet rules = BCT.BCTRuleSet();
+      await rules.init(
+          currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
+      String halfTimeMsgSteps = "";
+      String halfTimeMsgMinutes = "";
+      String dailyStepsReached = rules.dailyStepsReached();
+      String dailyMinutesReached = rules.dailyMinutesReached();
+      if (rules.halfDayCheck()) {
+        halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
+        halfTimeMsgSteps = rules.halfTimeMsgSteps();
+      }
+      if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
+        await prefs.setString(
+            "lastTimeDailyGoalsShown", DateTime.now().toString());
+        if (dailyStepsReached.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Tägliches Schrittziel erreicht',
+                  body: dailyStepsReached));
+          showOverlay(
+              dailyStepsReached,
+              Icon(
+                Icons.thumb_up_alt,
+                color: Colors.green,
+                size: 50.0,
+              ),
+              withButton: true);
         }
-        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
-          await prefs.setString(
-              "lastTimeDailyGoalsShown", DateTime.now().toString());
-          if (dailyStepsReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Tägliches Schrittziel erreicht',
-                    body: dailyStepsReached));
-            showOverlay(
-                dailyStepsReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-          if (dailyMinutesReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Sie sind sehr aktiv!',
-                    body: dailyMinutesReached));
-            showOverlay(
-                dailyMinutesReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-        }
-        if (prefs.getBool("halfTimeAlreadyFired") != null && !prefs.getBool("halfTimeAlreadyFired")) {
-          if (halfTimeMsgSteps.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 3,
-                    channelKey: 'bct_channel',
-                    title: 'Halbzeit, toll gemacht!',
-                    body: halfTimeMsgSteps));
-          }
-          if (halfTimeMsgMinutes.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 4,
-                    channelKey: 'bct_channel',
-                    title: 'Weiter so!',
-                    body: halfTimeMsgMinutes));
-          }
-          prefs.setBool("halfTimeAlreadyFired", true);
+        if (dailyMinutesReached.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 10,
+                  channelKey: 'bct_channel',
+                  title: 'Sie sind sehr aktiv!',
+                  body: dailyMinutesReached));
+          showOverlay(
+              dailyMinutesReached,
+              Icon(
+                Icons.thumb_up_alt,
+                color: Colors.green,
+                size: 50.0,
+              ),
+              withButton: true);
         }
       }
+      if (prefs.getBool("halfTimeAlreadyFired") != null &&
+          !prefs.getBool("halfTimeAlreadyFired")) {
+        if (halfTimeMsgSteps.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 3,
+                  channelKey: 'bct_channel',
+                  title: 'Halbzeit, toll gemacht!',
+                  body: halfTimeMsgSteps));
+        }
+        if (halfTimeMsgMinutes.length > 1) {
+          AwesomeNotifications().createNotification(
+              content: NotificationContent(
+                  id: 4,
+                  channelKey: 'bct_channel',
+                  title: 'Weiter so!',
+                  body: halfTimeMsgMinutes));
+        }
+        prefs.setBool("halfTimeAlreadyFired", true);
+      }
+    }
     if (!uploadSuccessful) {
       showOverlay(
           "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
@@ -198,16 +188,25 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             color: Colors.orange,
             size: 50.0,
           ),
-          withButton: true, buttonType: 'upload');
+          withButton: true,
+          buttonType: 'upload');
     }
+    prefs.setBool("btBusy", false);
   }
 
   @override
   void onResume() async {
     // print("ON RESUME");
     SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool btBusy;
+    try {
+      btBusy = prefs.getBool("btBusy");
+    } catch (e) {
+      btBusy = true;
+      prefs.setBool("btBusy", btBusy);
+    }
     bool uploadSuccessful;
-    if(prefs.getBool("uploadSuccessful") == null) {
+    if (prefs.getBool("uploadSuccessful") == null) {
       uploadSuccessful = true;
     } else {
       uploadSuccessful = prefs.getBool("uploadSuccessful");
@@ -287,7 +286,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 withButton: true);
           }
         }
-        if (prefs.getBool("halfTimeAlreadyFired") != null && !prefs.getBool("halfTimeAlreadyFired")) {
+        if (prefs.getBool("halfTimeAlreadyFired") != null &&
+            !prefs.getBool("halfTimeAlreadyFired")) {
           if (halfTimeMsgSteps.length > 1) {
             AwesomeNotifications().createNotification(
                 content: NotificationContent(
@@ -316,14 +316,14 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             color: Colors.orange,
             size: 50.0,
           ),
-          withButton: true, buttonType: 'upload');
+          withButton: true,
+          buttonType: 'upload');
     }
+    prefs.setBool("btBusy", false);
   }
 
   @override
-  void onPause() {
-
-  }
+  void onPause() {}
 
   @override
   Widget build(BuildContext context) {
@@ -355,7 +355,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               Container(
                   width: size.width,
                   height: size.height * 0.3,
-                  child: _getUploadButton(context)),
+                  child: _getUploadButton1(context)),
             ]),
             Row(children: [
               Image.asset('assets/images/divider.png',
@@ -510,7 +510,15 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                                             ],
                                           ),
                                           textAlign: TextAlign.left,
-                                          presetFontSizes: [20, 19, 18, 15, 12, 10, 8],
+                                          presetFontSizes: [
+                                            20,
+                                            19,
+                                            18,
+                                            15,
+                                            12,
+                                            10,
+                                            8
+                                          ],
                                           minFontSize: 8,
                                           maxFontSize: 20,
                                         ),
@@ -1132,12 +1140,118 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         color: Colors.green,
         onPressed: () async {
           var connectivityResult = await (Connectivity().checkConnectivity());
-          if (connectivityResult == ConnectivityResult.mobile || connectivityResult == ConnectivityResult.wifi) {
+          if (connectivityResult == ConnectivityResult.mobile ||
+              connectivityResult == ConnectivityResult.wifi) {
             await uploadAndSchedule();
           } else {
-            showOverlay("Bitte stellen Sie sicher, dass eine Internetverbindung besteht und starten Sie dann den Ladezyklus erneut.", Icon(Icons.wifi_off,  color: Colors.green, size: 50), withButton: true);
+            showOverlay(
+                "Bitte stellen Sie sicher, dass eine Internetverbindung besteht und starten Sie dann den Ladezyklus erneut.",
+                Icon(Icons.wifi_off, color: Colors.green, size: 50),
+                withButton: true);
           }
+        },
+      ),
+    );
+  }
 
+  Widget _getUploadButton1(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20.0),
+      child: FutureBuilder(
+        future: getBTStatus(),
+        builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return new MaterialButton(
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              shape: new RoundedRectangleBorder(
+                borderRadius: new BorderRadius.circular(50.0),
+              ),
+              child: new Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  new Icon(
+                    Icons.timer,
+                    size: 30,
+                  ),
+                  new Text("Ladezyklus"),
+                  new Icon(
+                    Icons.battery_charging_full_sharp,
+                    size: 30,
+                  ),
+                ],
+              ),
+              textColor: Colors.white,
+              color: Colors.grey,
+              onPressed: () async {},
+            );
+          } else {
+            if (!snapshot.data) {
+              return new MaterialButton(
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: new RoundedRectangleBorder(
+                  borderRadius: new BorderRadius.circular(50.0),
+                ),
+                child: new Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    new Icon(
+                      Icons.timer,
+                      size: 30,
+                    ),
+                    new Text("Ladezyklus"),
+                    new Icon(
+                      Icons.battery_charging_full_sharp,
+                      size: 30,
+                    ),
+                  ],
+                ),
+                textColor: Colors.white,
+                color: Colors.green,
+                onPressed: () async {
+                  var connectivityResult =
+                  await (Connectivity().checkConnectivity());
+                  if (connectivityResult == ConnectivityResult.mobile ||
+                      connectivityResult == ConnectivityResult.wifi) {
+                    await uploadAndSchedule();
+                  } else {
+                    showOverlay(
+                        "Bitte stellen Sie sicher, dass eine Internetverbindung besteht und starten Sie dann den Ladezyklus erneut.",
+                        Icon(Icons.wifi_off, color: Colors.green, size: 50),
+                        withButton: true);
+                  }
+                },
+              );
+            }
+            else {
+              return new MaterialButton(
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                shape: new RoundedRectangleBorder(
+                  borderRadius: new BorderRadius.circular(50.0),
+                ),
+                child: new Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: <Widget>[
+                    new Icon(
+                      Icons.timer,
+                      size: 30,
+                    ),
+                    new Text("Ladezyklus"),
+                    new Icon(
+                      Icons.battery_charging_full_sharp,
+                      size: 30,
+                    ),
+                  ],
+                ),
+                textColor: Colors.white,
+                color: Colors.grey,
+                onPressed: () async {
+                },
+              );
+            }
+          }
         },
       ),
     );
@@ -1171,7 +1285,6 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     return await SharedPreferences.getInstance().then(
       (value) async {
         return value.getInt('current_active_minutes').toString();
-        // });
       },
     );
   }
@@ -1179,20 +1292,25 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
   Future<String> getSteps() async {
     return await SharedPreferences.getInstance().then(
       (value) async {
-        // return await BLE.getStepsAndMinutes().then((completer) {
         return value.getInt('current_steps').toString();
-        // });
       },
     );
   }
 
-  // Future<String> getButtonText() async {
-  //   SharedPreferences prefs = await SharedPreferences.getInstance();
-  //   bool timeNeverSet = await prefs.getBool("timeNeverSet");
-  //   String _buttonText = timeNeverSet ? "Startzeit wählen" : "Ladezyklus";
-  //
-  //   return _buttonText;
-  // }
+  Future<bool> getBTStatus() async {
+    return await SharedPreferences.getInstance().then(
+      (value) async {
+        return value.getBool('btBusy') == null ? false : value.getBool('btBusy');
+        // bool result = value.getBool('btBusy');
+        // if (result == null) {
+        //   return false;
+        // } else {
+        //   return result;
+        // }
+      },
+    );
+  }
+
   Future<bool> isbctGroup() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     List<String> participantAsList = prefs.getStringList("participant");
@@ -1200,6 +1318,4 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
 
     return p.bctGroup;
   }
-
-  // Future<void> loadDataFromBangleAndPushBCTs() async {}
 }
