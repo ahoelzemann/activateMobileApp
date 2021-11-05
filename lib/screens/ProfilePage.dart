@@ -121,12 +121,24 @@ class MapScreenState extends State<ProfilePage> {
       studienIDController = new TextEditingController(text: participant[1]);
       // showBangleID = true;
       bangleIDController.text = participant[3];
+      gender = participant[7];
+      if (gender == 'm') {
+        initialIndex = 0;
+      }
+      else if (gender == 'f') {
+        initialIndex = 1;
+      }
       setState(() {
+
+        bctGroup = participant[6].toLowerCase() == 'true';
         List<String> datestring = participant[4].split(".");
         int day = int.parse(datestring[0]);
         int month = int.parse(datestring[1]);
         int year = int.parse(datestring[2]);
         selectedDate = DateTime(year, month, day);
+        // bctGroup = participant[7];
+        agreedOnTerms = participant[8];
+
         // initValues['ageToSave'] = 0;
         setState(() {
           radioButtonItem = participant[5];
@@ -281,11 +293,13 @@ class MapScreenState extends State<ProfilePage> {
                                 ToggleSwitch(
                                   minWidth: 50.0,
                                   minHeight: 35.0,
+                                  totalSwitches: 3,
                                   initialLabelIndex: initialIndex,
-                                  cornerRadius: 20.0,
+                                  activeBgColor: [Colors.green],
                                   activeFgColor: Colors.white,
                                   inactiveBgColor: Colors.grey,
-                                  inactiveFgColor: Colors.white,
+                                  inactiveFgColor: Colors.grey[900],
+                                  cornerRadius: 20.0,
                                   labels: ['M', 'W', 'D'],
                                   icons: [
                                     Icons.male,
@@ -293,11 +307,9 @@ class MapScreenState extends State<ProfilePage> {
                                     Icons.transgender
                                   ],
                                   iconSize: 30.0,
-                                  activeBgColors: [
-                                    Colors.green,
-                                    Colors.green,
-                                    Colors.green
-                                  ],
+                                  // activeBgColors:
+                                  //   [[Color.fromRGBO(0, 136, 0, 1.0), Color.fromRGBO(0, 136, 0, 1.0), Color.fromRGBO(0, 136, 0, 1.0)]]
+                                  // ,
                                   onToggle: (index) {
                                     if (index == 0) {
                                       gender = "m";

@@ -28,6 +28,7 @@ import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+// import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 
 StreamSubscription _subscription;
 
@@ -745,79 +746,14 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             // ),
             // ListTile(
             //   title: Text(
-            //     'Stopp erzwingen',
+            //     'Test Experimental BT Connector',
             //     style: TextStyle(
             //         fontFamily: "PlayfairDisplay",
             //         fontWeight: FontWeight.bold,
             //         color: Colors.black),
             //   ),
             //   onTap: () async {
-            //     SharedPreferences prefs = await SharedPreferences.getInstance();
-            //
-            //     // if (!btState) {
-            //       await BLEManagerAndroid.refresh();
-            //     // }
-            //     TimeOfDay _time = TimeOfDay(hour: 7, minute: 0);
-            //     Navigator.of(context).push(showPicker(
-            //         context: context,
-            //         hourLabel: "Stunden",
-            //         minuteLabel: "Minuten",
-            //         okText: "Bestätigen",
-            //         cancelText: "Abbrechen",
-            //         disableMinute: true,
-            //         disableHour: false,
-            //         is24HrFormat: true,
-            //         value: _time,
-            //         onChange: (dateTime) async {
-            //           showOverlay(
-            //               'Ihre Geräte werden geladen.',
-            //               SpinKitFadingCircle(
-            //                 color: Colors.orange,
-            //                 size: 50.0,
-            //               ));
-            //           prefs.setInt("recordingWillStartAt", dateTime.hour);
-            //           if (Platform.isAndroid) {
-            //             prefs.setBool("uploadInProgress", true);
-            //             AppServiceData data = AppServiceData();
-            //             try {
-            //               String _result = 'result';
-            //               var result = await AppClient.execute(data);
-            //               var resultData = AppServiceData.fromJson(result);
-            //               setState(() => _result =
-            //               'finished executing service process ;) -> ${resultData.progress}');
-            //
-            //               prefs.setBool("isRecording", false);
-            //               prefs.setBool("uploadInProgress", false);
-            //               prefs.setBool("timeNeverSet", false);
-            //               _reloadPage(context);
-            //               return true;
-            //             } catch (e, stacktrace) {
-            //               print(e);
-            //               print(stacktrace);
-            //
-            //               return false;
-            //             }
-            //           } else {
-            //             SharedPreferences prefs = await SharedPreferences.getInstance();
-            //             bool timeNeverSet = prefs.getBool("timeNeverSet");
-            //             if (!timeNeverSet) {
-            //               await BLEManagerIOS.stopRecordingAndUpload();
-            //             }
-            //             await BLEManagerIOS.syncTimeAndStartRecording();
-            //             hideOverlay();
-            //             prefs.setBool("isRecording", false);
-            //             prefs.setBool("uploadInProgress", false);
-            //             prefs.setBool("timeNeverSet", false);
-            //             _reloadPage(context);
-            //
-            //             return true;
-            //           }
-            //         },
-            //         onChangeDateTime: (dateTime) async {
-            //           (await SharedPreferences.getInstance())
-            //               .setString("recordingWillStartAtString", checkIfTimeIsToday(dateTime).toString());
-            //         }
-            //     ));
+            //      await BTExperimental.testConnector();
             //   },
             // ),
 

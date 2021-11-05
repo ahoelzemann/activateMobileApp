@@ -1,4 +1,5 @@
 import 'dart:async';
+
 // import 'dart:ffi';
 import 'dart:typed_data';
 import 'dart:ui';
@@ -47,6 +48,7 @@ class BluetoothManager {
   List<dynamic> _downloadedFiles = [];
   int lastUploadedFile = 0;
   int globalTimer;
+  String osVersion = "None";
 
   Future<bool> asyncInit() async {
     await FlutterBlue.BlowItUp();
@@ -82,9 +84,10 @@ class BluetoothManager {
     flutterBlue.startScan();
 
     try {
-      for(int i = 0; i < 5; i++) {
+      for (int i = 0; i < 5; i++) {
         result = await flutterBlue.scanResults
-            .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult)).timeout(Duration(seconds: 4), onTimeout: () async {
+            .firstWhere((scanResult) => _isSavedDeviceVisible(scanResult))
+            .timeout(Duration(seconds: 4), onTimeout: () async {
           await flutterBlue.stopScan();
           await Future.delayed(Duration(seconds: 30));
           return [];
@@ -129,6 +132,7 @@ class BluetoothManager {
     bool deviceFound = await _findMyDevice();
     if (deviceFound) {
       Future<bool> returnValue;
+      await Future.delayed(Duration(seconds: 8));
       await myDevice.connect(autoConnect: false).timeout(Duration(seconds: 10),
           onTimeout: () {
         debugPrint('timeout occured');
@@ -250,6 +254,63 @@ class BluetoothManager {
     return completer.future;
   }
 
+  Future<dynamic> _getOSVersion() async {
+    Completer completer = new Completer();
+
+    debugPrint('checkingOsVersion');
+    StreamSubscription _responseSubscription;
+    String versionCmd = "verString\n";
+    String result = "";
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
+    _responseSubscription = characTX.value.timeout(Duration(seconds: 5),
+        onTimeout: (timeout) async {
+      if (result.contains("Uncaught")) {
+        await _responseSubscription.cancel();
+        result = await _getOSVersionBangleModule();
+        osVersion = result;
+        completer.complete(result);
+      } else {
+        print(result);
+      }
+    }).listen((event) async {
+      debugPrint(event.toString() + "  //////////////");
+      result += String.fromCharCodes(event);
+    });
+    await characRX.write(Uint8List.fromList(versionCmd.codeUnits),
+        withoutResponse: false);
+
+    return completer.future;
+  }
+
+  Future<dynamic> _getOSVersionBangleModule() async {
+    Completer completer = new Completer();
+
+    debugPrint('checkingOsVersion with Bangle Module');
+    StreamSubscription _responseSubscription;
+    String versionCmd = "Bangle.verString\n";
+    String result = "";
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
+    banglePrefix = true;
+    _responseSubscription = characTX.value.timeout(Duration(seconds: 3),
+        onTimeout: (timeout) async {
+          await _responseSubscription.cancel();
+          completer.complete(result);
+    }).listen((event) async {
+      debugPrint(event.toString() + "  //////////////");
+      if (event.length > 0) {
+        result = String.fromCharCodes(event);
+      }
+    });
+    await characRX.write(Uint8List.fromList(versionCmd.codeUnits),
+        withoutResponse: false);
+
+    return completer.future;
+  }
+
   Future<dynamic> _syncTime() async {
     await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
@@ -257,10 +318,19 @@ class BluetoothManager {
     DateTime date = DateTime.now();
     int currentTimeZoneOffset = date.timeZoneOffset.inHours;
     debugPrint('setting time');
+    String version = await _getOSVersion();
     String timeCmd = "\u0010setTime(";
     await characRX.write(Uint8List.fromList(timeCmd.codeUnits),
         withoutResponse: true);
-    timeCmd = (date.millisecondsSinceEpoch / 1000).toString() + ");";
+  // timeCmd =
+    // if (version.contains("7.0")) {
+      timeCmd = version.contains("7.0") ? ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
+          ");" : ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
+          ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
+              ");";
+    // } else {
+    //   timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
+    // }
     await characRX.write(Uint8List.fromList(timeCmd.codeUnits),
         withoutResponse: true);
     timeCmd = "if (E.setTimeZone) ";
@@ -270,7 +340,7 @@ class BluetoothManager {
     await characRX.write(Uint8List.fromList(timeCmd.codeUnits),
         withoutResponse: false);
 
-    await Future.delayed(Duration(milliseconds: 500));
+    await characTX.setNotifyValue(false);
     completer.complete(true);
     return completer.future;
   }
@@ -281,6 +351,9 @@ class BluetoothManager {
     debugPrint("Sending  stpUp command...");
     String cmd = "";
     String dt = "";
+    await characTX.setNotifyValue(false);
+    await Future.delayed(const Duration(milliseconds: 500));
+    await characTX.setNotifyValue(true);
     if (banglePrefix) {
       cmd = "Bangle.stpUp($HZ,$GS,$hour)\n";
     } else {
@@ -326,12 +399,18 @@ class BluetoothManager {
     StreamSubscription bleSubscription;
     debugPrint("Sending  start Upload command...");
     await Future.delayed(const Duration(seconds: 5));
-    cmd = "startUpload()\n";
     String dt = "";
     int numOfFiles = 0;
     await characTX.setNotifyValue(false);
-    await Future.delayed(const Duration(milliseconds: 500));
+    await Future.delayed(const Duration(milliseconds: 1000));
     await characTX.setNotifyValue(true);
+
+    if (!banglePrefix) {
+      cmd= "startUpload()\n";
+    } else {
+      cmd = "Bangle.startUpload()\n";
+    }
+
     bleSubscription = characTX.value.timeout(Duration(seconds: 2),
         onTimeout: (timeout) async {
       if (dt.contains("Uncaught")) {
@@ -342,6 +421,10 @@ class BluetoothManager {
         if (dt.length == 0) {
           numOfFiles = 0;
         } else {
+          List dt_list = dt.split("=");
+          if (dt_list.length > 1) {
+            dt = dt_list[1];
+          }
           dt = dt.replaceAll(new RegExp(r'[/\D/g]'), '');
           numOfFiles = int.parse(dt);
         }
@@ -625,6 +708,9 @@ Future<dynamic> stopRecordingAndUpload() async {
     await Future.delayed(const Duration(milliseconds: 700));
     await bleManager._syncTime();
     print("syncing time");
+    await bleManager.disconnectFromDevice();
+    await bleManager.asyncInit();
+    await bleManager.connectToSavedDevice();
     await Future.delayed(const Duration(milliseconds: 700));
     await bleManager.startUpload();
     await bleManager.stpUp(12.5, 8, hour);

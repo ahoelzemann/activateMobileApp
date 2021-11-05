@@ -32,7 +32,6 @@ if (keystorePropertiesFile.exists()) {
 }
 
 android {
-    compileSdkVersion 30
 
     sourceSets {
         main.java.srcDirs += 'src/main/kotlin'
@@ -40,10 +39,11 @@ android {
 
     defaultConfig {
         applicationId "com.activate.trac2move"
-        minSdkVersion 23
-        targetSdkVersion 30
-        versionName "3.0.9"
-        versionCode 61
+        minSdkVersion 27
+        compileSdkVersion 30
+//        targetSdkVersion 32
+        versionName "3.1.0"
+        versionCode 62
     }
     signingConfigs {
         release {

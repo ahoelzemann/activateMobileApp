@@ -3,7 +3,7 @@ import 'dart:ui';
 
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:ssh/ssh.dart';
+import 'package:ssh2/ssh2.dart';
 
 // import 'package:ssh2/ssh2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
