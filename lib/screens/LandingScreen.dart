@@ -17,18 +17,18 @@ import 'package:trac2move/screens/Contact.dart';
 import 'package:evil_icons_flutter/evil_icons_flutter.dart';
 import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
-    as BLEManagerAndroid;
+// import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
+//     as BLEManagerAndroid;
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/FAQ.dart';
-import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
+// import 'package:trac2move/ble/BluetoothManageriOS.dart' as BLEManagerIOS;
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-// import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
+import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 
 StreamSubscription _subscription;
 
@@ -38,11 +38,12 @@ class LandingScreen extends StatefulWidget {
 }
 
 void isolate1(String arg) async {
-  if (Platform.isIOS) {
-    await BLEManagerIOS.stopRecordingAndUpload();
-  } else {
-    await BLEManagerAndroid.stopRecordingUploadAndStart();
-  }
+  await BTExperimental.stopRecordingAndUpload();
+  // if (Platform.isIOS) {
+  //   await BLEManagerIOS.stopRecordingAndUpload();
+  // } else {
+  //   await BLEManagerAndroid.stopRecordingUploadAndStart();
+  // }
 }
 
 void reloadPage(context) async {
@@ -81,9 +82,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       await prefs.setBool("uploadInProgress", true);
       try {
         if (Platform.isIOS) {
-          await BLEManagerIOS.getStepsAndMinutes();
-        } else {
-          await BLEManagerAndroid.getStepsAndMinutes();
+          // await BLEManagerIOS.getStepsAndMinutes();
+        // } else {
+        //   await BLEManagerAndroid.getStepsAndMinutes();
         }
       } catch (e) {
         await prefs.setBool("uploadInProgress", false);
@@ -221,11 +222,11 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     if (isUploading == null || !isUploading) {
       await prefs.setBool("uploadInProgress", true);
       try {
-        if (Platform.isIOS) {
-          await BLEManagerIOS.getStepsAndMinutes();
-        } else {
-          await BLEManagerAndroid.getStepsAndMinutes();
-        }
+        // if (Platform.isIOS) {
+        //   await BLEManagerIOS.getStepsAndMinutes();
+        // } else {
+        //   await BLEManagerAndroid.getStepsAndMinutes();
+        // }
       } catch (e) {
         await prefs.setBool("uploadInProgress", false);
       }
@@ -744,18 +745,19 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             //     hideOverlay();
             //   },
             // ),
-            // ListTile(
-            //   title: Text(
-            //     'Test Experimental BT Connector',
-            //     style: TextStyle(
-            //         fontFamily: "PlayfairDisplay",
-            //         fontWeight: FontWeight.bold,
-            //         color: Colors.black),
-            //   ),
-            //   onTap: () async {
-            //      await BTExperimental.testConnector();
-            //   },
-            // ),
+            ListTile(
+              title: Text(
+                'Test Experimental BT Connector',
+                style: TextStyle(
+                    fontFamily: "PlayfairDisplay",
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black),
+              ),
+              onTap: () async {
+                 isolate1("");
+                // final flutterIsolate = await FlutterIsolate.spawn(isolate1, "");
+              },
+            ),
 
             FutureBuilder(
                 future: isbctGroup(),

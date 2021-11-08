@@ -7,8 +7,8 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
-    as BLEManagerAndroid;
+// import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
+//     as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,7 +21,7 @@ import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 // import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
+import 'package:trac2move/ble/BTExperimental.dart' as BLEManager;
 import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
@@ -34,7 +34,6 @@ void main() async {
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
   Fimber.plantTree(FileLoggerTree());
   Fimber.e(DateTime.now().toString() + " Beginning Log File:");
-  // await Executor().warmUp(isolatesCount: 10, log:true);
   int status = await BackgroundFetch.status;
   if (status != BackgroundFetch.STATUS_AVAILABLE) {
     print("Background App Refresh isn't activated.");
@@ -89,7 +88,7 @@ void main() async {
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
-        BLEManagerAndroid.createPermission();
+        await BLEManager.getPermission();
       }
     }
 
@@ -155,15 +154,15 @@ void main() async {
           int lastSteps = prefs.getInt("current_steps");
           int lastActiveMinutes = prefs.getInt("current_active_minutes");
           if (!isUploading) {
-            try {
-              if (Platform.isIOS) {
-                await BLEManagerIOS.getStepsAndMinutes();
-              } else {
-                await BLEManagerAndroid.getStepsAndMinutes();
-              }
-            } catch (e) {
-              await prefs.setBool("uploadInProgress", false);
-            }
+            // try {
+              // if (Platform.isIOS) {
+              //   await BLEManagerIOS.getStepsAndMinutes();
+              // } else {
+              //   await BLEManagerAndroid.getStepsAndMinutes();
+              // }
+            // } catch (e) {
+            //   await prefs.setBool("uploadInProgress", false);
+            // }
           }
 
           if (await isbctGroup()) {
@@ -232,17 +231,17 @@ void main() async {
         var isUploading = prefs.getBool("uploadInProgress");
         int lastSteps = prefs.getInt("current_steps");
         int lastActiveMinutes = prefs.getInt("current_active_minutes");
-        if (!isUploading) {
-          try {
-            if (Platform.isIOS) {
-              await BLEManagerIOS.getStepsAndMinutes();
-            } else {
-              await BLEManagerAndroid.getStepsAndMinutes();
-            }
-          } catch (e) {
-            await prefs.setBool("uploadInProgress", false);
-          }
-        }
+        // if (!isUploading) {
+        //   try {
+        //     if (Platform.isIOS) {
+        //       await BLEManagerIOS.getStepsAndMinutes();
+        //     } else {
+        //       await BLEManagerAndroid.getStepsAndMinutes();
+        //     }
+        //   } catch (e) {
+        //     await prefs.setBool("uploadInProgress", false);
+        //   }
+        // }
 
         if (await isbctGroup()) {
           int currentActiveMinutes = prefs.getInt("current_active_minutes");

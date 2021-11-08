@@ -7,7 +7,7 @@ import 'package:trac2move/screens/LandingScreen.dart';
 import 'package:trac2move/persistant/PostgresConnector.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/ble/BluetoothManagerIOS.dart' as BLEManagerIOS;
+import 'package:trac2move/ble/BTExperimental.dart' as BLEManagerIOS;
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:trac2move/screens/Terms.dart';
 import 'dart:io' show Platform;
