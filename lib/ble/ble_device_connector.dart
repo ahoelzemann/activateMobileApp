@@ -16,25 +16,34 @@ class BleDeviceConnector{
   // ignore: cancel_subscriptions
   StreamSubscription<ConnectionStateUpdate> _connection;
 
-  Future<void> connect(String deviceId) async {
+  Future<dynamic> connect(String deviceId) async {
+    Completer completer = new Completer();
     print('Start connecting to $deviceId');
-    _connection = _ble.connectToDevice(id: deviceId).listen(
-          (update) {
-        print(
-            'ConnectionState for device $deviceId : ${update.connectionState}');
+    _connection = _ble.connectToDevice(id: deviceId).listen((update) {
+        print('ConnectionState for device '
+            '$deviceId : ${update.connectionState}');
         _deviceConnectionController.add(update);
+        if (update.connectionState == DeviceConnectionState.connected) {
+          completer.complete(true);
+        }
       },
-      onError: (Object e) =>
-          print('Connecting to device $deviceId resulted in error $e'),
+      onError: (Object e) {
+        print('Connecting to device $deviceId resulted in error $e');
+        completer.complete(false);
+      }
     );
+    return completer.future;
   }
 
-  Future<void> disconnect(String deviceId) async {
+  Future disconnect(String deviceId) async {
+    Completer completer = new Completer();
     try {
       print('disconnecting from device: $deviceId');
       await _connection.cancel();
+      // completer.complete(true);
     } on Exception catch (e, _) {
       print("Error disconnecting from a device: $e");
+      completer.complete(false);
     } finally {
       // Since [_connection] subscription is terminated, the "disconnected" state cannot be received and propagated
       _deviceConnectionController.add(
@@ -44,10 +53,16 @@ class BleDeviceConnector{
           failure: null,
         ),
       );
+
     }
+
+    // return completer.future;
   }
 
-  Future<void> dispose() async {
+  Future<bool> dispose() async {
+
     await _deviceConnectionController.close();
+    return true;
+
   }
 }

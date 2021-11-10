@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 
@@ -21,6 +23,10 @@ Future<bool> setGlobalConnectionTimer(seconds) async {
   } catch (e) {
     return false;
   }
+}
+
+Future<void> writeToFile(List<int> data, String path) {
+  return new File(path).writeAsBytes(data);
 }
 
 Future<int> getLastUploadedFileNumber() async {
