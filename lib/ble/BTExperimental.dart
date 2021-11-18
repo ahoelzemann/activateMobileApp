@@ -14,24 +14,6 @@ import 'package:trac2move/ble/ble_device_connector.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
 import 'package:trac2move/util/Upload_V2.dart';
 
-// BluetoothManager external_manager;
-
-Future<void> downloadWrapper(Map<String, dynamic> context) async {
-// manager = arg.elementAt(0);
-  BluetoothManager manager = context["manager"];
-  await manager._startUpload();
-  await Future.delayed(Duration(seconds: 1));
-  await manager.stpUp(12.5, 8, manager.hour);
-  await Future.delayed(Duration(seconds: 1));
-  manager._disconnect();
-}
-
-Future<void> uploadWrapper(Map<String, dynamic> context) async {
-  // BluetoothManager manager = arg.elementAt(0);
-  BluetoothManager manager = context["manager"];
-  manager.pg_connector.saveStepsandMinutes();
-  await manager.uploader.uploadFiles();
-}
 
 class BluetoothManager {
   static final BluetoothManager _bluetoothManager =
@@ -41,7 +23,6 @@ class BluetoothManager {
 
   BluetoothManager._internal();
 
-  String managerState = "";
   DeviceConnectionState connectionState;
   PostgresConnector pg_connector;
   Upload uploader;
@@ -83,20 +64,19 @@ class BluetoothManager {
     pg_connector = new PostgresConnector();
     uploader = new Upload();
     await uploader.init();
-    managerState = "initialized";
   }
 
   Future<dynamic> _discoverMyDevice() async {
     print("scanning for devices");
     Completer completer = new Completer();
     StreamSubscription<DiscoveredDevice> deviceSubscription;
-    deviceSubscription = _ble.scanForDevices(withServices: [
-      ISSC_PROPRIETARY_SERVICE_UUID
-    ], scanMode: ScanMode.lowLatency).timeout(Duration(seconds: 3),
+    deviceSubscription = _ble.scanForDevices(withServices: [ISSC_PROPRIETARY_SERVICE_UUID
+    ], scanMode: ScanMode.balanced).timeout(Duration(seconds: 30),
         onTimeout: (timeOut) async {
       await deviceSubscription.cancel();
       completer.complete(false);
     }).listen((device) async {
+      print(device.name);
       if (device.name == savedDevice) {
         savedId = device.id;
         print(device.manufacturerData);
@@ -138,7 +118,6 @@ class BluetoothManager {
     // await Future.delayed(Duration(seconds: 20));
     print("connected! now discovering characteristics");
     connectionState = DeviceConnectionState.connected;
-    managerState = "connected";
     completer.complete(true);
     return completer.future;
   }
@@ -146,43 +125,37 @@ class BluetoothManager {
   Future<dynamic> _disconnect() async {
     // Completer completer = new Completer();
     connector.disconnect(savedId);
-    managerState = "disconnected";
     connectionState = DeviceConnectionState.disconnected;
-    // _connector.dispose();
-    // final port = IsolateNameServer.lookupPortByName('uploadIsolate');
-    //
-    // if (port != null) {
-    //   port.send('done');
-    // } else {
-    //   print('port is null');
-    //  }
 
     return true;
   }
 
-  Future<dynamic> _checkIfBLAndLocationIsActive() {
+  Future<dynamic> _checkIfBLAndLocationIsActive() async {
     Completer completer = new Completer();
-    if (Platform.isAndroid) {
-      if (_ble.status == BleStatus.locationServicesDisabled) {
-        completer.complete("locationPoweredOff");
+    _ble.statusStream.listen((event) async {
+      // if (_ble.status == BleStatus.poweredOff) {
+      //   completer.complete("blePoweredOff");
+      // }
+      if (event == BleStatus.ready) {
+        await Future.delayed(Duration(milliseconds: 1500));
+        completer.complete("ready");
+      // }
+      // if (_ble.status == BleStatus.unknown) {
+      //   completer.complete("ready");
       }
-    }
-    if (_ble.status == BleStatus.poweredOff) {
-      completer.complete("blePoweredOff");
-    }
-    if (_ble.status == BleStatus.ready) {
-      completer.complete("ready");
-    }
-    if (_ble.status == BleStatus.unknown) {
-      completer.complete("ready");
-    }
+
+    });
+    // if (Platform.isAndroid) {
+    //   if (_ble.status == BleStatus.locationServicesDisabled) {
+    //     completer.complete("locationPoweredOff");
+    //   }
+    // }
     return completer.future;
   }
 
   Future<dynamic> _getOsVersion() async {
     await Future.delayed(Duration(milliseconds: 500));
     Completer completer = new Completer();
-    managerState = "working";
     QualifiedCharacteristic characTX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_TX,
@@ -193,7 +166,6 @@ class BluetoothManager {
         deviceId: savedId);
 
     debugPrint('checkingOsVersion');
-    // StreamSubscription _responseSubscription;
     String versionCmd = "verString\n";
     subscription =
         _ble.subscribeToCharacteristic(characTX).listen((data) async {
@@ -261,7 +233,6 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    // StreamSubscription _responseSubscription;
     DateTime date = DateTime.now();
     int currentTimeZoneOffset = date.timeZoneOffset.inHours;
     debugPrint('setting time');
@@ -359,7 +330,6 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    // StreamSubscription _characSubscription;
     subscription = _ble
         .subscribeToCharacteristic(characTX)
     //     .timeout(Duration(seconds: 30), onTimeout: (timeout) async {
@@ -417,7 +387,6 @@ class BluetoothManager {
             event[16] == 110) {
           _fileName = String.fromCharCodes(event);
           print("Saving: " + _fileName);
-          // _logData = 1;
         }
       } else {
         _data.addAll(event);
@@ -470,7 +439,6 @@ class BluetoothManager {
       });
 
       while (_currentResult == null && try_counter != maxtrys) {
-
         if (Platform.isIOS) {
           try {
             if (_ble.status != BleStatus.ready) {
@@ -558,7 +526,7 @@ class BluetoothManager {
           value: Uint8List.fromList(prefix.codeUnits));
       await Future.delayed(Duration(milliseconds: 500));
     }
-    // StreamSubscription _responseSubscription;
+
     subscription = _ble
         .subscribeToCharacteristic(characTX)
         .timeout(Duration(seconds: 3), onTimeout: (timeout) async {
@@ -589,8 +557,6 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_TX,
         deviceId: savedId);
-
-    // StreamSubscription _responseSubscription;
 
     subscription = _ble
         .subscribeToCharacteristic(characTX)
@@ -685,7 +651,6 @@ Future<dynamic> findNearestDevice() async {
       await Future.delayed(Duration(seconds: 5));
 
       prefs.setString("Devicename", bangle[0]);
-      // prefs.setString("device_id", bangle[1]);
       print("Nearest Device: " + bangle[0]);
       completer.complete(true);
     } catch (e) {
@@ -700,12 +665,9 @@ Future<dynamic> findNearestDevice() async {
       onTimeout: (timeout) async {
     if (bangles.length == 0) {
       await deviceSubscription.cancel();
-      // updateOverlayText(
-      //     "Wir konnten keine Bangle.js finden. Bitte initialisieren Sie sowohl Bluetooth, als auch ihre GPS-Verbindung neu und versuchen Sie es dann erneut.");
       completer.complete(false);
     }
   }).listen((device) async {
-    // print(device);
     bangles[device.name + "#" + device.id] = device.rssi;
   }, onError: (error) {
     updateOverlayText(
@@ -716,156 +678,29 @@ Future<dynamic> findNearestDevice() async {
   return completer.future;
 }
 
-Future<dynamic> testConnector() async {
-  await findNearestDevice();
-  return true;
+Future<dynamic> getStepsAndMinutes() async {
+  Completer completer = new Completer();
+  BluetoothManager manager = new BluetoothManager();
+  await manager._asyncInit();
+  manager.hour = manager.prefs.getInt("recordingWillStartAt");
+  await manager._checkIfBLAndLocationIsActive().then((value) {
+    if (value != "ready") {
+      if (value == "blePoweredOff") {
+        //tbd
+      } else if (value == "bleLocationOff") {
+        // tbd
+      }
+    } else {
+      print("ble is available.");
+    }
+  });
+  bool deviceVisible = await manager._discoverMyDevice();
+  if (!deviceVisible) {
+    completer.complete(false);
+  }
+
+  return completer.future;
 }
-
-// Future<dynamic> stopRecordingAndUpload2() async {
-//   Completer completer = new Completer();
-//
-//   BluetoothManager manager = new BluetoothManager();
-//   final port = IsolateNameServer.lookupPortByName('main');
-//   print("initializing the ble manager");
-//   await manager._asyncInit();
-//   manager.hour = manager.prefs.getInt("recordingWillStartAt");
-//   print("checking if ble is available....");
-//   String btAndLocationActive = await manager._checkIfBLAndLocationIsActive();
-//   print("ble is available.");
-//   if (btAndLocationActive != "ready") {
-//     if (btAndLocationActive == "blePoweredOff") {
-//       showOverlay(
-//           "Bluetooth nicht verfügbar. Bitte aktivieren Sie die Bluetoothverbindung und versuchen Sie es erneut.",
-//           Icon(Icons.bluetooth, color: Colors.blue, size: 30),
-//           withButton: true);
-//     } else if (btAndLocationActive == "bleLocationOff") {
-//       showOverlay(
-//           "Ihr Standort ist nicht verfügbar. Bitte aktivieren Sie die Standorterfassung und versuchen Sie es erneut.",
-//           Icon(Icons.location_on, color: Colors.blue, size: 30),
-//           withButton: true);
-//     }
-//     manager._connector.dispose();
-//     manager = null;
-//     completer.complete(false);
-//   } else {
-//     var result = await manager._discoverMyDevice();
-//     if (result == false) {
-//       // manager._connector.dispose();
-//       manager = null;
-//       if (port != null) {
-//         port.send('cantConnect');
-//       } else {
-//         print('port is null');
-//       }
-//       completer.complete(false);
-//     } else {
-//       await manager._connect().then((value) {
-//         if (!value) {
-//           if (port != null) {
-//             port.send('cantConnect');
-//           } else {
-//             print('port is null');
-//           }
-//         }
-//       });
-//       manager._connector.state.listen((event) async {
-//         // bool uploading = manager.prefs.getBool("uploadInProgress");
-//         // if (event.connectionState == DeviceConnectionState.disconnected &&
-//         //     uploading) {
-//         //   manager._ble.clearGattCache(manager.savedId);
-//         //   manager = null;
-//         //   await Future.delayed(Duration(seconds: 60));
-//         //   manager = new BluetoothManager();
-//         //   await manager._asyncInit();
-//         //   await manager._discoverMyDevice();
-//         //   await manager._connect().then((value) {
-//         //     if (!value) {
-//         //       if (port != null) {
-//         //         port.send('cantConnect');
-//         //       } else {
-//         //         print('port is null');
-//         //       }
-//         //     }
-//         //   });
-//         //   await manager._isStillSending();
-//         //   await manager._syncTime();
-//         //   await Future.delayed(Duration(seconds: 1));
-//         //   await manager._startUpload();
-//         //   await Future.delayed(Duration(seconds: 1));
-//         //   await manager.stpUp(12.5, 8, manager.hour);
-//         //   await Future.delayed(Duration(seconds: 1));
-//         //
-//         //   await manager.prefs.setBool("uploadInProgress", false);
-//         //   await manager._disconnect();
-//         //   await Future.delayed(Duration(seconds: 2));
-//         //   await setLastUploadedFileNumber(-1);
-//         //   await manager.pg_connector.saveStepsandMinutes();
-//         //   await Future.delayed(Duration(seconds: 1));
-//         //
-//         //   // await manager.prefs.setBool("fromIsolate", false);
-//         //
-//         //   await Future.delayed(Duration(seconds: 1));
-//         //   manager = null;
-//         //   await uploadActivityDataToServer();
-//         //   completer.complete(true);
-//         // }
-//       });
-//       await manager._isStillSending();
-//       await manager._getOsVersion();
-//       if (manager.prefix != "") {
-//         await Future.delayed(Duration(seconds: 5));
-//         await manager._getOSVersionWithPrefix();
-//         print("final osVersion:" + manager.osVersion.toString());
-//       }
-//       await manager._syncTime();
-//       await Future.delayed(Duration(seconds: 1));
-//       await manager._startUpload();
-//       await Future.delayed(Duration(seconds: 1));
-//       await manager.stpUp(12.5, 8, manager.hour);
-//       await Future.delayed(Duration(seconds: 2));
-//       await manager.prefs.setBool("uploadInProgress", false);
-//       await manager._disconnect();
-//       await Future.delayed(Duration(seconds: 2));
-//       await setLastUploadedFileNumber(-1);
-//       await manager.pg_connector.saveStepsandMinutes();
-//       await Future.delayed(Duration(seconds: 1));
-//
-//       // await manager.prefs.setBool("fromIsolate", false);
-//
-//       await Future.delayed(Duration(seconds: 1));
-//       manager = null;
-//       await uploadActivityDataToServer();
-//       completer.complete(true);
-//     }
-//   }
-//
-//   return completer.future;
-// }
-
-// Future<dynamic> stopRecordingAndUpload() async {
-//   Completer completer = new Completer();
-//   // int maxRuns = 5;
-//   BluetoothManager manager;
-//   // for (int i = 0; i < maxRuns; i++) {
-//   //   print("run " + i.toString());
-//     manager = await uploadRoutine(i).timeout(const Duration(hours: 3));
-//     // if (manager.managerState != "done") {
-//     //   if (i == maxRuns - 1) {
-//     //     break;
-//     //   }
-//       // if (Platform.isAndroid) {
-//       //   manager._ble.clearGattCache(manager.savedId);
-//       // }
-//       // manager = null;
-//       // print("waiting 4 minutes");
-//       // await Future.delayed(Duration(minutes: 4));
-//     // } else {
-//     //   break;
-//     // }
-//   // }
-//   completer.complete(manager);
-//   return completer.future;
-// }
 
 Future<dynamic> stopRecordingAndUpload() async {
   Completer completer = new Completer();
@@ -884,9 +719,9 @@ Future<dynamic> stopRecordingAndUpload() async {
       print("ble is available.");
     }
   });
-  if (!await manager._discoverMyDevice()) {
+  bool deviceVisible = await manager._discoverMyDevice();
+  if (!deviceVisible) {
     if (port != null) {
-      manager.managerState = "failed";
       completer.complete(manager);
       port.send('cantConnect');
     } else {
@@ -896,7 +731,6 @@ Future<dynamic> stopRecordingAndUpload() async {
   await manager._connect().then((value) {
     if (!value) {
       if (port != null) {
-        manager.managerState = "failed";
         completer.complete(manager);
         port.send('cantConnect');
       } else {
@@ -910,7 +744,7 @@ Future<dynamic> stopRecordingAndUpload() async {
     bool uploading = manager.prefs.getBool("uploadInProgress");
     if (event.connectionState == DeviceConnectionState.disconnected &&
         uploading) {
-      if (Platform.isAndroid) {
+      if (Platform.isAndroid || Platform.isIOS) {
         try {
           manager.subscription.cancel();
           manager.connector.dispose();
@@ -924,22 +758,22 @@ Future<dynamic> stopRecordingAndUpload() async {
         } else {
           print('port is null');
         }
-      } else {
-        await Future.delayed(Duration(minutes: 4));
-        for (int i=0; i<5;i++) {
-          await manager._connect().then((value) {
-            if (!value && i==5) {
-              if (port != null) {
-                manager.managerState = "failed";
-                completer.complete(manager);
-                port.send('cantConnect');
-              } else {
-                print('port is null');
-              }
-            }
-          });
-        }
       }
+      // else {
+      //   await Future.delayed(Duration(minutes: 4));
+      //   for (int i=0; i<5;i++) {
+      //     await manager._connect().then((value) {
+      //       if (!value && i==5) {
+      //         if (port != null) {
+      //           completer.complete(manager);
+      //           port.send('cantConnect');
+      //         } else {
+      //           print('port is null');
+      //         }
+      //       }
+      //     });
+      //   }
+      // }
     }
   })..onError((error) { // Cascade
     print("Error");
@@ -958,7 +792,6 @@ Future<dynamic> stopRecordingAndUpload() async {
   await Future.delayed(Duration(seconds: 1));
   await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
     if (port != null) {
-      manager.managerState = "failedAtDownload";
       completer.complete(manager);
       port.send('downloadCanceled');
     } else {
@@ -967,11 +800,10 @@ Future<dynamic> stopRecordingAndUpload() async {
   });
   await Future.delayed(Duration(seconds: 1));
   await manager.stpUp(12.5, 8, manager.hour);
-  await Future.delayed(Duration(seconds: 2));
+  await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("uploadInProgress", false);
   await manager._disconnect();
-  manager.managerState = "done";
-  await Future.delayed(Duration(seconds: 2));
+  await Future.delayed(Duration(seconds: 1));
   await setLastUploadedFileNumber(-1);
   await manager.pg_connector.saveStepsandMinutes();
   await Future.delayed(Duration(seconds: 1));

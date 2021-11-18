@@ -42,9 +42,10 @@ void isolate1(String arg) async {
   await BTExperimental.stopRecordingAndUpload();
 }
 
-// bool isolate2({int item}) {
-//   BTExperimental.stopRecordingAndUpload();
-// }
+void mainIsolate(String arg) async {
+
+}
+
 
 void reloadPage(context) async {
   hideOverlay();
@@ -925,7 +926,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               print("Connection Not Possible - Killing the Isolate.");
               flutterIsolate.kill();
               await prefs.setBool("uploadInProgress", false);
-              // await prefs.setBool("fromIsolate", false);
+              await prefs.setBool("fromIsolate", false);
               hideOverlay();
               showOverlay(
                   "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
@@ -937,7 +938,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                   "BLE Connection closed - Killing the Isolate and spawning a new one.");
               flutterIsolate.kill();
               runs++;
-              if (Platform.isAndroid) {
+
                 if (runs <= 5) {
                   await Future.delayed(Duration(minutes: 1));
                   flutterIsolate = await FlutterIsolate.spawn(isolate1, "");
@@ -950,15 +951,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                       Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                       withButton: true);
                 }
-              } else {
-                await prefs.setBool("uploadInProgress", false);
-                await prefs.setBool("fromIsolate", false);
-                hideOverlay();
-                showOverlay(
-                    "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
-                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-                    withButton: true);
-              }
+
             }
             if (message == 'downloadCanceled') {
               print("Download Canceled - Killing the Isolate.");
@@ -986,7 +979,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
               print('Killing the Isolate');
               flutterIsolate.kill();
               await prefs.setBool("uploadInProgress", false);
-              // await prefs.setBool("fromIsolate", false);
+              await prefs.setBool("fromIsolate", false);
               hideOverlay();
               showOverlay(
                   "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
@@ -996,82 +989,6 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           });
 
           return true;
-          // } catch (e, stacktrace) {
-          //   print(e);
-          //   print(stacktrace);
-          //
-          //   return false;
-          // }
-          // } else {
-          //   SharedPreferences prefs = await SharedPreferences.getInstance();
-          //
-          //   try {
-          //     logError("starting upload");
-          //     await prefs.setBool("fromIsolate", true);
-          //     final flutterIsolate = await FlutterIsolate.spawn(isolate1, "");
-          //
-          //     final receivePort = ReceivePort();
-          //     final sendPort = receivePort.sendPort;
-          //     IsolateNameServer.registerPortWithName(sendPort, 'main');
-          //
-          //     receivePort.listen((dynamic message) async {
-          //       if (message == 'done') {
-          //         print('Killing the Isolate');
-          //         // flutterIsolate.kill();
-          //         await prefs.setBool("uploadInProgress", false);
-          //         await prefs.setBool("fromIsolate", false);
-          //         hideOverlay();
-          //       }
-          //       if (message is List) {
-          //         hideOverlay();
-          //         showOverlay(
-          //             'Ihre Daten werden übertragen.',
-          //             SpinKitFadingCircle(
-          //               color: Colors.orange,
-          //               size: 50.0,
-          //             ),
-          //             withButton: false,
-          //             timer: message[0]);
-          //       }
-          //       if (message == 'cantConnect') {
-          //         print("Connection Not Possible - Killing the Isolate.");
-          //         // flutterIsolate.kill();
-          //         await prefs.setBool("uploadInProgress", false);
-          //         await prefs.setBool("fromIsolate", false);
-          //         hideOverlay();
-          //         showOverlay(
-          //             "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-          //             Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-          //             withButton: true);
-          //       }
-          //       if (message == 'downloadCanceled') {
-          //         print("Download Canceled - Killing the Isolate.");
-          //         // flutterIsolate.kill();
-          //         await prefs.setBool("uploadInProgress", false);
-          //         await prefs.setBool("fromIsolate", false);
-          //         hideOverlay();
-          //         showOverlay(
-          //             "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
-          //             Icon(Icons.upload_file, size: 30, color: Colors.green),
-          //             withButton: true);
-          //       }
-          //       if (message == 'doneWithError') {
-          //         print('Killing the Isolate');
-          //         // flutterIsolate.kill();
-          //         await prefs.setBool("uploadInProgress", false);
-          //         await prefs.setBool("fromIsolate", false);
-          //         hideOverlay();
-          //         showOverlay(
-          //             "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-          //             Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-          //             withButton: true);
-          //       }
-          //     });
-          //   } catch (e, stacktrace) {
-          //     logError(e, stackTrace: stacktrace);
-          //     print(e);
-          //   }
-          // }
         },
         onChangeDateTime: (dateTime) async {
           (await SharedPreferences.getInstance()).setString(
