@@ -661,7 +661,7 @@ class MapScreenState extends State<ProfilePage> {
                           showAlertDialogAlreadyExists(context,
                               value != null ? value : 'Verbinde zu Server');
                         } else {
-                          _saveLocalUser(
+                          saveLocalUser(
                               ageToSave,
                               selectedDate,
                               studienIDController.text,
@@ -684,7 +684,7 @@ class MapScreenState extends State<ProfilePage> {
                           gender,
                           agreedOnTerms);
 
-                      await _saveLocalUser(
+                      await saveLocalUser(
                           ageToSave,
                           selectedDate,
                           studienIDController.text,
@@ -901,7 +901,7 @@ Future<String> _saveUserOnServer(
   return result;
 }
 
-Future<dynamic> _saveLocalUser(
+Future<dynamic> saveLocalUser(
     int ageToSave,
     DateTime birthday,
     String studienID,

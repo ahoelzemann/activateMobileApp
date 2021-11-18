@@ -1,16 +1,9 @@
-import 'dart:convert';
 import 'dart:ui';
-
-import 'package:trac2move/screens/Overlay.dart';
-import 'package:trac2move/util/DataLoader.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:ssh2/ssh2.dart';
-
-// import 'package:ssh2/ssh2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:trac2move/util/Logger.dart';
 
 Future<dynamic> checkForSavedFiles() async {
@@ -50,20 +43,7 @@ class Upload {
       port = 22;
       login = "trac2move_upload";
       pw = "5aU=txXKoU!";
-      // if (prefs.getBool("useSecureStorage")) {
-      //   final storage = new FlutterSecureStorage();
-      //   host = utf8
-      //       .decode(base64.decode(await storage.read(key: 'serverAddress')));
-      //   port = int.parse(
-      //       utf8.decode(base64.decode(await storage.read(key: 'port'))));
-      //   login = utf8.decode(base64.decode(await storage.read(key: 'login')));
-      //   pw = utf8.decode(base64.decode(await storage.read(key: 'password')));
-      // } else {
-      //   host = "131.173.80.175";
-      //   port = 22;
-      //   login = "trac2move_upload";
-      //   pw = "5aU=txXKoU!";
-      // }
+
       client = new SSHClient(
         host: host,
         port: port,
@@ -83,6 +63,7 @@ class Upload {
     try {
       String result = await client.connect();
       if (result == "session_connected") {
+        await Future.delayed(Duration(seconds: 3));
         result = await client.connectSFTP();
         if (result == "sftp_connected") {
           try {
@@ -117,6 +98,7 @@ class Upload {
       {String uploadStrategy = 'one', int repetitions = 5}) async {
 
     final port = IsolateNameServer.lookupPortByName('main');
+    Completer completer = new Completer();
     if (uploadStrategy == 'one') {
       try {
         filePaths = Directory(localFilesDirectory).listSync();
@@ -130,11 +112,8 @@ class Upload {
 
       }
       if (filePaths.length == 0) {
-        if (port != null) {
-          port.send('done');
-        } else {
-          print('port is null');
-        }
+        completer.complete(true);
+        return completer.future;
       }
       for (int i = 0; i < filePaths.length; i++) {
         String result;
@@ -153,9 +132,12 @@ class Upload {
           }
         }
       }
+      completer.complete(true);
     } else {
       // tbd parallel upload with multiple isolates ?!
     }
+
+    return completer.future;
   }
 
   Future<String> uploadOneFile(
@@ -176,44 +158,6 @@ class Upload {
       return 'failed';
     }
   }
-
-// Future<void> uploadLogFile(path) async {
-//   String serverlogfolder = this.serverFilePath + "/logfiles/";
-//   // File newFile = await File(path).copy('$path/filename.jpg');
-//   // Directory tempDir = await getApplicationDocumentsDirectory();
-//   // Todo Add active minutes by category here
-//   try {
-//     String result = await client.connect();
-//     if (result == "session_connected") {
-//       result = await client.connectSFTP();
-//       if (result == "sftp_connected") {
-//         try {
-//           try {
-//             print(await client.sftpMkdir(this.serverFilePath));
-//             print(await client.sftpMkdir(serverlogfolder));
-//           } catch (e) {
-//             print('Folder already exists');
-//           }
-//           print(
-//             await client.sftpUpload(
-//                 path: path,
-//                 toPath: serverlogfolder,
-//                 callback: (progress) {
-//                   print(progress); // read upload progress
-//                 }),
-//           );
-//         } catch (e, stacktrace) {
-//           logError(e, stackTrace: stacktrace);
-//         }
-//
-//         print(await client.disconnectSFTP());
-//         client.disconnect();
-//       }
-//     }
-//   } catch (e, stacktrace) {
-//     logError(e, stackTrace: stacktrace);
-//   }
-// }
 }
 
 Future<dynamic> uploadActivityDataToServer() async {
@@ -228,11 +172,20 @@ Future<dynamic> uploadActivityDataToServer() async {
       await uploader.uploadFiles();
       uploader.client.disconnect();
       await prefs.setBool("uploadSuccessful", true);
-      if (port != null) {
-        port.send('done');
-      } else {
-        print('port is null');
+      await prefs.setBool("uploadInProgress", false);
+      if (Platform.isIOS) {
+        if (port != null) {
+          port.send('done');
+        } else {
+          print('port is null');
+        }
       }
+      return true;
+      // if (port != null) {
+      //   port.send('done');
+      // } else {
+      //   print('port is null');
+      // }
     } else {
 
     }

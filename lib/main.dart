@@ -7,6 +7,7 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 // import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
 //     as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -19,6 +20,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:trac2move/util/Logger.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
+
 // import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:app_settings/app_settings.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BLEManager;
@@ -93,7 +95,17 @@ void main() async {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-
+    // prefs.setString("Devicename", "Bangle.js 4531");
+    prefs.setString("Devicename", "Bangle.js 834b");
+    // saveLocalUser(
+    //     33,
+    //     DateTime.parse("1969-07-20 20:18:04Z"),
+    //     "X13455",
+    //     prefs.getString("Devicename"),
+    //     "left",
+    //     true,
+    //     "male",
+    //     "data");
     bool firstRun = prefs.getBool('firstRun');
     prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
     prefs.setBool('useSecureStorage', useSecureStorage);
@@ -104,9 +116,9 @@ void main() async {
     if (firstRun == null) {
       setGlobalConnectionTimer(0);
       setLastUploadedFileNumber(-1);
-      prefs.setBool("fromIsolate", false);
+      // prefs.setBool("fromIsolate", false);
       prefs.setBool("halfTimeAlreadyFired", false);
-      prefs.setBool("agreedOnTerms", false);
+      // prefs.setBool("agreedOnTerms", false);
       firstRun = true;
       await prefs.setInt("recordingWillStartAt", 7);
       prefs.setInt("current_steps", 0);
@@ -134,16 +146,18 @@ void main() async {
     }
     bool firstTime = true;
 
-    await BackgroundFetch.configure(
+    int backgroundFetchStatus = await BackgroundFetch.configure(
         BackgroundFetchConfig(
-          minimumFetchInterval: 60,
-          stopOnTerminate: true,
-          enableHeadless: true,
-          requiresBatteryNotLow: false,
-          requiresCharging: false,
-          requiresStorageNotLow: false,
-          requiresDeviceIdle: false,
-        ), (String taskId) async {
+            minimumFetchInterval: 60,
+            stopOnTerminate: true,
+            enableHeadless: true,
+            requiresBatteryNotLow: false,
+            requiresCharging: false,
+            requiresStorageNotLow: false,
+            requiresDeviceIdle: false,
+            requiredNetworkType: NetworkType.NONE
+        ),
+            (String taskId) async {
       // <-- Event handler
       // This is the fetch-event callback.
       if (Platform.isAndroid) {
@@ -154,15 +168,15 @@ void main() async {
           int lastSteps = prefs.getInt("current_steps");
           int lastActiveMinutes = prefs.getInt("current_active_minutes");
           if (!isUploading) {
-            // try {
-              // if (Platform.isIOS) {
-              //   await BLEManagerIOS.getStepsAndMinutes();
-              // } else {
-              //   await BLEManagerAndroid.getStepsAndMinutes();
-              // }
-            // } catch (e) {
-            //   await prefs.setBool("uploadInProgress", false);
-            // }
+            try {
+              if (Platform.isIOS) {
+                // await BLEManagerIOS.getStepsAndMinutes();
+              } else {
+                // await BLEManagerAndroid.getStepsAndMinutes();
+              }
+            } catch (e) {
+              await prefs.setBool("uploadInProgress", false);
+            }
           }
 
           if (await isbctGroup()) {
@@ -231,17 +245,17 @@ void main() async {
         var isUploading = prefs.getBool("uploadInProgress");
         int lastSteps = prefs.getInt("current_steps");
         int lastActiveMinutes = prefs.getInt("current_active_minutes");
-        // if (!isUploading) {
-        //   try {
-        //     if (Platform.isIOS) {
-        //       await BLEManagerIOS.getStepsAndMinutes();
-        //     } else {
-        //       await BLEManagerAndroid.getStepsAndMinutes();
-        //     }
-        //   } catch (e) {
-        //     await prefs.setBool("uploadInProgress", false);
-        //   }
-        // }
+        if (!isUploading) {
+          try {
+            if (Platform.isIOS) {
+              // await BLEManagerIOS.getStepsAndMinutes();
+            } else {
+              // await BLEManagerAndroid.getStepsAndMinutes();
+            }
+          } catch (e) {
+            await prefs.setBool("uploadInProgress", false);
+          }
+        }
 
         if (await isbctGroup()) {
           int currentActiveMinutes = prefs.getInt("current_active_minutes");
@@ -308,8 +322,8 @@ void main() async {
       BackgroundFetch.finish(taskId);
     });
 
-    runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
     // BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
+    runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   } catch (e, stacktrace) {
     print(e);
     logError(e, stackTrace: stacktrace);
@@ -363,6 +377,8 @@ SetFirstPage() {
               return LoadingScreen();
             }
           } else {
+            // return Stack(
+            //     children: [LandingScreen(), OverlayView()]);
             return Stack(
                 children: [ProfilePage(createUser: true), OverlayView()]);
           }
@@ -385,18 +401,8 @@ class Trac2Move extends StatelessWidget {
   }
 }
 
-// create an async void to call the API function with settings name as parameter
 openSettingsMenu(settingsName) async {
-  // var resultSettingsOpening = false;
-
   if (settingsName == "location") {
     AppSettings.openLocationSettings;
   }
-
-  // try {
-  //   resultSettingsOpening =
-  //       await AccessSettingsMenu.openSettings(settingsType: settingsName);
-  // } catch (e) {
-  //   resultSettingsOpening = false;
-  // }
 }

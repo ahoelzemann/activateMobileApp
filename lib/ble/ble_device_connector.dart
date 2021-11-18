@@ -39,7 +39,7 @@ class BleDeviceConnector{
     Completer completer = new Completer();
     try {
       print('disconnecting from device: $deviceId');
-      await _connection.cancel();
+
       // completer.complete(true);
     } on Exception catch (e, _) {
       print("Error disconnecting from a device: $e");
@@ -53,7 +53,7 @@ class BleDeviceConnector{
           failure: null,
         ),
       );
-
+      await _connection.cancel();
     }
 
     // return completer.future;
@@ -61,7 +61,7 @@ class BleDeviceConnector{
 
   Future<bool> dispose() async {
 
-    await _deviceConnectionController.close();
+    _deviceConnectionController.close();
     return true;
 
   }

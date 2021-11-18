@@ -367,8 +367,9 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 59;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
+				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -509,8 +510,9 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 59;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
+				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -540,8 +542,9 @@
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 59;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
+				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
 				INFOPLIST_FILE = Runner/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 12.1;
 				LD_RUNPATH_SEARCH_PATHS = (
