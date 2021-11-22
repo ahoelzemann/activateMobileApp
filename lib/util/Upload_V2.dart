@@ -112,6 +112,14 @@ class Upload {
 
       }
       if (filePaths.length == 0) {
+        client.disconnect();
+        await prefs.setBool("uploadSuccessful", true);
+        await prefs.setBool("uploadInProgress", false);
+        if (port != null) {
+          port.send('done');
+        } else {
+          print('port is null');
+        }
         completer.complete(true);
         return completer.future;
       }
@@ -162,32 +170,44 @@ class Upload {
 
 Future<dynamic> uploadActivityDataToServer() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  final port = IsolateNameServer.lookupPortByName('main');
+  final port = IsolateNameServer.lookupPortByName('worker');
   await prefs.setBool("uploadSuccessful", false);
   Upload uploader = new Upload();
-  await uploader.init().then((value) async {
-    if (value) {
-      await uploader.connect();
-      print('connected');
-      await uploader.uploadFiles();
-      uploader.client.disconnect();
+  return await uploader.init().then((value) async {
+    uploader.filePaths = Directory(uploader.localFilesDirectory).listSync();
+    if (!(uploader.filePaths.length > 0)) {
       await prefs.setBool("uploadSuccessful", true);
       await prefs.setBool("uploadInProgress", false);
-      if (Platform.isIOS) {
+      if (port != null) {
+        port.send('done');
+      } else {
+        print('port is null');
+      }
+      return true;
+    } else {
+      if (value) {
+        await uploader.connect();
+        print('connected');
+        await uploader.uploadFiles().timeout(const Duration(minutes: 20), onTimeout: () {
+          if (port != null) {
+            port.send('uploadToServerFailed');
+          } else {
+            print('port is null');
+          }
+        });
+        uploader.client.disconnect();
+        await prefs.setBool("uploadSuccessful", true);
+        await prefs.setBool("uploadInProgress", false);
         if (port != null) {
           port.send('done');
         } else {
           print('port is null');
         }
-      }
-      return true;
-      // if (port != null) {
-      //   port.send('done');
-      // } else {
-      //   print('port is null');
-      // }
-    } else {
+        // }
+        return true;
+      } else {
 
+      }
     }
 
   });

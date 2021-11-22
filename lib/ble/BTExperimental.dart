@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/persistant/PostgresConnector.dart';
+import 'package:trac2move/persistent/PostgresConnector.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:trac2move/ble/ble_device_connector.dart';
@@ -54,8 +54,8 @@ class BluetoothManager {
   String savedId;
 
   Future<bool> _asyncInit() async {
-    // flutterReactiveBle = FlutterReactiveBle();
     _ble = FlutterReactiveBle();
+    _ble.scanRegistry.discoveredDevices.clear();
     connector = BleDeviceConnector(ble: _ble);
     prefs = await SharedPreferences.getInstance();
     savedDevice = prefs.getString("Devicename");
@@ -76,11 +76,12 @@ class BluetoothManager {
       await deviceSubscription.cancel();
       completer.complete(false);
     }).listen((device) async {
-      print(device.name);
+      // print(device.name);
       if (device.name == savedDevice) {
+        print("device found");
         savedId = device.id;
-        print(device.manufacturerData);
-        print(String.fromCharCodes(device.manufacturerData));
+        // print(device.manufacturerData);
+        // print(String.fromCharCodes(device.manufacturerData));
         prefs.setInt(
             "current_steps",
             device.manufacturerData.elementAt(2) +
@@ -137,8 +138,10 @@ class BluetoothManager {
       //   completer.complete("blePoweredOff");
       // }
       if (event == BleStatus.ready) {
-        await Future.delayed(Duration(milliseconds: 1500));
-        completer.complete("ready");
+        // await Future.delayed(Duration(milliseconds: 1500));
+        if (!completer.isCompleted) {
+          completer.complete("ready");
+        }
       // }
       // if (_ble.status == BleStatus.unknown) {
       //   completer.complete("ready");
@@ -402,16 +405,28 @@ class BluetoothManager {
   }
 
   Future<dynamic> _startUpload() async {
-    final port = IsolateNameServer.lookupPortByName('main');
+    final port = IsolateNameServer.lookupPortByName('worker');
     Completer completer = new Completer();
     int maxtrys = 1;
     _downloadedFiles = [];
     await Future.delayed(Duration(milliseconds: 500));
     DateTime now = DateTime.now();
     prefs.setBool("uploadInProgress", true);
-    int _numofFiles = await _getNumFiles();
+    int _numofFiles = await _getNumFiles().timeout(Duration(seconds: 60), onTimeout: () async {
+      if (port != null) {
+        port.send('downloadCanceled');
+      } else {
+        debugPrint('port is null');
+      }
+    });
     if (_numofFiles > 20) {
       if (port != null) {
+        try {
+          _ble = null;
+          _disconnect();
+        } catch (e) {
+
+        }
         port.send('downloadCanceled');
       } else {
         debugPrint('port is null');
@@ -579,7 +594,7 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    debugPrint("Status:" + myDevice.name.toString() + " RX UUID discovered");
+    // debugPrint("Status:" + myDevice.name.toString() + " RX– UUID discovered");
 
     debugPrint("Sending delete command...");
 
@@ -681,8 +696,10 @@ Future<dynamic> findNearestDevice() async {
 Future<dynamic> getStepsAndMinutes() async {
   Completer completer = new Completer();
   BluetoothManager manager = new BluetoothManager();
+  Timer(Duration(seconds: 10), () async {
+
+  });
   await manager._asyncInit();
-  manager.hour = manager.prefs.getInt("recordingWillStartAt");
   await manager._checkIfBLAndLocationIsActive().then((value) {
     if (value != "ready") {
       if (value == "blePoweredOff") {
@@ -696,7 +713,12 @@ Future<dynamic> getStepsAndMinutes() async {
   });
   bool deviceVisible = await manager._discoverMyDevice();
   if (!deviceVisible) {
+    manager = null;
     completer.complete(false);
+  } else {
+    // manager._ble.clearGattCache(manager.savedId);
+    manager = null;
+    completer.complete(true);
   }
 
   return completer.future;
@@ -705,7 +727,7 @@ Future<dynamic> getStepsAndMinutes() async {
 Future<dynamic> stopRecordingAndUpload() async {
   Completer completer = new Completer();
   BluetoothManager manager = new BluetoothManager();
-  final port = IsolateNameServer.lookupPortByName('main');
+  final port = IsolateNameServer.lookupPortByName('worker');
   await manager._asyncInit();
   manager.hour = manager.prefs.getInt("recordingWillStartAt");
   await manager._checkIfBLAndLocationIsActive().then((value) {
@@ -759,21 +781,6 @@ Future<dynamic> stopRecordingAndUpload() async {
           print('port is null');
         }
       }
-      // else {
-      //   await Future.delayed(Duration(minutes: 4));
-      //   for (int i=0; i<5;i++) {
-      //     await manager._connect().then((value) {
-      //       if (!value && i==5) {
-      //         if (port != null) {
-      //           completer.complete(manager);
-      //           port.send('cantConnect');
-      //         } else {
-      //           print('port is null');
-      //         }
-      //       }
-      //     });
-      //   }
-      // }
     }
   })..onError((error) { // Cascade
     print("Error");
@@ -802,14 +809,15 @@ Future<dynamic> stopRecordingAndUpload() async {
   await manager.stpUp(12.5, 8, manager.hour);
   await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("uploadInProgress", false);
+  await manager.cleanFlash();
   await manager._disconnect();
-  await Future.delayed(Duration(seconds: 1));
-  await setLastUploadedFileNumber(-1);
-  await manager.pg_connector.saveStepsandMinutes();
-  await Future.delayed(Duration(seconds: 1));
+  // await Future.delayed(Duration(seconds: 1));
+  // await setLastUploadedFileNumber(-1);
+  // await manager.pg_connector.saveStepsandMinutes();
+  // await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("fromIsolate", false);
-  await Future.delayed(Duration(seconds: 1));
-  await uploadActivityDataToServer().then((value) => completer.complete(true));
+  // await Future.delayed(Duration(seconds: 1));
+  // await uploadActivityDataToServer().then((value) => completer.complete(true));
 
 
   return completer.future;

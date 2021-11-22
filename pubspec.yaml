@@ -23,35 +23,24 @@ environment:
 dependencies:
   awesome_notifications: ^0.6.17
   shared_preferences: ^2.0.8
-#  ssh: ^0.0.7
   ssh2: ^2.2.3
   flutter_spinkit: "^5.1.0"
   date_format: ^2.0.4
   evil_icons_flutter: ^0.5.0
   ionicons: ^0.1.2
-#  flutter_ble_lib: ^3.0.0-beta
   path_provider: 2.0.7
   flutter_reactive_ble: ^5.0.2
   flutter_secure_storage: ^5.0.0-beta.5
-#  system_shortcuts: 1.0.0
   auto_size_text: ^3.0.0
   permission_handler: ^8.3.0
-#  location: ^4.1.1
-#  flutter_blue:
-#    git: https://github.com/boskokg/flutter_blue/
-#  access_settings_menu: ^0.0.1
   app_settings: ^4.1.1
   flutter_fimber_filelogger: ^2.0.0
   flutter_cupertino_date_picker: ^1.0.26+2
   geolocator: ^7.7.1
-#  easy_isolate: ^1.3.0
-#  flutter_fimber: ^0.6.1
   need_resume: ^1.0.6
   day_night_time_picker: ^1.0.3+1
-#  bluetooth_enable: ^0.1.1
   toggle_switch: "^1.3.0"
   connectivity_plus: ^2.0.2
-#  flutter_isolate: ^2.0.0
   flutter_isolate: "2.0.2-pre"
   url_launcher: ^6.0.12
   background_fetch: ^1.0.2

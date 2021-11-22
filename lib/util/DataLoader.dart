@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:flutter/services.dart' show ByteData, rootBundle;
 // import 'package:convert/convert.dart';
 import 'dart:typed_data';
-import 'package:trac2move/persistant/Participant.dart';
+import 'package:trac2move/persistent/Participant.dart';
 import 'dart:io' as io;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -18,7 +18,6 @@ class mySharedPreferences {
       return await SharedPreferences.getInstance().then((value) {
         steps = value.getInt("steps");
         active_minutes = value.getInt("active_minutes");
-        // ignore: unnecessary_null_comparison
         if (steps == null) {
           steps = 7000;
           active_minutes = 30;

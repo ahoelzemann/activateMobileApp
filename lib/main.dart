@@ -7,9 +7,6 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-// import 'package:trac2move/ble/BluetoothManagerAndroid_New.dart'
-//     as BLEManagerAndroid;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
@@ -21,13 +18,12 @@ import 'package:trac2move/util/Logger.dart';
 import 'package:flutter_fimber/flutter_fimber.dart';
 import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 
-// import 'package:access_settings_menu/access_settings_menu.dart';
 import 'package:app_settings/app_settings.dart';
-import 'package:trac2move/ble/BTExperimental.dart' as BLEManager;
+import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
-import 'package:trac2move/persistant/Participant.dart';
+import 'package:trac2move/persistent/Participant.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
 
 void main() async {
@@ -90,13 +86,13 @@ void main() async {
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
-        await BLEManager.getPermission();
+        await BTExperimental.getPermission();
       }
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
     // prefs.setString("Devicename", "Bangle.js 4531");
-    prefs.setString("Devicename", "Bangle.js 834b");
+    // prefs.setString("Devicename", "Bangle.js 834b");
     // saveLocalUser(
     //     33,
     //     DateTime.parse("1969-07-20 20:18:04Z"),
@@ -169,11 +165,7 @@ void main() async {
           int lastActiveMinutes = prefs.getInt("current_active_minutes");
           if (!isUploading) {
             try {
-              if (Platform.isIOS) {
-                // await BLEManagerIOS.getStepsAndMinutes();
-              } else {
-                // await BLEManagerAndroid.getStepsAndMinutes();
-              }
+              await BTExperimental.getStepsAndMinutes();
             } catch (e) {
               await prefs.setBool("uploadInProgress", false);
             }
@@ -247,11 +239,7 @@ void main() async {
         int lastActiveMinutes = prefs.getInt("current_active_minutes");
         if (!isUploading) {
           try {
-            if (Platform.isIOS) {
-              // await BLEManagerIOS.getStepsAndMinutes();
-            } else {
-              // await BLEManagerAndroid.getStepsAndMinutes();
-            }
+            await BTExperimental.getStepsAndMinutes();
           } catch (e) {
             await prefs.setBool("uploadInProgress", false);
           }
@@ -322,7 +310,6 @@ void main() async {
       BackgroundFetch.finish(taskId);
     });
 
-    // BackgroundFetch.registerHeadlessTask(backgroundFetchHeadlessTask);
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   } catch (e, stacktrace) {
     print(e);
