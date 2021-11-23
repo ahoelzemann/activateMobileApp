@@ -809,13 +809,13 @@ Future<dynamic> stopRecordingAndUpload() async {
   await manager.stpUp(12.5, 8, manager.hour);
   await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("uploadInProgress", false);
+  await manager.prefs.setBool("fromIsolate", false);
   await manager.cleanFlash();
   await manager._disconnect();
   // await Future.delayed(Duration(seconds: 1));
   // await setLastUploadedFileNumber(-1);
   // await manager.pg_connector.saveStepsandMinutes();
   // await Future.delayed(Duration(seconds: 1));
-  await manager.prefs.setBool("fromIsolate", false);
   // await Future.delayed(Duration(seconds: 1));
   // await uploadActivityDataToServer().then((value) => completer.complete(true));
 
