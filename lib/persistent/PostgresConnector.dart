@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/util/Logger.dart';
@@ -7,10 +8,19 @@ import 'package:trac2move/util/DataLoader.dart';
 
 // ToDo : Clean up function and implement exceptions
 class PostgresConnector {
+  var httpClient = HttpClient();
+
+  Future<dynamic> init() {
+    httpClient.badCertificateCallback =
+    ((X509Certificate cert, String host, int port) =>
+    true);
+  }
+
   final String token =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicGFydGljaXBhbnRzX2FwcCJ9.yyNvCf6g0-yV2JUzTk9nFbYPpbzswCMisY4aEA7otLk";
 
   final url = 'https://activate-db.uni-vechta.de:443/api/';
+  // final url = 'http://activate-db.uni-vechta.de/api/';
 
   final postgresUser = 'proband';
   final postgresPassword = 'activate_prevention2021%';
@@ -169,8 +179,11 @@ class PostgresConnector {
                     utf8.encode(postgresUser+':'+postgresPassword))
               },
               body: body);
+          print(result);
+          print('Schritte/Minuten erfolgreich gespeichert');
           return 'Schritte/Minuten erfolgreich gespeichert';
         } catch (e, stacktrace) {
+          print(e);
           logError(e, stackTrace: stacktrace);
           return 'Schritte/Minuten nicht erfolgreich gespeichert';
         }

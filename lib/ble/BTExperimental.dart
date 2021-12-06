@@ -423,7 +423,7 @@ class BluetoothManager {
       if (port != null) {
         try {
           _ble = null;
-          _disconnect();
+          await _disconnect();
         } catch (e) {
 
         }
@@ -811,13 +811,13 @@ Future<dynamic> stopRecordingAndUpload() async {
   await manager.prefs.setBool("uploadInProgress", false);
   await manager.prefs.setBool("fromIsolate", false);
   await manager.cleanFlash();
+  await setLastUploadedFileNumber(-1);
   await manager._disconnect();
-  // await Future.delayed(Duration(seconds: 1));
-  // await setLastUploadedFileNumber(-1);
-  // await manager.pg_connector.saveStepsandMinutes();
+  await manager.pg_connector.saveStepsandMinutes();
   // await Future.delayed(Duration(seconds: 1));
   // await Future.delayed(Duration(seconds: 1));
-  // await uploadActivityDataToServer().then((value) => completer.complete(true));
+  // await Future.delayed(Duration(seconds: 1));
+  await uploadActivityDataToServer().then((value) => completer.complete(true));
 
 
   return completer.future;
