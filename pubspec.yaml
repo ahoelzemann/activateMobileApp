@@ -48,6 +48,7 @@ dependencies:
   cupertino_icons: ^1.0.4
   syncfusion_flutter_charts: ^19.3.48
 
+
   flutter:
     sdk: flutter
 

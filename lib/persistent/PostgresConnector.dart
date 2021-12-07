@@ -9,13 +9,6 @@ import 'package:trac2move/util/DataLoader.dart';
 // ToDo : Clean up function and implement exceptions
 class PostgresConnector {
   var httpClient = HttpClient();
-
-  Future<dynamic> init() {
-    httpClient.badCertificateCallback =
-    ((X509Certificate cert, String host, int port) =>
-    true);
-  }
-
   final String token =
       "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoicGFydGljaXBhbnRzX2FwcCJ9.yyNvCf6g0-yV2JUzTk9nFbYPpbzswCMisY4aEA7otLk";
 
@@ -24,6 +17,12 @@ class PostgresConnector {
 
   final postgresUser = 'proband';
   final postgresPassword = 'activate_prevention2021%';
+
+  Future<dynamic> init() {
+    httpClient.badCertificateCallback =
+    ((X509Certificate cert, String host, int port) =>
+    true);
+  }
 
   Future<String> postParticipant(String studienID, int age, String birthday,
       String bangleID, worn_at, bctGroup, gender, agreedOnTerms) =>
@@ -137,7 +136,7 @@ class PostgresConnector {
           });
         } catch (e, stacktrace) {
           logError(e, stackTrace: stacktrace);
-          return 'Kommunikation mit dem Server nicht möglich';
+          return 'Kommunikation mit dem Server nicht möglich.';
         }
       });
 
