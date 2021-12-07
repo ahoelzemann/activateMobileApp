@@ -7,7 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/persistent/PostgresConnector.dart';
+import 'package:trac2move/persistent/PostgresConnector_V2.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:trac2move/ble/ble_device_connector.dart';

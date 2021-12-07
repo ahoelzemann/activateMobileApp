@@ -9,11 +9,13 @@ import 'package:trac2move/util/Logger.dart';
 Future<dynamic> checkForSavedFiles() async {
   Completer completer = new Completer();
 
-  List filePaths = Directory((await getApplicationDocumentsDirectory()).path + "/daily_data/").listSync();
+  List filePaths = Directory(
+          (await getApplicationDocumentsDirectory()).path + "/daily_data/")
+      .listSync();
   if (filePaths.length > 0) {
     completer.complete(filePaths);
-  }
-  else completer.complete([]);
+  } else
+    completer.complete([]);
 
   return completer.future;
 }
@@ -37,7 +39,8 @@ class Upload {
     try {
       prefs = await SharedPreferences.getInstance();
       studienID = prefs.getStringList('participant')[1];
-      localFilesDirectory = (await getApplicationDocumentsDirectory()).path + "/daily_data/";
+      localFilesDirectory =
+          (await getApplicationDocumentsDirectory()).path + "/daily_data/";
       serverFilePath = "activity_data/" + studienID;
       host = "131.173.80.175";
       port = 22;
@@ -85,9 +88,7 @@ class Upload {
     Completer completer = new Completer();
     try {
       await client.disconnect();
-    } catch (e) {
-
-    }
+    } catch (e) {}
 
     await init();
     completer.complete(await connect());
@@ -96,20 +97,23 @@ class Upload {
 
   Future<dynamic> uploadFiles(
       {String uploadStrategy = 'one', int repetitions = 5}) async {
-
     final port = IsolateNameServer.lookupPortByName('main');
     Completer completer = new Completer();
     if (uploadStrategy == 'one') {
       try {
         filePaths = Directory(localFilesDirectory).listSync();
-      } catch(e, stackTrace) {
+      } catch (e, stackTrace) {
         print(stackTrace);
+        client.disconnect();
+        await prefs.setBool("uploadSuccessful", true);
+        await prefs.setBool("uploadInProgress", false);
         if (port != null) {
           port.send('done');
+          completer.complete(true); 
+          return completer.future;
         } else {
           return false;
         }
-
       }
       if (filePaths.length == 0) {
         client.disconnect();
@@ -174,7 +178,15 @@ Future<dynamic> uploadActivityDataToServer() async {
   await prefs.setBool("uploadSuccessful", false);
   Upload uploader = new Upload();
   return await uploader.init().then((value) async {
-    uploader.filePaths = Directory(uploader.localFilesDirectory).listSync();
+    try {
+      uploader.filePaths = Directory(uploader.localFilesDirectory).listSync();
+    } catch (error, stackTrace) {
+      if (port != null) {
+        port.send('done');
+      } else {
+        print('port is null');
+      }
+    }
     if (!(uploader.filePaths.length > 0)) {
       await prefs.setBool("uploadSuccessful", true);
       await prefs.setBool("uploadInProgress", false);
@@ -188,7 +200,8 @@ Future<dynamic> uploadActivityDataToServer() async {
       if (value) {
         await uploader.connect();
         print('connected');
-        await uploader.uploadFiles().timeout(const Duration(minutes: 20), onTimeout: () {
+        await uploader.uploadFiles().timeout(const Duration(minutes: 20),
+            onTimeout: () {
           if (port != null) {
             port.send('uploadToServerFailed');
           } else {
@@ -205,13 +218,9 @@ Future<dynamic> uploadActivityDataToServer() async {
         }
         // }
         return true;
-      } else {
-
-      }
+      } else {}
     }
-
   });
-
 }
 
 Future<dynamic> uploadActivityDataToServerOverlay() async {
@@ -227,15 +236,14 @@ Future<dynamic> uploadActivityDataToServerOverlay() async {
   return true;
 }
 
-Future<dynamic> uploadAlreadyStoredFiles() async{
+Future<dynamic> uploadAlreadyStoredFiles() async {
   List savedFiles = await checkForSavedFiles();
 
   if (savedFiles.length > 0) {
     await uploadActivityDataToServer();
 
     return true;
-  }
-  else {
+  } else {
     return false;
   }
 }
