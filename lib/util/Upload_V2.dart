@@ -97,7 +97,7 @@ class Upload {
 
   Future<dynamic> uploadFiles(
       {String uploadStrategy = 'one', int repetitions = 5}) async {
-    final port = IsolateNameServer.lookupPortByName('main');
+    final port = IsolateNameServer.lookupPortByName('upload');
     Completer completer = new Completer();
     if (uploadStrategy == 'one') {
       try {
@@ -108,7 +108,7 @@ class Upload {
         await prefs.setBool("uploadSuccessful", true);
         await prefs.setBool("uploadInProgress", false);
         if (port != null) {
-          port.send('done');
+          port.send('uploadDone');
           completer.complete(true); 
           return completer.future;
         } else {
@@ -120,7 +120,7 @@ class Upload {
         await prefs.setBool("uploadSuccessful", true);
         await prefs.setBool("uploadInProgress", false);
         if (port != null) {
-          port.send('done');
+          port.send('uploadDone');
         } else {
           print('port is null');
         }
@@ -174,7 +174,7 @@ class Upload {
 
 Future<dynamic> uploadActivityDataToServer() async {
   SharedPreferences prefs = await SharedPreferences.getInstance();
-  final port = IsolateNameServer.lookupPortByName('worker');
+  final port = IsolateNameServer.lookupPortByName('upload');
   await prefs.setBool("uploadSuccessful", false);
   Upload uploader = new Upload();
   return await uploader.init().then((value) async {
@@ -182,7 +182,7 @@ Future<dynamic> uploadActivityDataToServer() async {
       uploader.filePaths = Directory(uploader.localFilesDirectory).listSync();
     } catch (error, stackTrace) {
       if (port != null) {
-        port.send('done');
+        port.send('uploadDone');
       } else {
         print('port is null');
       }
@@ -191,7 +191,7 @@ Future<dynamic> uploadActivityDataToServer() async {
       await prefs.setBool("uploadSuccessful", true);
       await prefs.setBool("uploadInProgress", false);
       if (port != null) {
-        port.send('done');
+        port.send('uploadDone');
       } else {
         print('port is null');
       }
@@ -212,7 +212,7 @@ Future<dynamic> uploadActivityDataToServer() async {
         await prefs.setBool("uploadSuccessful", true);
         await prefs.setBool("uploadInProgress", false);
         if (port != null) {
-          port.send('done');
+          port.send('uploadDone');
         } else {
           print('port is null');
         }

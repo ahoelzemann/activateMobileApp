@@ -14,7 +14,6 @@ import 'package:trac2move/ble/ble_device_connector.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
 import 'package:trac2move/util/Upload_V2.dart';
 
-
 class BluetoothManager {
   static final BluetoothManager _bluetoothManager =
       BluetoothManager._internal();
@@ -70,9 +69,23 @@ class BluetoothManager {
     print("scanning for devices");
     Completer completer = new Completer();
     StreamSubscription<DiscoveredDevice> deviceSubscription;
-    deviceSubscription = _ble.scanForDevices(withServices: [ISSC_PROPRIETARY_SERVICE_UUID
+    deviceSubscription = _ble.scanForDevices(withServices: [
+      ISSC_PROPRIETARY_SERVICE_UUID
     ], scanMode: ScanMode.balanced).timeout(Duration(seconds: 30),
         onTimeout: (timeOut) async {
+      _ble.deinitialize();
+
+      try {
+        print("disconnecting...");
+        _disconnect();
+        final port = IsolateNameServer.lookupPortByName('worker');
+        if (port != null) {
+          port.send('cantConnect');
+        } else {
+          print('port is null');
+        }
+      } catch (e) {}
+      print("device not visible.");
       await deviceSubscription.cancel();
       completer.complete(false);
     }).listen((device) async {
@@ -125,9 +138,36 @@ class BluetoothManager {
 
   Future<dynamic> _disconnect() async {
     // Completer completer = new Completer();
-    connector.disconnect(savedId);
+    final portWorker = IsolateNameServer.lookupPortByName('worker');
+    final portUpload = IsolateNameServer.lookupPortByName('upload');
+    if (Platform.isAndroid) {
+      await connector.disconnectAndroid(savedId);
+    } else {
+      connector.disconnect(savedId);
+    }
     connectionState = DeviceConnectionState.disconnected;
+    if (portUpload != null) {
+      print('Upload Disconnect Function');
+      portUpload.send('uploadDone');
+    } else {
+      print('port is null');
+    }
 
+    if (portWorker != null) {
+      print('Disconnect Function');
+      portWorker.send('done');
+    } else {
+      print('port is null');
+    }
+
+    final portMain = IsolateNameServer.lookupPortByName('main');
+
+    if (portMain != null) {
+      print('Disconnect Function');
+      portMain.send('done');
+    } else {
+      print('port is null');
+    }
     return true;
   }
 
@@ -142,11 +182,10 @@ class BluetoothManager {
         if (!completer.isCompleted) {
           completer.complete("ready");
         }
-      // }
-      // if (_ble.status == BleStatus.unknown) {
-      //   completer.complete("ready");
+        // }
+        // if (_ble.status == BleStatus.unknown) {
+        //   completer.complete("ready");
       }
-
     });
     // if (Platform.isAndroid) {
     //   if (_ble.status == BleStatus.locationServicesDisabled) {
@@ -333,13 +372,12 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    subscription = _ble
-        .subscribeToCharacteristic(characTX)
-    //     .timeout(Duration(seconds: 30), onTimeout: (timeout) async {
-    //   debugPrint("TIMEOUT FIRED");
-    //   await subscription.cancel();
-    //   completer.complete({});
-    // })
+    subscription = _ble.subscribeToCharacteristic(characTX)
+        //     .timeout(Duration(seconds: 30), onTimeout: (timeout) async {
+        //   debugPrint("TIMEOUT FIRED");
+        //   await subscription.cancel();
+        //   completer.complete({});
+        // })
         .listen((event) async {
       int _dataSize = event.length;
       if (event.length + lastEvent.length == 15) {
@@ -412,7 +450,8 @@ class BluetoothManager {
     await Future.delayed(Duration(milliseconds: 500));
     DateTime now = DateTime.now();
     prefs.setBool("uploadInProgress", true);
-    int _numofFiles = await _getNumFiles().timeout(Duration(seconds: 60), onTimeout: () async {
+    int _numofFiles = await _getNumFiles().timeout(Duration(seconds: 60),
+        onTimeout: () async {
       if (port != null) {
         port.send('downloadCanceled');
       } else {
@@ -424,9 +463,7 @@ class BluetoothManager {
         try {
           _ble = null;
           await _disconnect();
-        } catch (e) {
-
-        }
+        } catch (e) {}
         port.send('downloadCanceled');
       } else {
         debugPrint('port is null');
@@ -448,9 +485,9 @@ class BluetoothManager {
       debugPrint(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
       Map<String, List<int>> _currentResult = new Map();
-      _currentResult = await _sendNext(fileCount)
-          .timeout(Duration(minutes: 5), onTimeout: () async {
-          _currentResult = {};
+      _currentResult = await _sendNext(fileCount).timeout(Duration(minutes: 5),
+          onTimeout: () async {
+        _currentResult = {};
       });
 
       while (_currentResult == null && try_counter != maxtrys) {
@@ -475,7 +512,7 @@ class BluetoothManager {
         try_counter++;
         _currentResult = await _sendNext(fileCount);
       }
-      if (try_counter == maxtrys &&  _currentResult.length == 0) {
+      if (try_counter == maxtrys && _currentResult.length == 0) {
         await prefs.setString("uploadFailedAt", DateTime.now().toString());
         if (port != null) {
           port.send('downloadCanceled');
@@ -575,7 +612,7 @@ class BluetoothManager {
 
     subscription = _ble
         .subscribeToCharacteristic(characTX)
-        .timeout(Duration(seconds: 2), onTimeout: (timeout) async {
+        .timeout(Duration(seconds: 5), onTimeout: (timeout) async {
       print("not Sending");
       subscription.cancel();
       completer.complete(true);
@@ -696,9 +733,7 @@ Future<dynamic> findNearestDevice() async {
 Future<dynamic> getStepsAndMinutes() async {
   Completer completer = new Completer();
   BluetoothManager manager = new BluetoothManager();
-  Timer(Duration(seconds: 10), () async {
-
-  });
+  Timer(Duration(seconds: 10), () async {});
   await manager._asyncInit();
   await manager._checkIfBLAndLocationIsActive().then((value) {
     if (value != "ready") {
@@ -729,6 +764,7 @@ Future<dynamic> stopRecordingAndUpload() async {
   BluetoothManager manager = new BluetoothManager();
   final port = IsolateNameServer.lookupPortByName('worker');
   await manager._asyncInit();
+  // await manager.pg_connector.saveStepsandMinutes();
   manager.hour = manager.prefs.getInt("recordingWillStartAt");
   await manager._checkIfBLAndLocationIsActive().then((value) {
     if (value != "ready") {
@@ -744,7 +780,7 @@ Future<dynamic> stopRecordingAndUpload() async {
   bool deviceVisible = await manager._discoverMyDevice();
   if (!deviceVisible) {
     if (port != null) {
-      completer.complete(manager);
+      // completer.complete(manager);
       port.send('cantConnect');
     } else {
       print('port is null');
@@ -753,7 +789,7 @@ Future<dynamic> stopRecordingAndUpload() async {
   await manager._connect().then((value) {
     if (!value) {
       if (port != null) {
-        completer.complete(manager);
+        // completer.complete(manager);
         port.send('cantConnect');
       } else {
         print('port is null');
@@ -766,27 +802,46 @@ Future<dynamic> stopRecordingAndUpload() async {
     bool uploading = manager.prefs.getBool("uploadInProgress");
     if (event.connectionState == DeviceConnectionState.disconnected &&
         uploading) {
-      if (Platform.isAndroid || Platform.isIOS) {
-        try {
-          manager.subscription.cancel();
-          manager.connector.dispose();
-          manager = null;
-          connectionListener.cancel();
-        } catch (e) {
-          print(e);
-        }
-        if (port != null) {
-          port.send('connectionClosed');
-        } else {
-          print('port is null');
-        }
+      // if (Platform.isAndroid || Platform.isIOS) {
+      try {
+        manager.subscription.cancel();
+        manager.connector.dispose();
+        manager = null;
+        connectionListener.cancel();
+      } catch (e) {
+        print(e);
       }
+      if (port != null) {
+        port.send('connectionClosed');
+      } else {
+        print('port is null');
+      }
+      // }
+    } else if (event.connectionState == DeviceConnectionState.disconnected) {
+      try {
+        manager.subscription.cancel();
+        manager.connector.dispose();
+        manager = null;
+        connectionListener.cancel();
+      } catch (e) {
+        print(e);
+      }
+      // await Future.delayed(Duration(seconds: 15));
+      // if (port != null) {
+      //   port.send('done');
+      // } else {
+      //   print('port is null');
+      // }
     }
-  })..onError((error) { // Cascade
-    print("Error");
-  })..onDone(() {       // Cascade
-    print("done");
-  });
+  })
+    ..onError((error) {
+      // Cascade
+      print("Error");
+    })
+    ..onDone(() {
+      // Cascade
+      print("done");
+    });
 
   await manager._isStillSending();
   await manager._getOsVersion();
@@ -796,7 +851,7 @@ Future<dynamic> stopRecordingAndUpload() async {
     print("final osVersion:" + manager.osVersion.toString());
   }
   await manager._syncTime();
-  await Future.delayed(Duration(seconds: 1));
+  await Future.delayed(Duration(seconds: 3));
   await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
     if (port != null) {
       completer.complete(manager);
@@ -807,18 +862,20 @@ Future<dynamic> stopRecordingAndUpload() async {
   });
   await Future.delayed(Duration(seconds: 1));
   await manager.stpUp(12.5, 8, manager.hour);
-  await Future.delayed(Duration(seconds: 1));
+  // await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("uploadInProgress", false);
   await manager.prefs.setBool("fromIsolate", false);
   await manager.cleanFlash();
   await setLastUploadedFileNumber(-1);
+  await Future.delayed(Duration(seconds: 4));
   await manager._disconnect();
-  await manager.pg_connector.saveStepsandMinutes();
+  // if (Platform.isAndroid) {
+  //   manager._ble.clearGattCache(manager.savedDevice);
+  // }
   // await Future.delayed(Duration(seconds: 1));
   // await Future.delayed(Duration(seconds: 1));
   // await Future.delayed(Duration(seconds: 1));
-  await uploadActivityDataToServer().then((value) => completer.complete(true));
-
+  // await uploadActivityDataToServer().then((value) => completer.complete(true));
 
   return completer.future;
 }

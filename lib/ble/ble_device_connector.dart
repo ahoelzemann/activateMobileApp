@@ -19,7 +19,7 @@ class BleDeviceConnector{
   Future<dynamic> connect(String deviceId) async {
     Completer completer = new Completer();
     print('Start connecting to $deviceId');
-    _connection = _ble.connectToDevice(id: deviceId).listen((update) {
+    _connection = _ble.connectToDevice(id: deviceId, connectionTimeout: Duration(seconds:20)).listen((update) {
         print('ConnectionState for device '
             '$deviceId : ${update.connectionState}');
         _deviceConnectionController.add(update);
@@ -53,7 +53,34 @@ class BleDeviceConnector{
           failure: null,
         ),
       );
+
       await _connection.cancel();
+    }
+
+    // return completer.future;
+  }
+
+  Future disconnectAndroid(String deviceId) async {
+    Completer completer = new Completer();
+    try {
+      print('disconnecting from device: $deviceId');
+      _deviceConnectionController.add(
+        ConnectionStateUpdate(
+          deviceId: deviceId,
+          connectionState: DeviceConnectionState.disconnected,
+          failure: null,
+        ),
+      );
+      await _connection.cancel();
+      completer.complete(true);
+    } on Exception catch (e, _) {
+      print("Error disconnecting from a device: $e");
+      completer.complete(false);
+    } finally {
+      // Since [_connection] subscription is terminated, the "disconnected" state cannot be received and propagated
+
+
+
     }
 
     // return completer.future;

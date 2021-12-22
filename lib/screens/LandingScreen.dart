@@ -27,6 +27,9 @@ import 'package:trac2move/screens/Charts.dart';
 import 'package:flutter_isolate/flutter_isolate.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
+import 'package:trac2move/persistent/PostgresConnector_V2.dart' as pg_connector;
+import 'package:trac2move/util/Upload_V2.dart' as uploader;
+
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -34,6 +37,7 @@ class LandingScreen extends StatefulWidget {
 }
 
 void mainIsolate(String arg) async {
+  // await Future.delayed(Duration(seconds: 2));
   final receivePort = ReceivePort();
   int runs = 0;
   FlutterIsolate flutterWorkerIsolate = await FlutterIsolate.spawn(workerIsolate, "");
@@ -70,6 +74,18 @@ void mainIsolate(String arg) async {
 
 void workerIsolate(String arg) async {
   await BTExperimental.stopRecordingAndUpload();
+}
+
+void uploadIsolate(String arg) async {
+
+  // await Future.delayed(Duration(seconds: 1));
+  await BTExperimental.getStepsAndMinutes();
+  var pgc =  pg_connector.PostgresConnector();
+  await pgc.saveStepsandMinutes();
+  await uploader.uploadActivityDataToServer();
+
+  // final port = IsolateNameServer.lookupPortByName('upload');
+  // port.send("uploadDone");
 }
 
 void reloadPage(context) async {
@@ -922,11 +938,24 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           await prefs.setInt("recordingWillStartAt", dateTime.hour);
           await prefs.setBool("uploadInProgress", true);
           await prefs.setBool("fromIsolate", true);
+
+
           final receivePort = ReceivePort();
           FlutterIsolate flutterMainIsolate =
               await FlutterIsolate.spawn(mainIsolate, "");
           final sendPort = receivePort.sendPort;
           IsolateNameServer.registerPortWithName(sendPort, 'main');
+          final receivePortUpload = ReceivePort();
+          FlutterIsolate flutterUploadIsolate =
+          await FlutterIsolate.spawn(uploadIsolate, "");
+          final sendPortUpload = receivePortUpload.sendPort;
+          IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
+          receivePortUpload.listen((dynamic message) async {
+            if (message == "uploadDone") {
+              print('Killing the upload isolate');
+              flutterUploadIsolate.kill();
+            }
+          });
           receivePort.listen((dynamic message) async {
             if (message is List) {
               hideOverlay();
