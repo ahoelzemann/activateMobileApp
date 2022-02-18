@@ -103,13 +103,13 @@ void main() async {
     //     "male",
     //     "data");
     bool firstRun = prefs.getBool('firstRun');
-    prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
     prefs.setBool('useSecureStorage', useSecureStorage);
     prefs.setBool("uploadInProgress", false);
     prefs.setBool("backgroundFetchStarted", false);
     prefs.setBool("btOccupied", false);
 
     if (firstRun == null) {
+      prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
       setGlobalConnectionTimer(0);
       setLastUploadedFileNumber(-1);
       // prefs.setBool("fromIsolate", false);
@@ -151,79 +151,21 @@ void main() async {
             requiresCharging: false,
             requiresStorageNotLow: false,
             requiresDeviceIdle: false,
-            requiredNetworkType: NetworkType.NONE
-        ),
-            (String taskId) async {
+            requiredNetworkType: NetworkType.NONE), (String taskId) async {
       // <-- Event handler
       // This is the fetch-event callback.
+      var isUploading = prefs.getBool("uploadInProgress");
+      if (!isUploading) {
+        try {
+          await BTExperimental.getStepsAndMinutes();
+        } catch (e) {
+          await prefs.setBool("uploadInProgress", false);
+        }
+      }
       if (Platform.isAndroid) {
         if (!firstTime) {
-          DateTime lastTime =
-              DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-          var isUploading = prefs.getBool("uploadInProgress");
-          int lastSteps = prefs.getInt("current_steps");
-          int lastActiveMinutes = prefs.getInt("current_active_minutes");
-          if (!isUploading) {
-            try {
-              await BTExperimental.getStepsAndMinutes();
-            } catch (e) {
-              await prefs.setBool("uploadInProgress", false);
-            }
-          }
-
           if (await isbctGroup()) {
-            int currentActiveMinutes = prefs.getInt("current_active_minutes");
-            int currentSteps = prefs.getInt("current_steps");
-            BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-            await rules.init(currentSteps, currentActiveMinutes, lastSteps,
-                lastActiveMinutes);
-            String halfTimeMsgSteps = "";
-            String halfTimeMsgMinutes = "";
-            String dailyStepsReached = rules.dailyStepsReached();
-            String dailyMinutesReached = rules.dailyMinutesReached();
-            if (rules.halfDayCheck()) {
-              halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-              halfTimeMsgSteps = rules.halfTimeMsgSteps();
-            }
-            if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
-              await prefs.setString(
-                  "lastTimeDailyGoalsShown", DateTime.now().toString());
-              if (dailyStepsReached.length > 1) {
-                AwesomeNotifications().createNotification(
-                    content: NotificationContent(
-                        id: 10,
-                        channelKey: 'bct_channel',
-                        title: 'Tägliches Schrittziel erreicht',
-                        body: dailyStepsReached));
-              }
-              if (dailyMinutesReached.length > 1) {
-                AwesomeNotifications().createNotification(
-                    content: NotificationContent(
-                        id: 11,
-                        channelKey: 'bct_channel',
-                        title: 'Sie sind sehr aktiv!',
-                        body: dailyMinutesReached));
-              }
-            }
-            if (!prefs.getBool("halfTimeAlreadyFired")) {
-              if (halfTimeMsgSteps.length > 1) {
-                AwesomeNotifications().createNotification(
-                    content: NotificationContent(
-                        id: 3,
-                        channelKey: 'bct_channel',
-                        title: 'Halbzeit, toll gemacht!',
-                        body: halfTimeMsgSteps));
-              }
-              if (halfTimeMsgMinutes.length > 1) {
-                AwesomeNotifications().createNotification(
-                    content: NotificationContent(
-                        id: 4,
-                        channelKey: 'bct_channel',
-                        title: 'Weiter so!',
-                        body: halfTimeMsgMinutes));
-              }
-              prefs.setBool("halfTimeAlreadyFired", true);
-            }
+            BCT.checkAndFireBCT();
           }
           print(DateTime.now().toString() +
               " | [BackgroundFetch] Event received $taskId");
@@ -232,72 +174,8 @@ void main() async {
           firstTime = false;
         }
       } else {
-        DateTime lastTime =
-            DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-        var isUploading = prefs.getBool("uploadInProgress");
-        int lastSteps = prefs.getInt("current_steps");
-        int lastActiveMinutes = prefs.getInt("current_active_minutes");
-        if (!isUploading) {
-          try {
-            await BTExperimental.getStepsAndMinutes();
-          } catch (e) {
-            await prefs.setBool("uploadInProgress", false);
-          }
-        }
-
         if (await isbctGroup()) {
-          int currentActiveMinutes = prefs.getInt("current_active_minutes");
-          int currentSteps = prefs.getInt("current_steps");
-          BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-          await rules.init(
-              currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-          String halfTimeMsgSteps = "";
-          String halfTimeMsgMinutes = "";
-          String dailyStepsReached = rules.dailyStepsReached();
-          String dailyMinutesReached = rules.dailyMinutesReached();
-          if (rules.halfDayCheck()) {
-            halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-            halfTimeMsgSteps = rules.halfTimeMsgSteps();
-          }
-          if (DateTime.now().isAfter(lastTime.add(Duration(hours: 1)))) {
-            await prefs.setString(
-                "lastTimeDailyGoalsShown", DateTime.now().toString());
-            if (dailyStepsReached.length > 1) {
-              AwesomeNotifications().createNotification(
-                  content: NotificationContent(
-                      id: 10,
-                      channelKey: 'bct_channel',
-                      title: 'Tägliches Schrittziel erreicht',
-                      body: dailyStepsReached));
-            }
-            if (dailyMinutesReached.length > 1) {
-              AwesomeNotifications().createNotification(
-                  content: NotificationContent(
-                      id: 11,
-                      channelKey: 'bct_channel',
-                      title: 'Sie sind sehr aktiv!',
-                      body: dailyMinutesReached));
-            }
-          }
-          if (!prefs.getBool("halfTimeAlreadyFired")) {
-            if (halfTimeMsgSteps.length > 1) {
-              AwesomeNotifications().createNotification(
-                  content: NotificationContent(
-                      id: 3,
-                      channelKey: 'bct_channel',
-                      title: 'Halbzeit, toll gemacht!',
-                      body: halfTimeMsgSteps));
-            }
-            if (halfTimeMsgMinutes.length > 1) {
-              AwesomeNotifications().createNotification(
-                  content: NotificationContent(
-                      id: 4,
-                      channelKey: 'bct_channel',
-                      title: 'Weiter so!',
-                      body: halfTimeMsgMinutes));
-            }
-            prefs.setBool("halfTimeAlreadyFired", true);
-          }
+          BCT.checkAndFireBCT();
         }
         print(DateTime.now().toString() +
             " | [BackgroundFetch] Event received $taskId");
@@ -324,15 +202,9 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
     participant = instance.getStringList("participant");
 
     if (participant == null) {
-      // TODo: change that back
       return null;
     } else {
       instance.setBool('firstRun', false);
-      SharedPreferences prefs = await SharedPreferences.getInstance();
-      int currentActiveMinutes = prefs.getInt("current_active_minutes");
-      int currentSteps = prefs.getInt("current_steps");
-      await prefs.setInt("last_steps", currentSteps);
-      await prefs.setInt("last_active_minutes", currentActiveMinutes);
 
       return 1;
     }

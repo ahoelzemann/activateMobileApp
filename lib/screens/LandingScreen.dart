@@ -30,7 +30,6 @@ import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 import 'package:trac2move/persistent/PostgresConnector_V2.dart' as pg_connector;
 import 'package:trac2move/util/Upload_V2.dart' as uploader;
 
-
 class LandingScreen extends StatefulWidget {
   @override
   _LandingScreenState createState() => _LandingScreenState();
@@ -40,7 +39,8 @@ void mainIsolate(String arg) async {
   // await Future.delayed(Duration(seconds: 2));
   final receivePort = ReceivePort();
   int runs = 0;
-  FlutterIsolate flutterWorkerIsolate = await FlutterIsolate.spawn(workerIsolate, "");
+  FlutterIsolate flutterWorkerIsolate =
+      await FlutterIsolate.spawn(workerIsolate, "");
   final sendPort = receivePort.sendPort;
   final port = IsolateNameServer.lookupPortByName('main');
   IsolateNameServer.registerPortWithName(sendPort, 'worker');
@@ -72,15 +72,26 @@ void mainIsolate(String arg) async {
   });
 }
 
+void forAndroid(SharedPreferences prefs) async {
+  await BTExperimental.getStepsAndMinutes();
+  var pgc = pg_connector.PostgresConnector();
+  await pgc.saveStepsandMinutes();
+  await uploader.uploadActivityDataToServer();
+  await BTExperimental.stopRecordingAndUpload();
+  print("For Andorid done");
+  await prefs.setBool("uploadInProgress", false);
+  await prefs.setBool("fromIsolate", false);
+  hideOverlay();
+}
+
 void workerIsolate(String arg) async {
   await BTExperimental.stopRecordingAndUpload();
 }
 
 void uploadIsolate(String arg) async {
-
   // await Future.delayed(Duration(seconds: 1));
   await BTExperimental.getStepsAndMinutes();
-  var pgc =  pg_connector.PostgresConnector();
+  var pgc = pg_connector.PostgresConnector();
   await pgc.saveStepsandMinutes();
   await uploader.uploadActivityDataToServer();
 
@@ -123,8 +134,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
     if (isUploading == null || !isUploading) {
       await prefs.setBool("uploadInProgress", true);
       try {
-          await BTExperimental.getStepsAndMinutes();
-          await prefs.setBool("uploadInProgress", false);
+        await BTExperimental.getStepsAndMinutes();
+        await prefs.setBool("uploadInProgress", false);
       } catch (e) {
         await prefs.setBool("uploadInProgress", false);
       }
@@ -146,79 +157,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       logError(e);
     }
     if (await isbctGroup()) {
-      DateTime lastTime =
-          DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
-      int currentActiveMinutes = prefs.getInt("current_active_minutes");
-      int currentSteps = prefs.getInt("current_steps");
-      int lastSteps = prefs.getInt("last_steps");
-      int lastActiveMinutes = prefs.getInt("last_active_minutes");
-      BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-      await rules.init(
-          currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-      String halfTimeMsgSteps = "";
-      String halfTimeMsgMinutes = "";
-      String dailyStepsReached = rules.dailyStepsReached();
-      String dailyMinutesReached = rules.dailyMinutesReached();
-      if (rules.halfDayCheck()) {
-        halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-        halfTimeMsgSteps = rules.halfTimeMsgSteps();
-      }
-      if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
-        await prefs.setString(
-            "lastTimeDailyGoalsShown", DateTime.now().toString());
-        if (dailyStepsReached.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 10,
-                  channelKey: 'bct_channel',
-                  title: 'Tägliches Schrittziel erreicht',
-                  body: dailyStepsReached));
-          showOverlay(
-              dailyStepsReached,
-              Icon(
-                Icons.thumb_up_alt,
-                color: Colors.green,
-                size: 50.0,
-              ),
-              withButton: true);
-        }
-        if (dailyMinutesReached.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 10,
-                  channelKey: 'bct_channel',
-                  title: 'Sie sind sehr aktiv!',
-                  body: dailyMinutesReached));
-          showOverlay(
-              dailyMinutesReached,
-              Icon(
-                Icons.thumb_up_alt,
-                color: Colors.green,
-                size: 50.0,
-              ),
-              withButton: true);
-        }
-      }
-      if (prefs.getBool("halfTimeAlreadyFired") != null &&
-          !prefs.getBool("halfTimeAlreadyFired")) {
-        if (halfTimeMsgSteps.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 3,
-                  channelKey: 'bct_channel',
-                  title: 'Halbzeit, toll gemacht!',
-                  body: halfTimeMsgSteps));
-        }
-        if (halfTimeMsgMinutes.length > 1) {
-          AwesomeNotifications().createNotification(
-              content: NotificationContent(
-                  id: 4,
-                  channelKey: 'bct_channel',
-                  title: 'Weiter so!',
-                  body: halfTimeMsgMinutes));
-        }
-        prefs.setBool("halfTimeAlreadyFired", true);
-      }
+      await Future.delayed(Duration(milliseconds: 500));
+      await BCT.checkAndFireBCT();
     }
     if (!uploadSuccessful) {
       showOverlay(
@@ -252,11 +192,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       uploadSuccessful = prefs.getBool("uploadSuccessful");
     }
     // uploadSuccessful = false;
-    DateTime lastTime =
-        DateTime.parse(prefs.getString("lastTimeDailyGoalsShown"));
     var isUploading = prefs.getBool("uploadInProgress");
-    int lastSteps = prefs.getInt("current_steps");
-    int lastActiveMinutes = prefs.getInt("current_active_minutes");
     if (isUploading == null || !isUploading) {
       await prefs.setBool("uploadInProgress", true);
       try {
@@ -271,78 +207,9 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         });
         // await prefs.setBool("uploadInProgress", false);
       }
-      // prefs.setInt("current_steps", desiredSteps);
-      // prefs.setInt("current_active_minutes", desiredMinutes);
       if (await isbctGroup()) {
-        int currentActiveMinutes = prefs.getInt("current_active_minutes");
-        int currentSteps = prefs.getInt("current_steps");
-        BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-        await rules.init(
-            currentSteps, currentActiveMinutes, lastSteps, lastActiveMinutes);
-        String halfTimeMsgSteps = "";
-        String halfTimeMsgMinutes = "";
-        String dailyStepsReached = rules.dailyStepsReached();
-        String dailyMinutesReached = rules.dailyMinutesReached();
-        if (rules.halfDayCheck()) {
-          halfTimeMsgMinutes = rules.halfTimeMsgMinutes();
-          halfTimeMsgSteps = rules.halfTimeMsgSteps();
-        }
-        if (DateTime.now().isAfter(lastTime.add(Duration(hours: 3)))) {
-          await prefs.setString(
-              "lastTimeDailyGoalsShown", DateTime.now().toString());
-          if (dailyStepsReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Tägliches Schrittziel erreicht',
-                    body: dailyStepsReached));
-            showOverlay(
-                dailyStepsReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-          if (dailyMinutesReached.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 10,
-                    channelKey: 'bct_channel',
-                    title: 'Sie sind sehr aktiv!',
-                    body: dailyMinutesReached));
-            showOverlay(
-                dailyMinutesReached,
-                Icon(
-                  Icons.thumb_up_alt,
-                  color: Colors.green,
-                  size: 50.0,
-                ),
-                withButton: true);
-          }
-        }
-        if (prefs.getBool("halfTimeAlreadyFired") != null &&
-            !prefs.getBool("halfTimeAlreadyFired")) {
-          if (halfTimeMsgSteps.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 3,
-                    channelKey: 'bct_channel',
-                    title: 'Halbzeit, toll gemacht!',
-                    body: halfTimeMsgSteps));
-          }
-          if (halfTimeMsgMinutes.length > 1) {
-            AwesomeNotifications().createNotification(
-                content: NotificationContent(
-                    id: 4,
-                    channelKey: 'bct_channel',
-                    title: 'Toll, weiter so!',
-                    body: halfTimeMsgMinutes));
-          }
-          prefs.setBool("halfTimeAlreadyFired", true);
-        }
+        await Future.delayed(Duration(milliseconds: 500));
+        await BCT.checkAndFireBCT();
       }
     }
     if (!uploadSuccessful) {
@@ -905,11 +772,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           if (isBCT) {
             int currentActiveMinutes = prefs.getInt("current_active_minutes");
             int currentSteps = prefs.getInt("current_steps");
-            int lastSteps = prefs.getInt("last_steps");
-            int lastActiveMinutes = prefs.getInt("last_active_minutes");
             BCT.BCTRuleSet rules = BCT.BCTRuleSet();
-            await rules.init(currentSteps, currentActiveMinutes, lastSteps,
-                lastActiveMinutes);
+            await rules.init(currentSteps, currentActiveMinutes);
             String endOfTheMessageSteps = rules.letsCallItADaySteps();
             String endOfTheMessageMinutes = rules.letsCallItADayMinutes();
             AwesomeNotifications().createNotification(
@@ -928,6 +792,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     body: endOfTheMessageMinutes));
           }
           await prefs.setBool("halfTimeAlreadyFired", false);
+          await prefs.setBool("minutesBCTFired", false);
+          await prefs.setBool("stepsBCTFired", false);
           showOverlay(
               'Ihre Daten werden übertragen.',
               SpinKitFadingCircle(
@@ -939,107 +805,110 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           await prefs.setBool("uploadInProgress", true);
           await prefs.setBool("fromIsolate", true);
 
-
-          final receivePort = ReceivePort();
-          FlutterIsolate flutterMainIsolate =
-              await FlutterIsolate.spawn(mainIsolate, "");
-          final sendPort = receivePort.sendPort;
-          IsolateNameServer.registerPortWithName(sendPort, 'main');
-          final receivePortUpload = ReceivePort();
-          FlutterIsolate flutterUploadIsolate =
-          await FlutterIsolate.spawn(uploadIsolate, "");
-          final sendPortUpload = receivePortUpload.sendPort;
-          IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
-          receivePortUpload.listen((dynamic message) async {
-            if (message == "uploadDone") {
-              print('Killing the upload isolate');
-              flutterUploadIsolate.kill();
-            }
-          });
-          receivePort.listen((dynamic message) async {
-            if (message is List) {
-              hideOverlay();
-              showOverlay(
-                  'Ihre Daten werden übertragen.',
-                  SpinKitFadingCircle(
-                    color: Colors.orange,
-                    size: 50.0,
-                  ),
-                  withButton: false,
-                  timer: message[0]);
-            }
-            if (message == 'cantConnect') {
-              print("Connection Not Possible - Killing the Isolate.");
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-                  Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-                  withButton: true);
-            }
-            if (message == 'connectionClosed') {
-              print("BLE Connection closed - Killing the Isolate");
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
-                  Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-                  withButton: true);
-            }
-            if (message == 'downloadCanceled') {
-              print("Download Canceled - Killing the Isolate.");
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
-                  Icon(Icons.upload_file, size: 30, color: Colors.green),
-                  withButton: true);
-            }
-            if (message == 'done') {
-              print('Killing the Isolate');
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
-                  Icon(Icons.check_box, size: 30, color: Colors.green),
-                  withButton: true);
-            }
-            if (message == 'doneWithError') {
-              print('Killing the Isolate');
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
-                  Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-                  withButton: true);
-            }
-            if (message == 'uploadToServerFailed') {
-              print('Killing the Isolate - Upload to Server failed');
-              flutterMainIsolate.kill();
-              await prefs.setBool("uploadInProgress", false);
-              await prefs.setBool("fromIsolate", false);
-              hideOverlay();
-              showOverlay(
-                  "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
-                  Icon(
-                    Icons.upload_file,
-                    color: Colors.orange,
-                    size: 50.0,
-                  ),
-                  withButton: true,
-                  buttonType: 'upload');
-            }
-          });
+          if (Platform.isAndroid) {
+            forAndroid(prefs);
+          } else {
+            final receivePort = ReceivePort();
+            FlutterIsolate flutterMainIsolate =
+                await FlutterIsolate.spawn(mainIsolate, "");
+            final sendPort = receivePort.sendPort;
+            IsolateNameServer.registerPortWithName(sendPort, 'main');
+            final receivePortUpload = ReceivePort();
+            FlutterIsolate flutterUploadIsolate =
+                await FlutterIsolate.spawn(uploadIsolate, "");
+            final sendPortUpload = receivePortUpload.sendPort;
+            IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
+            receivePortUpload.listen((dynamic message) async {
+              if (message == "uploadDone") {
+                print('Killing the upload isolate');
+                flutterUploadIsolate.kill();
+              }
+            });
+            receivePort.listen((dynamic message) async {
+              if (message is List) {
+                hideOverlay();
+                showOverlay(
+                    'Ihre Daten werden übertragen.',
+                    SpinKitFadingCircle(
+                      color: Colors.orange,
+                      size: 50.0,
+                    ),
+                    withButton: false,
+                    timer: message[0]);
+              }
+              if (message == 'cantConnect') {
+                print("Connection Not Possible - Killing the Isolate.");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'connectionClosed') {
+                print("BLE Connection closed - Killing the Isolate");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'downloadCanceled') {
+                print("Download Canceled - Killing the Isolate.");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                    Icon(Icons.upload_file, size: 30, color: Colors.green),
+                    withButton: true);
+              }
+              if (message == 'done') {
+                print('Killing the Isolate');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
+                    Icon(Icons.check_box, size: 30, color: Colors.green),
+                    withButton: true);
+              }
+              if (message == 'doneWithError') {
+                print('Killing the Isolate');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'uploadToServerFailed') {
+                print('Killing the Isolate - Upload to Server failed');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                    Icon(
+                      Icons.upload_file,
+                      color: Colors.orange,
+                      size: 50.0,
+                    ),
+                    withButton: true,
+                    buttonType: 'upload');
+              }
+            });
+          }
 
           return true;
         },

@@ -32,7 +32,7 @@ class Upload {
   String studienID;
 
   String localFilesDirectory;
-  String serverPath;
+  // String serverPath;
   String serverFilePath;
 
   Future<dynamic> init() async {
@@ -46,6 +46,7 @@ class Upload {
       port = 22;
       login = "trac2move_upload";
       pw = "5aU=txXKoU!";
+      filePaths = [];
 
       client = new SSHClient(
         host: host,

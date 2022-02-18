@@ -865,7 +865,16 @@ Future<dynamic> stopRecordingAndUpload() async {
   // await Future.delayed(Duration(seconds: 1));
   await manager.prefs.setBool("uploadInProgress", false);
   await manager.prefs.setBool("fromIsolate", false);
-  await manager.cleanFlash();
+  await manager.prefs.setInt(
+      "current_steps", 0);
+  await manager.prefs.setInt(
+      "current_active_minutes", 0);
+  await manager.prefs.setInt(
+      "current_active_minutes_low", 0);
+  await manager.prefs.setInt(
+      "current_active_minutes_avg", 0);
+  await manager.prefs.setBool("halfTimeAlreadyFired", false);
+  // await manager.cleanFlash();
   await setLastUploadedFileNumber(-1);
   await Future.delayed(Duration(seconds: 4));
   await manager._disconnect();
@@ -877,5 +886,5 @@ Future<dynamic> stopRecordingAndUpload() async {
   // await Future.delayed(Duration(seconds: 1));
   // await uploadActivityDataToServer().then((value) => completer.complete(true));
 
-  return completer.future;
+  return true;
 }

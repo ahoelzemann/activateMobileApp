@@ -366,7 +366,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/RunnerProfile.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 68;
 				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
 				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
@@ -376,7 +376,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.5;
+				MARKETING_VERSION = 4.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.activate.tractomove;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -509,7 +509,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/Runner.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 68;
 				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
 				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
@@ -519,7 +519,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.5;
+				MARKETING_VERSION = 4.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.activate.tractomove;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -541,7 +541,7 @@
 				CODE_SIGN_ENTITLEMENTS = Runner/RunnerRelease.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 65;
+				CURRENT_PROJECT_VERSION = 68;
 				DEVELOPMENT_TEAM = AC6XYQ2L6R;
 				ENABLE_BITCODE = NO;
 				FLUTTER_ROOT = /Users/alexander/Downloads/flutter;
@@ -551,7 +551,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 4.0.5;
+				MARKETING_VERSION = 4.0.8;
 				PRODUCT_BUNDLE_IDENTIFIER = de.activate.tractomove;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
