@@ -6,7 +6,6 @@ import 'package:trac2move/persistent/Participant.dart';
 import 'dart:io' as io;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/Logger.dart';
 
 class mySharedPreferences {
   int steps = 0;
@@ -32,7 +31,6 @@ class mySharedPreferences {
         return true;
       });
     } catch (e, stackTrace) {
-      logError(e, stackTrace: stackTrace);
       print(e);
       return false;
     }

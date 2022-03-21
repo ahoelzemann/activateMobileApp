@@ -4,7 +4,6 @@ import 'package:ssh2/ssh2.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:async';
 import 'dart:io';
-import 'package:trac2move/util/Logger.dart';
 
 Future<dynamic> checkForSavedFiles() async {
   Completer completer = new Completer();
@@ -57,7 +56,6 @@ class Upload {
 
       return true;
     } catch (e, stacktrace) {
-      logError(e, stackTrace: stacktrace);
       return false;
     }
   }

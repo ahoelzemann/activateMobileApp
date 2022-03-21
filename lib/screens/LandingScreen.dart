@@ -20,7 +20,6 @@ import 'package:ionicons/ionicons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/screens/Overlay.dart';
 import 'package:flutter_spinkit/flutter_spinkit.dart';
-import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/screens/FAQ.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/screens/Charts.dart';
@@ -154,7 +153,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
             );
       });
     } catch (e) {
-      logError(e);
+      print(e);
     }
     if (await isbctGroup()) {
       await Future.delayed(Duration(milliseconds: 500));
@@ -801,7 +800,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 size: 50.0,
               ),
               withButton: false);
-          await prefs.setInt("recordingWillStartAt", dateTime.hour);
+          int hour = dateTime.hour;
+          await prefs.setInt("recordingWillStartAt", hour);
           await prefs.setBool("uploadInProgress", true);
           await prefs.setBool("fromIsolate", true);
 
@@ -843,7 +843,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 await prefs.setBool("fromIsolate", false);
                 hideOverlay();
                 showOverlay(
-                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
                     Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                     withButton: true);
               }
@@ -887,7 +887,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 await prefs.setBool("fromIsolate", false);
                 hideOverlay();
                 showOverlay(
-                    "Ihre Bangle konnte nicht verbunden werden, bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
                     Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                     withButton: true);
               }

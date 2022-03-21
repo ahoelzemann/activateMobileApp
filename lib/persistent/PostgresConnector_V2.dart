@@ -3,7 +3,6 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:trac2move/util/Logger.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:dio/dio.dart';
 
@@ -58,7 +57,7 @@ class PostgresConnector {
             }
           });
         } catch (e, stacktrace) {
-          logError(e, stackTrace: stacktrace);
+          print(e);
           return 'Studienteilnehmer konnte nicht gespeichert werden';
         }
       });
@@ -76,7 +75,6 @@ class PostgresConnector {
 
       return response;
     } catch (e, stacktrace) {
-      logError(e, stackTrace: stacktrace);
       return false;
     }
   }
@@ -94,7 +92,6 @@ class PostgresConnector {
 
       return response;
     } catch (e, stacktrace) {
-      logError(e, stackTrace: stacktrace);
       return "false";
     }
   }
@@ -136,7 +133,6 @@ class PostgresConnector {
             }
           });
         } catch (e, stacktrace) {
-          logError(e, stackTrace: stacktrace);
           return 'Kommunikation mit dem Server nicht möglich.';
         }
       });
@@ -179,7 +175,6 @@ class PostgresConnector {
           return 'Schritte/Minuten erfolgreich gespeichert';
         } catch (e, stacktrace) {
           print(e);
-          logError(e, stackTrace: stacktrace);
           return 'Schritte/Minuten nicht erfolgreich gespeichert';
         }
       });

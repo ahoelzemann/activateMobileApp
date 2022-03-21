@@ -7,18 +7,14 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
-import 'package:geolocator/geolocator.dart';
-import 'package:trac2move/util/Logger.dart';
-import 'package:flutter_fimber/flutter_fimber.dart';
-import 'package:flutter_fimber_filelogger/flutter_fimber_filelogger.dart';
 
-import 'package:app_settings/app_settings.dart';
+// import 'package:app_settings/app_settings.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
@@ -30,8 +26,8 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  Fimber.plantTree(FileLoggerTree());
-  Fimber.e(DateTime.now().toString() + " Beginning Log File:");
+  // Fimber.plantTree(FileLoggerTree());
+  // Fimber.e(DateTime.now().toString() + " Beginning Log File:");
   int status = await BackgroundFetch.status;
   if (status != BackgroundFetch.STATUS_AVAILABLE) {
     print("Background App Refresh isn't activated.");
@@ -56,8 +52,8 @@ void main() async {
       ]);
 
   try {
-    bool useSecureStorage = true;
-    print("secureStorage done");
+    // bool useSecureStorage = true;
+    // print("secureStorage done");
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (!isAllowed) {
         // Insert here your friendly dialog box before call the request method
@@ -66,23 +62,30 @@ void main() async {
       }
     });
     if (Platform.isAndroid) {
-      print("location initialized before if");
-      if (!await Geolocator.isLocationServiceEnabled()) {
-        print("location initialized after if");
-        // openSettingsMenu('ACTION_LOCATION_SOURCE_SETTINGS');
-        // openSettingsMenu("location");
-        AppSettings.openLocationSettings();
+        Map<Permission, PermissionStatus> statuses = await [
+          Permission.location,
+          Permission.bluetooth,
+          Permission.bluetoothScan,
+          Permission.bluetoothConnect,
+          Permission.storage,
+        ].request();
+      // print("location initialized before if");
+      // if (!await Geolocator.isLocationServiceEnabled()) {
+      //   print("location initialized after if");
+      //   // openSettingsMenu('ACTION_LOCATION_SOURCE_SETTINGS');
+      //   // openSettingsMenu("location");
+      //   AppSettings.openLocationSettings();
+      //
+      //   print("location service requested");
+      // }
 
-        print("location service requested");
-      }
-
-      await Geolocator.requestPermission();
-      await Permission.storage.request();
-      print("storage service requested");
-      await Permission.bluetooth.request();
-      print("bluetooth service requested");
-      await Permission.locationWhenInUse.request();
-      print("location when in use requested");
+      // await Geolocator.requestPermission();
+      // await Permission.storage.request();
+      // print("storage service requested");
+      // await Permission.bluetooth.request();
+      // print("bluetooth service requested");
+      // await Permission.locationWhenInUse.request();
+      // print("location when in use requested");
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
@@ -91,19 +94,8 @@ void main() async {
     }
 
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    // prefs.setString("Devicename", "Bangle.js 4531");
-    // prefs.setString("Devicename", "Bangle.js 834b");
-    // saveLocalUser(
-    //     33,
-    //     DateTime.parse("1969-07-20 20:18:04Z"),
-    //     "X13455",
-    //     prefs.getString("Devicename"),
-    //     "left",
-    //     true,
-    //     "male",
-    //     "data");
     bool firstRun = prefs.getBool('firstRun');
-    prefs.setBool('useSecureStorage', useSecureStorage);
+    prefs.setBool('useSecureStorage', false);
     prefs.setBool("uploadInProgress", false);
     prefs.setBool("backgroundFetchStarted", false);
     prefs.setBool("btOccupied", false);
@@ -120,26 +112,19 @@ void main() async {
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       prefs.setBool("firstRun", firstRun);
-      if (useSecureStorage) {
-        final storage = new FlutterSecureStorage();
-        await storage.write(
-            key: 'serverAddress',
-            value: base64.encode(utf8.encode("131.173.80.175")));
-        await storage.write(
-            key: 'port', value: base64.encode(utf8.encode("22")));
-        await storage.write(
-            key: 'login',
-            value: base64.encode(utf8.encode("trac2move_upload")));
-        await storage.write(
-            key: 'password', value: base64.encode(utf8.encode("5aU=txXKoU!")));
-      } else {
-        print("saving server credentials...");
-        await prefs.setString('serverAddress', "131.173.80.175");
-        await prefs.setString('port', "22");
-        await prefs.setString('login', "trac2move_upload");
-        await prefs.setString('password', "5aU=txXKoU!");
-      }
+
+      // print("saving server credentials...");
+      // await prefs.setString('serverAddress', "131.173.80.175");
+      // await prefs.setString('port', "22");
+      // await prefs.setString('login', "trac2move_upload");
+      // await prefs.setString('password', "5aU=txXKoU!");
+
     }
+    print("saving server credentials...");
+    await prefs.setString('serverAddress', "131.173.80.175");
+    await prefs.setString('port', "22");
+    await prefs.setString('login', "trac2move_upload");
+    await prefs.setString('password', "5aU=txXKoU!");
     bool firstTime = true;
 
     int backgroundFetchStatus = await BackgroundFetch.configure(
@@ -163,6 +148,13 @@ void main() async {
         }
       }
       if (Platform.isAndroid) {
+          Map<Permission, PermissionStatus> statuses = await [
+            Permission.location,
+            Permission.bluetooth,
+            Permission.bluetoothScan,
+            Permission.bluetoothConnect,
+            Permission.storage,
+          ].request();
         if (!firstTime) {
           if (await isbctGroup()) {
             BCT.checkAndFireBCT();
@@ -191,7 +183,6 @@ void main() async {
     runApp(RootRestorationScope(restorationId: 'root', child: Trac2Move()));
   } catch (e, stacktrace) {
     print(e);
-    logError(e, stackTrace: stacktrace);
   }
 }
 
@@ -211,7 +202,6 @@ Future<int> _readActiveParticipantAndCheckBLE() async {
   } catch (e, stacktrace) {
     print(e);
     print(stacktrace);
-    logError(e, stackTrace: stacktrace);
 
     return 3;
   }
@@ -257,11 +247,5 @@ class Trac2Move extends StatelessWidget {
       print(exception);
       return LoadingScreenFeedback();
     }
-  }
-}
-
-openSettingsMenu(settingsName) async {
-  if (settingsName == "location") {
-    AppSettings.openLocationSettings;
   }
 }

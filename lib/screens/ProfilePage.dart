@@ -4,7 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:date_format/date_format.dart';
 import 'package:trac2move/persistent/Participant.dart';
 import 'package:trac2move/screens/LandingScreen.dart';
-import 'package:trac2move/persistent/PostgresConnector.dart';
+import 'package:trac2move/persistent/PostgresConnector_V2.dart';
 import 'package:trac2move/util/DataLoader.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BLEManagerIOS;
