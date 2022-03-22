@@ -7,27 +7,57 @@ import 'package:trac2move/screens/ProfilePage.dart';
 import 'package:trac2move/screens/LoadingScreen.dart';
 import 'package:trac2move/screens/LoadingScreenFeedback.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-// import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'dart:convert';
 import 'package:permission_handler/permission_handler.dart';
 import 'dart:io' show Platform;
 import 'package:trac2move/screens/Overlay.dart';
 import 'dart:io';
-
-// import 'package:app_settings/app_settings.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 import 'package:background_fetch/background_fetch.dart';
 import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/persistent/Participant.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
+import 'package:worker_manager/worker_manager.dart';
+
+
+Future<void> _checkPermissions() async {
+  if (Platform.isAndroid) {
+    Map<Permission, PermissionStatus> statuses = await [
+      Permission.location,
+      Permission.bluetoothScan,
+      Permission.bluetoothConnect
+    ].request();
+
+    for (var status in statuses.entries) {
+      if (status.key == Permission.location) {
+        if (status.value.isGranted) {
+          debugPrint('Location permission granted');
+        } else {
+          debugPrint("Location permission not granted");
+        }
+      }
+      if (status.key == Permission.bluetoothScan) {
+        if (status.value.isGranted) {
+          debugPrint('Bluetooth scan permission granted');
+        } else {
+          debugPrint('Bluetooth scan permission not granted');
+        }
+      }
+      if (status.key == Permission.bluetoothConnect) {
+        if (status.value.isGranted) {
+          debugPrint('Bluetooth connect permission granted');
+        } else {
+          debugPrint('Bluetooth connect permission not granted');
+        }
+      }
+    }
+  }
+}
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   SystemChrome.setPreferredOrientations(
       [DeviceOrientation.portraitUp, DeviceOrientation.portraitDown]);
-  // Fimber.plantTree(FileLoggerTree());
-  // Fimber.e(DateTime.now().toString() + " Beginning Log File:");
   int status = await BackgroundFetch.status;
   if (status != BackgroundFetch.STATUS_AVAILABLE) {
     print("Background App Refresh isn't activated.");
@@ -52,8 +82,6 @@ void main() async {
       ]);
 
   try {
-    // bool useSecureStorage = true;
-    // print("secureStorage done");
     AwesomeNotifications().isNotificationAllowed().then((isAllowed) {
       if (!isAllowed) {
         // Insert here your friendly dialog box before call the request method
@@ -62,13 +90,14 @@ void main() async {
       }
     });
     if (Platform.isAndroid) {
-        Map<Permission, PermissionStatus> statuses = await [
-          Permission.location,
-          Permission.bluetooth,
-          Permission.bluetoothScan,
-          Permission.bluetoothConnect,
-          Permission.storage,
-        ].request();
+      _checkPermissions();
+        // Map<Permission, PermissionStatus> statuses = await [
+        //   Permission.location,
+        //   Permission.bluetooth,
+        //   Permission.bluetoothScan,
+        //   Permission.bluetoothConnect,
+        //   Permission.storage,
+        // ].request();
       // print("location initialized before if");
       // if (!await Geolocator.isLocationServiceEnabled()) {
       //   print("location initialized after if");
@@ -92,7 +121,7 @@ void main() async {
         await BTExperimental.getPermission();
       }
     }
-
+    await Executor().warmUp();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool firstRun = prefs.getBool('firstRun');
     prefs.setBool('useSecureStorage', false);
@@ -148,13 +177,6 @@ void main() async {
         }
       }
       if (Platform.isAndroid) {
-          Map<Permission, PermissionStatus> statuses = await [
-            Permission.location,
-            Permission.bluetooth,
-            Permission.bluetoothScan,
-            Permission.bluetoothConnect,
-            Permission.storage,
-          ].request();
         if (!firstTime) {
           if (await isbctGroup()) {
             BCT.checkAndFireBCT();

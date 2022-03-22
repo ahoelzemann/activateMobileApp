@@ -38,7 +38,9 @@ class Loader {
   }
 
   void hideLoader() {
-    fallBackTimer.cancel();
+    if (fallBackTimer != null) {
+      fallBackTimer.cancel();
+    }
     loaderShowingNotifier.value = false;
   }
 

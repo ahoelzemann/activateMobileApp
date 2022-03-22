@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class BleDeviceConnector{
   BleDeviceConnector({
@@ -18,8 +19,17 @@ class BleDeviceConnector{
 
   Future<dynamic> connect(String deviceId) async {
     Completer completer = new Completer();
-    print('Start connecting to $deviceId');
-    _connection = _ble.connectToDevice(id: deviceId, connectionTimeout: Duration(seconds:20)).listen((update) {
+    if (deviceId == null || deviceId == "null") {
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      deviceId = await prefs.getString("device_id");
+      // completer.complete(false);
+      // return completer.future;
+    }
+    try {
+      print('Start connecting to $deviceId');
+      _connection = _ble.connectToDevice(
+          id: deviceId, connectionTimeout: Duration(seconds: 20)).listen((
+          update) {
         print('ConnectionState for device '
             '$deviceId : ${update.connectionState}');
         _deviceConnectionController.add(update);
@@ -27,12 +37,16 @@ class BleDeviceConnector{
           completer.complete(true);
         }
       },
-      onError: (Object e) {
-        print('Connecting to device $deviceId resulted in error $e');
-        completer.complete(false);
-      }
-    );
-    return completer.future;
+          onError: (Object e) {
+            print('Connecting to device $deviceId resulted in error $e');
+            completer.complete(false);
+          }
+      );
+      return completer.future;
+    } catch (e) {
+      completer.complete(false);
+      return completer.future;
+    }
   }
 
   Future disconnect(String deviceId) async {

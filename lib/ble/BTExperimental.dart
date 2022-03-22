@@ -51,7 +51,6 @@ class BluetoothManager {
   String savedDevice;
   String savedId;
 
-
   Future<bool> _asyncInit() async {
     _ble = FlutterReactiveBle();
     _ble.scanRegistry.discoveredDevices.clear();
@@ -76,10 +75,10 @@ class BluetoothManager {
       if (source == "upload") {
         hideOverlay();
         showOverlay(
-            "Wir konnten Ihre Bangle nicht finden. Stellen Sie sicher, dass sich diese in der Nähe befinden. "
-                "Sollte der Fehler weiterhin auftreten, starten Sie die Bangle bitte über den dritten Button neu.",
-            Icon(Icons.watch, color: Colors.orange, size: 50),
+            "Wir konnten keine Verbindung zur Bangle aufnehmen. Bitte starten Sie die App neu und führen einen Neustart der Bangle durch.",
+            Icon(Icons.bluetooth_disabled, color: Colors.blue, size: 50),
             withButton: true);
+
         try {
           final port = IsolateNameServer.lookupPortByName('worker');
           if (port != null) {
@@ -87,14 +86,14 @@ class BluetoothManager {
           } else {
             print('port is null');
           }
-        } catch (e) {
-
-        }
+        } catch (e) {}
       }
 
       print("device not visible.");
       await deviceSubscription.cancel();
       completer.complete(false);
+
+      return completer.future;
     }).listen((device) async {
       // print(device.name);
       if (device.name == savedDevice) {
@@ -131,24 +130,28 @@ class BluetoothManager {
   Future<dynamic> _connect() async {
     Completer completer = new Completer();
     print("trying to connect....");
-    await connector.connect(savedId);
-    // .timeout(Duration(seconds: 3),
-    // onTimeout: () async {
-    // completer.complete(false);
-    // });
-    // await Future.delayed(Duration(seconds: 20));
+    await connector.connect(savedId).timeout(Duration(seconds: 20),
+        onTimeout: () {
+      completer.complete(false);
+      return completer.future;
+    });
+
     print("connected! now discovering characteristics");
     connectionState = DeviceConnectionState.connected;
-    completer.complete(true);
+    if (!completer.isCompleted) {
+      completer.complete(true);
+    }
     return completer.future;
   }
 
   Future<dynamic> _disconnect() async {
-    if (Platform.isAndroid) {
+    if (Platform.isAndroid ) {
       await connector.disconnectAndroid(savedId);
       return true;
     } else {
-      connector.disconnect(savedId);
+      await connector.disconnectAndroid(savedId);
+      return true;
+      // connector.disconnect(savedId);
     }
     final portWorker = IsolateNameServer.lookupPortByName('worker');
     final portUpload = IsolateNameServer.lookupPortByName('upload');
@@ -234,7 +237,6 @@ class BluetoothManager {
       osVersion = 73;
       completer.complete(true);
     }
-
 
     return completer.future;
   }
@@ -381,8 +383,8 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    subscription = _ble.subscribeToCharacteristic(characTX)
-        .listen((event) async {
+    subscription =
+        _ble.subscribeToCharacteristic(characTX).listen((event) async {
       int _dataSize = event.length;
       if (event.length + lastEvent.length == 15) {
         var concatenatedEvents = lastEvent + event;
@@ -801,95 +803,133 @@ Future<dynamic> stopRecordingAndUpload() async {
     }
   });
   bool deviceVisible = await manager._discoverMyDevice("upload");
-  if (!deviceVisible) {
-    if (port != null) {
-      port.send('cantConnect');
-    } else {
-      print('port is null');
+
+  // if (!deviceVisible) {
+  //   if (port != null) {
+  //     port.send('cantConnect');
+  //   } else {
+  //     print('port is null');
+  //   }
+  // }
+  await Future.delayed(Duration(seconds: 2));
+  if (manager.savedId != null) {
+    await manager._connect().then((value) {
+      if (!value) {
+        if (Platform.isIOS) {
+          if (port != null) {
+            port.send('cantConnect');
+          } else {
+            print('port is null');
+          }
+        } else {
+          hideOverlay();
+          showOverlay(
+              "Wir konnten keine Verbindung zur Bangle aufnehmen. Bitte starten Sie die App neu und führen einen Neustart der Bangle durch.",
+              Icon(Icons.bluetooth_disabled, color: Colors.blue, size: 50),
+              withButton: true);
+        }
+      }
+    });
+    StreamSubscription connectionListener;
+    connectionListener = manager.connector.state.listen((event) async {
+      print("LISTENER LISTENS TO CHANGE");
+      bool uploading = manager.prefs.getBool("uploadInProgress");
+      if (event.connectionState == DeviceConnectionState.disconnected &&
+          uploading) {
+        try {
+          manager.subscription.cancel();
+          manager.connector.dispose();
+          manager = null;
+          connectionListener.cancel();
+        } catch (e) {
+          print(e);
+        }
+        if (port != null) {
+          port.send('connectionClosed');
+        } else {
+          print('port is null');
+        }
+        // }
+      } else if (event.connectionState == DeviceConnectionState.disconnected) {
+        try {
+          manager.subscription.cancel();
+          manager.connector.dispose();
+          manager = null;
+          connectionListener.cancel();
+        } catch (e) {
+          print(e);
+        }
+      }
+    })
+      ..onError((error) {
+        // Cascade
+        print("Error");
+      })
+      ..onDone(() {
+        // Cascade
+        print("done");
+      });
+
+    await manager._isStillSending();
+    await manager._getOsVersion();
+    if (manager.prefix != "") {
+      await Future.delayed(Duration(seconds: 5));
+      await manager._getOSVersionWithPrefix();
+      print("final osVersion:" + manager.osVersion.toString());
     }
-  }
-  await manager._connect().then((value) {
-    if (!value) {
+    await manager._syncTime();
+    // await Future.delayed(Duration(seconds: 30));
+    // await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
+    //   if (port != null) {
+    //     completer.complete(manager);
+    //     port.send('downloadCanceled');
+    //   } else {
+    //     debugPrint('port is null');
+    //   }
+    // });
+    // await Future.delayed(Duration(minutes: 5));
+    if (Platform.isAndroid) {
+      await Future.delayed(Duration(minutes: 5));
+    }
+    await manager.stpUp(12.5, 8, manager.hour);
+    await Future.delayed(Duration(seconds: 1));
+    await manager.prefs.setBool("uploadInProgress", false);
+    await manager.prefs.setBool("fromIsolate", false);
+    await manager.prefs.setInt("current_steps", 0);
+    await manager.prefs.setInt("current_active_minutes", 0);
+    await manager.prefs.setInt("current_active_minutes_low", 0);
+    await manager.prefs.setInt("current_active_minutes_avg", 0);
+    await manager.prefs.setBool("halfTimeAlreadyFired", false);
+    await Future.delayed(Duration(seconds: 1));
+    // await manager.cleanFlash();
+    await setLastUploadedFileNumber(-1);
+    await Future.delayed(Duration(seconds: 4));
+    try {
+      await manager._disconnect().timeout(Duration(seconds: 20), onTimeout: () {
+        if (Platform.isIOS) {
+          if (port != null) {
+            port.send('uploadDone');
+          } else {
+            exit(0);
+          }
+        }
+      });
+    } catch (e) {
+      print(e);
+    }
+  } else {
+    if (Platform.isAndroid) {
+      return false;
+    } else {
       if (port != null) {
-        // completer.complete(manager);
         port.send('cantConnect');
       } else {
         print('port is null');
       }
     }
-  });
-  StreamSubscription connectionListener;
-  connectionListener = manager.connector.state.listen((event) async {
-    print("LISTENER LISTENS TO CHANGE");
-    bool uploading = manager.prefs.getBool("uploadInProgress");
-    if (event.connectionState == DeviceConnectionState.disconnected &&
-        uploading) {
-      try {
-        manager.subscription.cancel();
-        manager.connector.dispose();
-        manager = null;
-        connectionListener.cancel();
-      } catch (e) {
-        print(e);
-      }
-      if (port != null) {
-        port.send('connectionClosed');
-      } else {
-        print('port is null');
-      }
-      // }
-    } else if (event.connectionState == DeviceConnectionState.disconnected) {
-      try {
-        manager.subscription.cancel();
-        manager.connector.dispose();
-        manager = null;
-        connectionListener.cancel();
-      } catch (e) {
-        print(e);
-      }
-    }
-  })
-    ..onError((error) {
-      // Cascade
-      print("Error");
-    })
-    ..onDone(() {
-      // Cascade
-      print("done");
-    });
-
-  await manager._isStillSending();
-  await manager._getOsVersion();
-  if (manager.prefix != "") {
-    await Future.delayed(Duration(seconds: 5));
-    await manager._getOSVersionWithPrefix();
-    print("final osVersion:" + manager.osVersion.toString());
   }
-  await manager._syncTime();
-  await Future.delayed(Duration(seconds: 3));
-  // await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
-  //   if (port != null) {
-  //     completer.complete(manager);
-  //     port.send('downloadCanceled');
-  //   } else {
-  //     debugPrint('port is null');
-  //   }
-  // });
-  await Future.delayed(Duration(minutes: 5));
-  await manager.stpUp(12.5, 8, manager.hour);
-  await Future.delayed(Duration(seconds: 1));
-  await manager.prefs.setBool("uploadInProgress", false);
-  await manager.prefs.setBool("fromIsolate", false);
-  await manager.prefs.setInt("current_steps", 0);
-  await manager.prefs.setInt("current_active_minutes", 0);
-  await manager.prefs.setInt("current_active_minutes_low", 0);
-  await manager.prefs.setInt("current_active_minutes_avg", 0);
-  await manager.prefs.setBool("halfTimeAlreadyFired", false);
-  await Future.delayed(Duration(seconds: 1));
-  // await manager.cleanFlash();
-  await setLastUploadedFileNumber(-1);
-  await Future.delayed(Duration(seconds: 4));
-  await manager._disconnect();
-
+  if (Platform.isIOS) {
+    await Future.delayed(Duration(minutes: 5));
+  }
   return true;
 }
