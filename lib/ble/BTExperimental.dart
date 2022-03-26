@@ -877,6 +877,10 @@ Future<dynamic> stopRecordingAndUpload() async {
       await manager._getOSVersionWithPrefix();
       print("final osVersion:" + manager.osVersion.toString());
     }
+    if (manager.hour == null) {
+      manager.hour = 6;
+    }
+    // await Future.delayed(Duration(milliseconds: 15));
     await manager._syncTime();
     // await Future.delayed(Duration(seconds: 30));
     // await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
@@ -888,9 +892,9 @@ Future<dynamic> stopRecordingAndUpload() async {
     //   }
     // });
     // await Future.delayed(Duration(minutes: 5));
-    if (Platform.isAndroid) {
-      await Future.delayed(Duration(minutes: 5));
-    }
+    // if (Platform.isAndroid) {
+    //   await Future.delayed(Duration(minutes: 5));
+    // }
     await manager.stpUp(12.5, 8, manager.hour);
     await Future.delayed(Duration(seconds: 1));
     await manager.prefs.setBool("uploadInProgress", false);
@@ -928,8 +932,8 @@ Future<dynamic> stopRecordingAndUpload() async {
       }
     }
   }
-  if (Platform.isIOS) {
-    await Future.delayed(Duration(minutes: 5));
-  }
+  // if (Platform.isIOS) {
+  await Future.delayed(Duration(minutes: 5));
+  // }
   return true;
 }

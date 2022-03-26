@@ -42,8 +42,8 @@ android {
         minSdkVersion 27
         compileSdkVersion 31
         targetSdkVersion 32
-        versionName "4.1.6"
-        versionCode 76
+        versionName "4.1.8"
+        versionCode 78
     }
     signingConfigs {
         release {
