@@ -37,6 +37,9 @@ dependencies:
   day_night_time_picker: ^1.0.5
   toggle_switch: "^1.4.0"
   connectivity_plus: ^2.2.1
+#  connectivity_plus:
+#    git:
+#      url: https://github.com/fluttercommunity/plus_plugins
   flutter_isolate: "2.0.2-pre"
   url_launcher: ^6.0.20
   background_fetch: ^1.0.3
@@ -45,7 +48,11 @@ dependencies:
   syncfusion_flutter_charts: ^19.4.56
   dio: ^4.0.4
 
+dependency_overrides:
+  bluez: ^0.8.0
+
   worker_manager: ^4.2.6
+  quick_blue: ^0.4.1+1
   flutter:
     sdk: flutter
 

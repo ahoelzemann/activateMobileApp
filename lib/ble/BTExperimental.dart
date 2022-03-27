@@ -61,6 +61,7 @@ class BluetoothManager {
     lastUploadedFile = await getLastUploadedFileNumber();
     pg_connector = new PostgresConnector();
     uploader = new Upload();
+    hour = 6;
     await uploader.init();
   }
 
@@ -253,11 +254,7 @@ class BluetoothManager {
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
     debugPrint('checkingOsVersionBangle.');
-    // StreamSubscription _responseSubscription;
     String versionCmd = "Bangle.verString\n";
-    // if (Platform.isAndroid) {
-    //   _ble.clearGattCache(savedId);
-    // }
 
     subscription =
         _ble.subscribeToCharacteristic(characTX).listen((data) async {
@@ -294,13 +291,13 @@ class BluetoothManager {
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
 
-    if (osVersion < 71) {
-      timeCmd =
-          ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
-              ");";
-    } else {
-      timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
-    }
+    // if (osVersion < 71) {
+    //   timeCmd =
+    //       ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
+    //           ");";
+    // } else {
+    timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
+    // }
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
     timeCmd = "if (E.setTimeZone) ";
@@ -453,7 +450,6 @@ class BluetoothManager {
     Completer completer = new Completer();
     int maxtrys = 1;
     _downloadedFiles = [];
-    await Future.delayed(Duration(milliseconds: 500));
     DateTime now = DateTime.now();
     prefs.setBool("uploadInProgress", true);
     int _numofFiles = await _getNumFiles().timeout(Duration(seconds: 60),
@@ -497,7 +493,7 @@ class BluetoothManager {
         " FILES, THIS WILL TAKE SOME MINUTES ...");
 
     for (; fileCount < _numofFiles; fileCount++) {
-      await Future.delayed(Duration(milliseconds: 500));
+      // await Future.delayed(Duration(milliseconds: 500));
       debugPrint(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
       Map<String, List<int>> _currentResult = new Map();
@@ -640,8 +636,6 @@ class BluetoothManager {
   }
 
   Future<dynamic> cleanFlash() async {
-    await Future.delayed(Duration(milliseconds: 300));
-
     Completer completer = new Completer();
     QualifiedCharacteristic characRX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
@@ -784,6 +778,7 @@ Future<dynamic> getStepsAndMinutes() async {
 }
 
 Future<dynamic> stopRecordingAndUpload() async {
+  Completer completer = Completer();
   BluetoothManager manager = new BluetoothManager();
 
   final port = IsolateNameServer.lookupPortByName('worker');
@@ -811,7 +806,7 @@ Future<dynamic> stopRecordingAndUpload() async {
   //     print('port is null');
   //   }
   // }
-  await Future.delayed(Duration(seconds: 2));
+  // await Future.delayed(Duration(seconds: 2));
   if (manager.savedId != null) {
     await manager._connect().then((value) {
       if (!value) {
@@ -849,7 +844,6 @@ Future<dynamic> stopRecordingAndUpload() async {
         } else {
           print('port is null');
         }
-        // }
       } else if (event.connectionState == DeviceConnectionState.disconnected) {
         try {
           manager.subscription.cancel();
@@ -871,32 +865,22 @@ Future<dynamic> stopRecordingAndUpload() async {
       });
 
     await manager._isStillSending();
-    await manager._getOsVersion();
-    if (manager.prefix != "") {
-      await Future.delayed(Duration(seconds: 5));
-      await manager._getOSVersionWithPrefix();
-      print("final osVersion:" + manager.osVersion.toString());
-    }
-    if (manager.hour == null) {
-      manager.hour = 6;
-    }
-    // await Future.delayed(Duration(milliseconds: 15));
-    await manager._syncTime();
-    // await Future.delayed(Duration(seconds: 30));
-    // await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
-    //   if (port != null) {
-    //     completer.complete(manager);
-    //     port.send('downloadCanceled');
-    //   } else {
-    //     debugPrint('port is null');
-    //   }
-    // });
-    // await Future.delayed(Duration(minutes: 5));
-    // if (Platform.isAndroid) {
-    //   await Future.delayed(Duration(minutes: 5));
+    // await manager._getOsVersion();
+    // if (manager.prefix != "") {
+    //   await Future.delayed(Duration(seconds: 5));
+    //   await manager._getOSVersionWithPrefix();
+    //   print("final osVersion:" + manager.osVersion.toString());
     // }
+    await manager._syncTime();
+    await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
+      if (port != null) {
+        completer.complete(manager);
+        port.send('downloadCanceled');
+      } else {
+        debugPrint('port is null');
+      }
+    });
     await manager.stpUp(12.5, 8, manager.hour);
-    await Future.delayed(Duration(seconds: 1));
     await manager.prefs.setBool("uploadInProgress", false);
     await manager.prefs.setBool("fromIsolate", false);
     await manager.prefs.setInt("current_steps", 0);
@@ -904,10 +888,10 @@ Future<dynamic> stopRecordingAndUpload() async {
     await manager.prefs.setInt("current_active_minutes_low", 0);
     await manager.prefs.setInt("current_active_minutes_avg", 0);
     await manager.prefs.setBool("halfTimeAlreadyFired", false);
-    await Future.delayed(Duration(seconds: 1));
+    await Future.delayed(Duration(milliseconds: 500));
     // await manager.cleanFlash();
     await setLastUploadedFileNumber(-1);
-    await Future.delayed(Duration(seconds: 4));
+    await Future.delayed(Duration(milliseconds: 500));
     try {
       await manager._disconnect().timeout(Duration(seconds: 20), onTimeout: () {
         if (Platform.isIOS) {
@@ -933,7 +917,7 @@ Future<dynamic> stopRecordingAndUpload() async {
     }
   }
   // if (Platform.isIOS) {
-  await Future.delayed(Duration(minutes: 5));
+  // await Future.delayed(Duration(minutes: 5));
   // }
   return true;
 }

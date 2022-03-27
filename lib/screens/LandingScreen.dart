@@ -817,112 +817,112 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           if (Platform.isAndroid) {
             forAndroid(prefs);
           } else {
-            final task = Executor().execute(fun1: await forAndroid(prefs));
+            // final task = Executor().execute(fun1: await forAndroid(prefs));
             hideOverlay();
             showOverlay(
                 "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
                 Icon(Icons.check_box, size: 30, color: Colors.green),
                 withButton: true);
-            // final receivePort = ReceivePort();
-            // FlutterIsolate flutterMainIsolate =
-            //     await FlutterIsolate.spawn(mainIsolate, "");
-            // final sendPort = receivePort.sendPort;
-            // IsolateNameServer.registerPortWithName(sendPort, 'main');
-            // final receivePortUpload = ReceivePort();
-            // FlutterIsolate flutterUploadIsolate =
-            //     await FlutterIsolate.spawn(uploadIsolate, "");
-            // final sendPortUpload = receivePortUpload.sendPort;
-            // IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
-            // receivePortUpload.listen((dynamic message) async {
-            //   if (message == "uploadDone") {
-            //     print('Killing the upload isolate');
-            //     flutterUploadIsolate.kill();
-            //   }
-            // });
-            // receivePort.listen((dynamic message) async {
-            //   if (message is List) {
-            //     hideOverlay();
-            //     showOverlay(
-            //         'Ihre Daten werden übertragen.',
-            //         SpinKitFadingCircle(
-            //           color: Colors.orange,
-            //           size: 50.0,
-            //         ),
-            //         withButton: false,
-            //         timer: message[0]);
-            //   }
-            //   if (message == 'cantConnect') {
-            //     print("Connection Not Possible - Killing the Isolate.");
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
-            //         Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-            //         withButton: true);
-            //   }
-            //   if (message == 'connectionClosed') {
-            //     print("BLE Connection closed - Killing the Isolate");
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
-            //         Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-            //         withButton: true);
-            //   }
-            //   if (message == 'downloadCanceled') {
-            //     print("Download Canceled - Killing the Isolate.");
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
-            //         Icon(Icons.upload_file, size: 30, color: Colors.green),
-            //         withButton: true);
-            //   }
-            //   if (message == 'done') {
-            //     print('Killing the Isolate');
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
-            //         Icon(Icons.check_box, size: 30, color: Colors.green),
-            //         withButton: true);
-            //   }
-            //   if (message == 'doneWithError') {
-            //     print('Killing the Isolate');
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
-            //         Icon(Icons.bluetooth, size: 30, color: Colors.blue),
-            //         withButton: true);
-            //   }
-            //   if (message == 'uploadToServerFailed') {
-            //     print('Killing the Isolate - Upload to Server failed');
-            //     flutterMainIsolate.kill();
-            //     await prefs.setBool("uploadInProgress", false);
-            //     await prefs.setBool("fromIsolate", false);
-            //     hideOverlay();
-            //     showOverlay(
-            //         "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
-            //         Icon(
-            //           Icons.upload_file,
-            //           color: Colors.orange,
-            //           size: 50.0,
-            //         ),
-            //         withButton: true,
-            //         buttonType: 'upload');
-            //   }
-            // });
+            final receivePort = ReceivePort();
+            FlutterIsolate flutterMainIsolate =
+                await FlutterIsolate.spawn(mainIsolate, "");
+            final sendPort = receivePort.sendPort;
+            IsolateNameServer.registerPortWithName(sendPort, 'main');
+            final receivePortUpload = ReceivePort();
+            FlutterIsolate flutterUploadIsolate =
+                await FlutterIsolate.spawn(uploadIsolate, "");
+            final sendPortUpload = receivePortUpload.sendPort;
+            IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
+            receivePortUpload.listen((dynamic message) async {
+              if (message == "uploadDone") {
+                print('Killing the upload isolate');
+                flutterUploadIsolate.kill();
+              }
+            });
+            receivePort.listen((dynamic message) async {
+              if (message is List) {
+                hideOverlay();
+                showOverlay(
+                    'Ihre Daten werden übertragen.',
+                    SpinKitFadingCircle(
+                      color: Colors.orange,
+                      size: 50.0,
+                    ),
+                    withButton: false,
+                    timer: message[0]);
+              }
+              if (message == 'cantConnect') {
+                print("Connection Not Possible - Killing the Isolate.");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'connectionClosed') {
+                print("BLE Connection closed - Killing the Isolate");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'downloadCanceled') {
+                print("Download Canceled - Killing the Isolate.");
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                    Icon(Icons.upload_file, size: 30, color: Colors.green),
+                    withButton: true);
+              }
+              if (message == 'done') {
+                print('Killing the Isolate');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
+                    Icon(Icons.check_box, size: 30, color: Colors.green),
+                    withButton: true);
+              }
+              if (message == 'doneWithError') {
+                print('Killing the Isolate');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
+                    Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                    withButton: true);
+              }
+              if (message == 'uploadToServerFailed') {
+                print('Killing the Isolate - Upload to Server failed');
+                flutterMainIsolate.kill();
+                await prefs.setBool("uploadInProgress", false);
+                await prefs.setBool("fromIsolate", false);
+                hideOverlay();
+                showOverlay(
+                    "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
+                    Icon(
+                      Icons.upload_file,
+                      color: Colors.orange,
+                      size: 50.0,
+                    ),
+                    withButton: true,
+                    buttonType: 'upload');
+              }
+            });
           }
 
           return true;
@@ -990,6 +990,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 textColor: Colors.white,
                 color: Colors.green,
                 onPressed: () async {
+                  // await uploadAndSchedule();
                   var connectivityResult =
                       await (Connectivity().checkConnectivity());
                   if (connectivityResult == ConnectivityResult.mobile ||
