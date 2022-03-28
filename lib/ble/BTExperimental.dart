@@ -253,11 +253,7 @@ class BluetoothManager {
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
     debugPrint('checkingOsVersionBangle.');
-    // StreamSubscription _responseSubscription;
     String versionCmd = "Bangle.verString\n";
-    // if (Platform.isAndroid) {
-    //   _ble.clearGattCache(savedId);
-    // }
 
     subscription =
         _ble.subscribeToCharacteristic(characTX).listen((data) async {
@@ -294,13 +290,13 @@ class BluetoothManager {
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
 
-    if (osVersion < 71) {
-      timeCmd =
-          ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
-              ");";
-    } else {
-      timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
-    }
+    // if (osVersion < 71) {
+    //   timeCmd =
+    //       ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
+    //           ");";
+    // } else {
+    timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
+    // }
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
     timeCmd = "if (E.setTimeZone) ";
