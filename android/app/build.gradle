@@ -39,11 +39,11 @@ android {
 
     defaultConfig {
         applicationId "de.activate.trac2move"
-        minSdkVersion 27
+        minSdkVersion 25
         compileSdkVersion 31
         targetSdkVersion 32
-        versionName "4.1.8"
-        versionCode 78
+        versionName "4.2.1"
+        versionCode 81
     }
     signingConfigs {
         release {

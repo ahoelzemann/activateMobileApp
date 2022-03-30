@@ -289,14 +289,13 @@ class BluetoothManager {
     String timeCmd = "\x10setTime(";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
-
-    // if (osVersion < 71) {
-    //   timeCmd =
-    //       ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
-    //           ");";
-    // } else {
+    if (osVersion < 74) {
+      timeCmd =
+          ((date.millisecondsSinceEpoch + (1000 * 60 * 60)) / 1000).toString() +
+              ");";
+    } else {
     timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
-    // }
+    }
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
     timeCmd = "if (E.setTimeZone) ";
