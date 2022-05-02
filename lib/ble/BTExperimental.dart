@@ -5,6 +5,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_reactive_ble/flutter_reactive_ble.dart';
+import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:trac2move/persistent/PostgresConnector_V2.dart';
@@ -65,9 +66,10 @@ class BluetoothManager {
     await uploader.init();
   }
 
-  Future<dynamic> _discoverMyDevice(String source) async {
+  Future<dynamic> _discoverMyDeviceV2(String source) async {
     print("scanning for devices");
     Completer completer = new Completer();
+
     StreamSubscription<DiscoveredDevice> deviceSubscription;
     deviceSubscription = _ble.scanForDevices(withServices: [
       ISSC_PROPRIETARY_SERVICE_UUID
@@ -81,7 +83,7 @@ class BluetoothManager {
             withButton: true);
 
         try {
-          final port = IsolateNameServer.lookupPortByName('worker');
+          final port = IsolateNameServer.lookupPortByName('main');
           if (port != null) {
             port.send('cantConnect');
           } else {
@@ -100,8 +102,6 @@ class BluetoothManager {
       if (device.name == savedDevice) {
         print("device found");
         savedId = device.id;
-        // print(device.manufacturerData);
-        // print(String.fromCharCodes(device.manufacturerData));
         prefs.setInt(
             "current_steps",
             device.manufacturerData.elementAt(2) +
@@ -128,6 +128,73 @@ class BluetoothManager {
     return completer.future;
   }
 
+  Future<dynamic> _discoverMyDevice(String source) async {
+    print("scanning for devices");
+    Completer completer = new Completer();
+    Timer myTimer;
+    myTimer = Timer(Duration(seconds: 30), () async {
+      if (source == "upload") {
+        if (Platform.isAndroid) {
+          hideOverlay();
+          showOverlay(
+              "Wir konnten keine Verbindung zur Bangle aufnehmen. Bitte starten Sie die App neu und führen einen Neustart der Bangle durch.",
+              Icon(Icons.bluetooth_disabled, color: Colors.blue, size: 50),
+              withButton: true);
+        } else {
+          try {
+            final port = IsolateNameServer.lookupPortByName('main');
+            if (port != null) {
+              port.send('cantConnect');
+            } else {
+              print('port is null');
+            }
+          } catch (e) {
+            completer.complete(false);
+          }
+        }
+      }
+      print("device not visible.");
+      completer.complete(false);
+
+      return completer.future;
+    });
+    StreamSubscription<DiscoveredDevice> deviceSubscription;
+    deviceSubscription = _ble.scanForDevices(
+        withServices: [ISSC_PROPRIETARY_SERVICE_UUID],
+        scanMode: ScanMode.balanced).listen((device) async {
+      // print(device.name);
+      if (device.name == savedDevice) {
+        myTimer.cancel();
+        print("device found");
+        savedId = device.id;
+        prefs.setInt(
+            "current_steps",
+            device.manufacturerData.elementAt(2) +
+                (device.manufacturerData.elementAt(3) << 8));
+        prefs.setInt(
+            "current_active_minutes",
+            device.manufacturerData.elementAt(4) +
+                (device.manufacturerData.elementAt(5) << 8));
+        prefs.setInt(
+            "current_active_minutes_low",
+            device.manufacturerData.elementAt(6) +
+                (device.manufacturerData.elementAt(7) << 8));
+        prefs.setInt(
+            "current_active_minutes_avg", device.manufacturerData.elementAt(8));
+        prefs.setInt("current_active_minutes_high",
+            device.manufacturerData.elementAt(9));
+        await deviceSubscription.cancel();
+        completer.complete(true);
+        return completer.future;
+      }
+    }, onError: (error) {
+      completer.complete(false);
+      return completer.future;
+    });
+
+    return completer.future;
+  }
+
   Future<dynamic> _connect() async {
     Completer completer = new Completer();
     print("trying to connect....");
@@ -146,11 +213,11 @@ class BluetoothManager {
   }
 
   Future<dynamic> _disconnect() async {
-    if (Platform.isAndroid ) {
+    if (Platform.isAndroid) {
       await connector.disconnectAndroid(savedId);
       return true;
     } else {
-      await connector.disconnectAndroid(savedId);
+      await connector.disconnect(savedId);
       return true;
       // connector.disconnect(savedId);
     }
@@ -204,7 +271,7 @@ class BluetoothManager {
   }
 
   Future<dynamic> _getOsVersion() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     Completer completer = new Completer();
     QualifiedCharacteristic characTX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
@@ -243,7 +310,7 @@ class BluetoothManager {
   }
 
   Future<dynamic> _getOSVersionWithPrefix() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 50));
     Completer completer = new Completer();
     QualifiedCharacteristic characTX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
@@ -260,12 +327,14 @@ class BluetoothManager {
         _ble.subscribeToCharacteristic(characTX).listen((data) async {
       String answer =
           String.fromCharCodes(data).replaceAll(new RegExp(r"\D"), "");
-      if (answer != "11") {
-        osVersion = int.parse(answer);
-        print("Original Answer: " + answer);
-        print("Regex: " + osVersion.toString());
-        await subscription.cancel();
-        completer.complete(true);
+      if (answer != "11" && answer.length > 0) {
+        if (!answer.contains("Bangle")) {
+          osVersion = int.parse(answer);
+          print("Original Answer: " + answer);
+          print("Regex: " + osVersion.toString());
+          await subscription.cancel();
+          completer.complete(true);
+        }
       }
     }, onError: (dynamic error) {
       print(error);
@@ -277,7 +346,7 @@ class BluetoothManager {
   }
 
   Future<dynamic> _syncTime() async {
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 50));
     Completer completer = new Completer();
     QualifiedCharacteristic characRX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
@@ -291,13 +360,13 @@ class BluetoothManager {
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
 
-    // if (osVersion < 71) {
-    //   timeCmd =
-    //       ((date.millisecondsSinceEpoch - (1000 * 60 * 60)) / 1000).toString() +
-    //           ");";
-    // } else {
-    timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
-    // }
+    if (osVersion < 74) {
+      timeCmd =
+          ((date.millisecondsSinceEpoch + (1000 * 60 * 60)) / 1000).toString() +
+              ");";
+    } else {
+      timeCmd = ((date.millisecondsSinceEpoch) / 1000).toString() + ");";
+    }
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(timeCmd.codeUnits));
     timeCmd = "if (E.setTimeZone) ";
@@ -313,13 +382,13 @@ class BluetoothManager {
   }
 
   Future<dynamic> _getNumFiles() async {
-    await Future.delayed(const Duration(milliseconds: 500));
+    // await Future.delayed(const Duration(milliseconds: 500));
     Completer completer = new Completer();
 
     String cmd = "startUpload()\n";
     // StreamSubscription _responseSubscription;
     debugPrint("Sending getNumFiles command...");
-    await Future.delayed(const Duration(seconds: 5));
+    // await Future.delayed(const Duration(seconds: 5));
     String dt = "";
     int numOfFiles = 0;
     QualifiedCharacteristic characTX = QualifiedCharacteristic(
@@ -333,7 +402,7 @@ class BluetoothManager {
     if (prefix != "") {
       await _ble.writeCharacteristicWithoutResponse(characRX,
           value: Uint8List.fromList(prefix.codeUnits));
-      await Future.delayed(Duration(milliseconds: 500));
+      // await Future.delayed(Duration(milliseconds: 500));
     }
     subscription = _ble
         .subscribeToCharacteristic(characTX)
@@ -370,7 +439,7 @@ class BluetoothManager {
     Map<String, List<int>> _result = {};
     List<int> _data = [];
     String _fileName;
-    Completer completer = new Completer();
+    Completer completer = await new Completer();
     String cmd;
     QualifiedCharacteristic characTX = QualifiedCharacteristic(
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
@@ -446,7 +515,7 @@ class BluetoothManager {
   }
 
   Future<dynamic> _startUpload() async {
-    final port = IsolateNameServer.lookupPortByName('worker');
+    final port = IsolateNameServer.lookupPortByName('main');
     Completer completer = new Completer();
     int maxtrys = 1;
     _downloadedFiles = [];
@@ -493,15 +562,33 @@ class BluetoothManager {
         " FILES, THIS WILL TAKE SOME MINUTES ...");
 
     for (; fileCount < _numofFiles; fileCount++) {
-      // await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 100));
       debugPrint(fileCount.toString() + " Start uploading ///////////////");
       int try_counter = 0;
-      Map<String, List<int>> _currentResult = new Map();
-      _currentResult = await _sendNext(fileCount).timeout(Duration(minutes: 5),
-          onTimeout: () async {
-        _currentResult = {};
+      Map<String, List<int>> _currentResult = await new Map();
+      Timer myTimer;
+      myTimer = Timer(Duration(minutes: (maxtrys + 1) * 5), () async {
+        try {
+          if (Platform.isIOS) {
+            if (port != null) {
+              port.send('connectionClosed');
+            } else {
+              exit(0);
+            }
+          } else {
+            await prefs.setBool("uploadInProgress", false);
+            await prefs.setBool("fromIsolate", false);
+            hideOverlay();
+            showOverlay(
+                "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
+                Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                withButton: true);
+          }
+        } catch (e) {
+          exit(0);
+        }
       });
-
+      _currentResult = await _sendNext(fileCount);
       while (_currentResult == null && try_counter != maxtrys) {
         if (Platform.isIOS) {
           try {
@@ -558,6 +645,10 @@ class BluetoothManager {
           _fileName.toString() +
           " saved to file //////////////////");
       await setLastUploadedFileNumber(fileCount + 1);
+
+      debugPrint("file downloaded --> canceling the timer");
+      await myTimer.cancel();
+      debugPrint("timer canceled.");
     }
 
     debugPrint("DONE UPLOADING, " + fileCount.toString() + " FILES RECEIVED");
@@ -582,13 +673,10 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    // if (prefix != "" && Platform.isAndroid) {
-    //   await _ble.clearGattCache(savedId);
-    // }
     if (prefix != "") {
       await _ble.writeCharacteristicWithoutResponse(characRX,
           value: Uint8List.fromList(prefix.codeUnits));
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(Duration(milliseconds: 100));
     }
 
     subscription = _ble
@@ -641,34 +729,33 @@ class BluetoothManager {
         serviceId: ISSC_PROPRIETARY_SERVICE_UUID,
         characteristicId: UUIDSTR_ISSC_TRANS_RX,
         deviceId: savedId);
-    // debugPrint("Status:" + myDevice.name.toString() + " RX– UUID discovered");
 
     debugPrint("Sending delete command...");
 
     String s = "var fL=require(\"Sto";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     s = "rage\").list(/.bin\$/";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     s = ");for (var i=0;i<";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     s = "fL.length; i++) ";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     s = "require(\"Storage";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     s = "\").erase(fL[i]);\n";
     await _ble.writeCharacteristicWithoutResponse(characRX,
         value: Uint8List.fromList(s.codeUnits));
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 100));
     print("delete cmd sent");
     completer.complete(true);
 
@@ -717,7 +804,7 @@ Future<dynamic> findNearestDevice() async {
       completer.complete(true);
     } catch (e) {
       updateOverlayText(
-          "Wir konnten keine Bangle.js finden. Bitte aktivieren Sie sowohl Bluetooth, als auch ihre GPS-Verbindung neu und versuchen Sie es dann erneut.");
+          "Wir konnten keine Bangle.js finden. Bitte starten Sie sowohl Bluetooth, als auch ihre GPS-Verbindung neu und versuchen Sie es dann erneut.");
       completer.complete(false);
     }
   });
@@ -780,8 +867,22 @@ Future<dynamic> getStepsAndMinutes() async {
 Future<dynamic> stopRecordingAndUpload() async {
   Completer completer = Completer();
   BluetoothManager manager = new BluetoothManager();
+  final port = await IsolateNameServer.lookupPortByName('main');
+  // Timer uploadTimerStep1 = Timer(Duration(seconds: 30), () async {
+  //   print("No internet connection, skipping the upload");
+  //
+  //   if (Platform.isAndroid) {
+  //     return false;
+  //   } else {
+  //     if (port != null) {
+  //       manager = null;
+  //       port.send('connectionClosed');
+  //     } else {
+  //       exit(0);
+  //     }
+  //   }
+  // });
 
-  final port = IsolateNameServer.lookupPortByName('worker');
   await manager._asyncInit();
 
   manager.hour = manager.prefs.getInt("recordingWillStartAt");
@@ -827,23 +928,53 @@ Future<dynamic> stopRecordingAndUpload() async {
     });
     StreamSubscription connectionListener;
     connectionListener = manager.connector.state.listen((event) async {
+      await Future.delayed(Duration(milliseconds: 100));
       print("LISTENER LISTENS TO CHANGE");
+
+      if (event.connectionState == DeviceConnectionState.connected) {
+        if (Platform.isIOS) {
+          port.send('changeOverlayReady');
+        } else {
+          hideOverlay();
+          showOverlay(
+              'Ihre Daten werden nun übertragen.'
+              '\nSie können die App jetzt im Hintergrund\nweiter laufen lassen.',
+              SpinKitFadingCircle(
+                color: Colors.green,
+                size: 50.0,
+              ),
+              withButton: false);
+        }
+      }
       bool uploading = manager.prefs.getBool("uploadInProgress");
       if (event.connectionState == DeviceConnectionState.disconnected &&
           uploading) {
         try {
           manager.subscription.cancel();
           manager.connector.dispose();
-          manager = null;
+          if (Platform.isIOS) {
+            if (port != null) {
+              manager = null;
+              port.send('connectionClosed');
+            } else {
+              exit(0);
+            }
+          } else {
+            await manager.prefs.setBool("uploadInProgress", false);
+            await manager.prefs.setBool("fromIsolate", false);
+            manager = null;
+            hideOverlay();
+            showOverlay(
+                "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
+                Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+                withButton: true);
+          }
+
           connectionListener.cancel();
         } catch (e) {
           print(e);
         }
-        if (port != null) {
-          port.send('connectionClosed');
-        } else {
-          print('port is null');
-        }
+        return false;
       } else if (event.connectionState == DeviceConnectionState.disconnected) {
         try {
           manager.subscription.cancel();
@@ -853,6 +984,7 @@ Future<dynamic> stopRecordingAndUpload() async {
         } catch (e) {
           print(e);
         }
+        return false;
       }
     })
       ..onError((error) {
@@ -865,14 +997,27 @@ Future<dynamic> stopRecordingAndUpload() async {
       });
 
     await manager._isStillSending();
-    // await manager._getOsVersion();
-    // if (manager.prefix != "") {
-    //   await Future.delayed(Duration(seconds: 5));
-    //   await manager._getOSVersionWithPrefix();
-    //   print("final osVersion:" + manager.osVersion.toString());
-    // }
+    await Future.delayed(Duration(milliseconds: 100));
+    Timer myTimer;
+    myTimer = Timer(Duration(seconds: 5), () async {
+      hideOverlay();
+      showOverlay(
+          "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
+          Icon(Icons.bluetooth, size: 30, color: Colors.blue),
+          withButton: true);
+    });
+    await manager._getOsVersion();
+    myTimer.cancel();
+    if (manager.prefix != "") {
+      await Future.delayed(Duration(milliseconds: 100));
+      await manager._getOSVersionWithPrefix();
+      print("final osVersion:" + manager.osVersion.toString());
+    }
     await manager._syncTime();
-    await manager._startUpload().timeout(Duration(hours: 3), onTimeout: () async {
+    // uploadTimerStep1.cancel();
+
+    await manager._startUpload().timeout(Duration(hours: 3),
+        onTimeout: () async {
       if (port != null) {
         completer.complete(manager);
         port.send('downloadCanceled');
@@ -883,27 +1028,32 @@ Future<dynamic> stopRecordingAndUpload() async {
     await manager.stpUp(12.5, 8, manager.hour);
     await manager.prefs.setBool("uploadInProgress", false);
     await manager.prefs.setBool("fromIsolate", false);
-    await manager.prefs.setInt("current_steps", 0);
-    await manager.prefs.setInt("current_active_minutes", 0);
-    await manager.prefs.setInt("current_active_minutes_low", 0);
-    await manager.prefs.setInt("current_active_minutes_avg", 0);
-    await manager.prefs.setBool("halfTimeAlreadyFired", false);
-    await Future.delayed(Duration(milliseconds: 500));
-    // await manager.cleanFlash();
+    // await manager.prefs.setBool("halfTimeAlreadyFired", false);
+    // await manager.prefs.setBool("minutesBCTFired", false);
+    // await manager.prefs.setBool("stepsBCTFired", false);
+    await Future.delayed(Duration(milliseconds: 50));
+    await manager.cleanFlash();
     await setLastUploadedFileNumber(-1);
-    await Future.delayed(Duration(milliseconds: 500));
+    await Future.delayed(Duration(milliseconds: 50));
     try {
-      await manager._disconnect().timeout(Duration(seconds: 20), onTimeout: () {
+      manager._disconnect().timeout(Duration(seconds: 20), onTimeout: () {
         if (Platform.isIOS) {
           if (port != null) {
-            port.send('uploadDone');
+            port.send('done');
           } else {
             exit(0);
           }
         }
       });
     } catch (e) {
-      print(e);
+      exit(0);
+    }
+    if (Platform.isIOS) {
+      if (port != null) {
+        port.send('done');
+      } else {
+        exit(0);
+      }
     }
   } else {
     if (Platform.isAndroid) {
@@ -916,8 +1066,6 @@ Future<dynamic> stopRecordingAndUpload() async {
       }
     }
   }
-  // if (Platform.isIOS) {
-  // await Future.delayed(Duration(minutes: 5));
-  // }
+
   return true;
 }

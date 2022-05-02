@@ -172,6 +172,13 @@ class PostgresConnector {
 
           print(result);
           print('Schritte/Minuten erfolgreich gespeichert');
+
+          await prefs.setInt("current_steps", 0);
+          await prefs.setInt("current_active_minutes", 0);
+          await prefs.setInt("current_active_minutes_low", 0);
+          await prefs.setInt("current_active_minutes_avg", 0);
+          // await prefs.setBool("halfTimeAlreadyFired", false);
+
           return 'Schritte/Minuten erfolgreich gespeichert';
         } catch (e, stacktrace) {
           print(e);

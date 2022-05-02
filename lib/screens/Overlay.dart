@@ -40,17 +40,11 @@ class OverlayView extends StatelessWidget {
                       Row(
                         children: [
                           Spacer(),
-                          // IconButton(
-                          //   icon: Icon(Icons.close_outlined),
-                          //   onPressed: () {
-                          //     Loader.appLoader.hideLoader();
-                          //   },
-                          // ),
                         ],
                       ),
                       Loader.appLoader.loaderIconNotifier.value,
                       SizedBox(
-                        height: 16,
+                        height: 20,
                       ),
                       Column(
                         children: [
@@ -81,10 +75,10 @@ class OverlayView extends StatelessWidget {
                                                     0.0, 0.0, 0.0, 0.0),
                                             insetPadding:
                                                 const EdgeInsets.fromLTRB(
-                                                    0.0, 0.0, 0.0, 0.0),
+                                                    25.0, 0.0, 25.0, 0.0),
                                             actionsPadding:
                                                 const EdgeInsets.fromLTRB(
-                                                    0.0, 0.0, 0.0, 0.0),
+                                                    25.0, 0.0, 25.0, 0.0),
                                           ),
                                         );
                                       } else {

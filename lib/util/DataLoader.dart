@@ -1,9 +1,4 @@
-import 'dart:convert';
-import 'package:flutter/services.dart' show ByteData, rootBundle;
-// import 'package:convert/convert.dart';
-import 'dart:typed_data';
 import 'package:trac2move/persistent/Participant.dart';
-import 'dart:io' as io;
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 

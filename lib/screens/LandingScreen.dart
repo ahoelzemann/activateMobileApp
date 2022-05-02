@@ -27,7 +27,6 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:trac2move/ble/BTExperimental.dart' as BTExperimental;
 import 'package:trac2move/persistent/PostgresConnector_V2.dart' as pg_connector;
 import 'package:trac2move/util/Upload_V2.dart' as uploader;
-import 'package:worker_manager/worker_manager.dart';
 
 class LandingScreen extends StatefulWidget {
   @override
@@ -35,76 +34,80 @@ class LandingScreen extends StatefulWidget {
 }
 
 void mainIsolate(String arg) async {
-  // await Future.delayed(Duration(seconds: 2));
-  final receivePort = ReceivePort();
-  int runs = 0;
-  FlutterIsolate flutterWorkerIsolate =
-      await FlutterIsolate.spawn(workerIsolate, "");
-  final sendPort = receivePort.sendPort;
-  final port = IsolateNameServer.lookupPortByName('main');
-  IsolateNameServer.registerPortWithName(sendPort, 'worker');
-  receivePort.listen((dynamic message) async {
-    if (message == 'connectionClosed') {
-      print(
-          "BLE Connection closed - Killing the Isolate and spawning a new one.");
-      flutterWorkerIsolate.kill();
-      runs++;
-
-      if (runs <= 5) {
-        await Future.delayed(Duration(minutes: 1));
-        flutterWorkerIsolate = await FlutterIsolate.spawn(workerIsolate, "");
-      } else {
-        if (port != null) {
-          port.send(message);
-        } else {
-          debugPrint('port is null');
-        }
-      }
-    } else {
-      flutterWorkerIsolate.kill();
-      if (port != null) {
-        port.send(message);
-      } else {
-        debugPrint('port is null');
-      }
-    }
-  });
+  await BTExperimental.stopRecordingAndUpload();
+  // final receivePort = ReceivePort();
+  // int runs = 0;
+  // FlutterIsolate flutterWorkerIsolate =
+  //     await FlutterIsolate.spawn(workerIsolate, "");
+  // final sendPort = receivePort.sendPort;
+  // final port = IsolateNameServer.lookupPortByName('main');
+  // IsolateNameServer.registerPortWithName(sendPort, 'worker');
+  // receivePort.listen((dynamic message) async {
+  //   if (message == 'connectionClosed') {
+  //     print(
+  //         "BLE Connection closed - Killing the Isolate and spawning a new one.");
+  //     flutterWorkerIsolate.kill();
+  //     runs++;
+  //
+  //     if (runs <= 5) {
+  //       await Future.delayed(Duration(minutes: 1));
+  //       flutterWorkerIsolate = await FlutterIsolate.spawn(workerIsolate, "");
+  //     } else {
+  //       if (port != null) {
+  //         port.send(message);
+  //       } else {
+  //         debugPrint('port is null');
+  //       }
+  //     }
+  //   } else {
+  //     flutterWorkerIsolate.kill();
+  //     print("Worer Isolate killed, forwarding message to main isolate.");
+  //     if (port != null) {
+  //       port.send(message);
+  //     } else {
+  //       debugPrint('port is null');
+  //     }
+  //   }
+  // });
 }
 
 Future<dynamic> forAndroid(SharedPreferences prefs) async {
-  Completer completer = new Completer();
+  Completer completer = Completer();
   await BTExperimental.getStepsAndMinutes();
   var pgc = pg_connector.PostgresConnector();
-  await pgc.saveStepsandMinutes();
-  await uploader.uploadActivityDataToServer();
+  pgc.saveStepsandMinutes();
+  uploader.uploadActivityDataToServer();
   bool result = await BTExperimental.stopRecordingAndUpload();
   print("For Andorid done");
   await prefs.setBool("uploadInProgress", false);
   await prefs.setBool("fromIsolate", false);
   if (result) {
     hideOverlay();
-    showOverlay(
-        "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
+    showOverlay("Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
         Icon(Icons.check_box, size: 30, color: Colors.green),
         withButton: true);
+  } else {
+    if (result) {
+      hideOverlay();
+      showOverlay("Es gab einen Fehler bei der Übertragung. Bitte starten Sie diesen erneut.",
+          Icon(Icons.warning_rounded, size: 30, color: Colors.orange),
+          withButton: true);
+    }
   }
   completer.complete([result]);
   return completer.future;
 }
 
-void workerIsolate(String arg) async {
-  await BTExperimental.stopRecordingAndUpload();
-}
-
 void uploadIsolate(String arg) async {
-  // await Future.delayed(Duration(seconds: 1));
-  await BTExperimental.getStepsAndMinutes();
-  var pgc = pg_connector.PostgresConnector();
-  await pgc.saveStepsandMinutes();
-  await uploader.uploadActivityDataToServer();
+  try {
+    await BTExperimental.getStepsAndMinutes();
+    var pgc = pg_connector.PostgresConnector();
+    pgc.saveStepsandMinutes();
+    await uploader.uploadActivityDataToServer();
+  } catch (e) {
+    debugPrint("Internet not available, skipping the upload");
+  }
 
-  // final port = IsolateNameServer.lookupPortByName('upload');
-  // port.send("uploadDone");
 }
 
 void reloadPage(context) async {
@@ -158,17 +161,18 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
       AwesomeNotifications().actionStream.listen((receivedNotification) {
         Navigator.of(context).pushNamed('/NotificationPage', arguments: {
           receivedNotification.id
-        } // your page params. I recommend to you to pass all *receivedNotification* object
+        }
             );
       });
     } catch (e) {
       print(e);
     }
     if (await isbctGroup()) {
-      await Future.delayed(Duration(milliseconds: 500));
+      await Future.delayed(Duration(milliseconds: 100));
       await BCT.checkAndFireBCT();
     }
     if (!uploadSuccessful) {
+      hideOverlay();
       showOverlay(
           "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
           Icon(
@@ -179,12 +183,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           withButton: true,
           buttonType: 'upload');
     }
+    hideOverlay();
     prefs.setBool("btBusy", false);
   }
 
   @override
   void onResume() async {
-    // print("ON RESUME");
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool btBusy;
     try {
@@ -216,11 +220,12 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
         // await prefs.setBool("uploadInProgress", false);
       }
       if (await isbctGroup()) {
-        await Future.delayed(Duration(milliseconds: 500));
+        await Future.delayed(Duration(milliseconds: 100));
         await BCT.checkAndFireBCT();
       }
     }
     if (!uploadSuccessful) {
+      hideOverlay();
       showOverlay(
           "Der letzte Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
           Icon(
@@ -755,6 +760,21 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                 );
               },
             ),
+            // ListTile(
+            //   title: Text('Overlay',
+            //       style: TextStyle(
+            //           fontFamily: "PlayfairDisplay",
+            //           fontWeight: FontWeight.bold,
+            //           color: Colors.black)),
+            //   onTap: () async {
+            //     showOverlay(
+            //         'Ihre Bangle wird verbunden.\nBitte warten Sie einen Moment.',
+            //         [Icon(Icons.bluetooth_searching, color: Colors.blue, size: 40), Icon(Icons.arrow_forward, color: Colors.black, size: 30), Icon(Icons.watch, color: Colors.blue, size: 40)],
+            //         withButton: false);
+            //     await Future.delayed(Duration(seconds: 5));
+            //     hideOverlay();
+            //   },
+            // ),
           ],
         ),
       ),
@@ -803,11 +823,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           await prefs.setBool("minutesBCTFired", false);
           await prefs.setBool("stepsBCTFired", false);
           showOverlay(
-              'Ihre Daten werden übertragen.',
-              SpinKitFadingCircle(
-                color: Colors.orange,
-                size: 50.0,
-              ),
+              'Ihre Bangle wird verbunden.\nBitte warten Sie einen Moment.',
+              [Icon(Icons.bluetooth_searching, color: Colors.blue, size: 40), Icon(Icons.arrow_forward, color: Colors.black, size: 30), Icon(Icons.watch, color: Colors.blue, size: 40)],
               withButton: false);
           int hour = dateTime.hour;
           await prefs.setInt("recordingWillStartAt", hour);
@@ -817,37 +834,32 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           if (Platform.isAndroid) {
             forAndroid(prefs);
           } else {
-            // final task = Executor().execute(fun1: await forAndroid(prefs));
-            hideOverlay();
-            showOverlay(
-                "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
-                Icon(Icons.check_box, size: 30, color: Colors.green),
-                withButton: true);
+
             final receivePort = ReceivePort();
+            final receivePortUpload = ReceivePort();
+            final sendPort = receivePort.sendPort;
+            final sendPortUpload = receivePortUpload.sendPort;
+            IsolateNameServer.registerPortWithName(sendPort, 'main');
             FlutterIsolate flutterMainIsolate =
                 await FlutterIsolate.spawn(mainIsolate, "");
-            final sendPort = receivePort.sendPort;
-            IsolateNameServer.registerPortWithName(sendPort, 'main');
-            final receivePortUpload = ReceivePort();
+            IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
             FlutterIsolate flutterUploadIsolate =
                 await FlutterIsolate.spawn(uploadIsolate, "");
-            final sendPortUpload = receivePortUpload.sendPort;
-            IsolateNameServer.registerPortWithName(sendPortUpload, 'upload');
-            receivePortUpload.listen((dynamic message) async {
+            StreamSubscription<dynamic> uploadSubscription;
+            StreamSubscription<dynamic> bleSubscription;
+            uploadSubscription = receivePortUpload.listen((dynamic message) async {
               if (message == "uploadDone") {
                 print('Killing the upload isolate');
                 flutterUploadIsolate.kill();
+                // uploadSubscription.cancel();
               }
             });
-            receivePort.listen((dynamic message) async {
+            bleSubscription = receivePort.listen((dynamic message) async {
               if (message is List) {
                 hideOverlay();
                 showOverlay(
-                    'Ihre Daten werden übertragen.',
-                    SpinKitFadingCircle(
-                      color: Colors.orange,
-                      size: 50.0,
-                    ),
+                    'Ihre Bangle wird verbunden.\nBitte warten Sie einen Moment.',
+                    [Icon(Icons.bluetooth_searching, color: Colors.blue, size: 40), Icon(Icons.arrow_forward, color: Colors.black, size: 30), Icon(Icons.watch, color: Colors.blue, size: 40)],
                     withButton: false,
                     timer: message[0]);
               }
@@ -861,6 +873,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass diese Betriebsbereit ist und Bluetooth aktiviert wurde.",
                     Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                     withButton: true);
+                // bleSubscription.cancel();
               }
               if (message == 'connectionClosed') {
                 print("BLE Connection closed - Killing the Isolate");
@@ -872,6 +885,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Wir haben die Verbindung zur Bangle verloren. Bitte stellen Sie sicher, dass diese Betriebsbereit ist, in der Nähe liegt und Bluetooth aktiviert wurde.",
                     Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                     withButton: true);
+                // bleSubscription.cancel();
               }
               if (message == 'downloadCanceled') {
                 print("Download Canceled - Killing the Isolate.");
@@ -883,6 +897,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Der Upload wurde leider unterbrochen. Bitte starten Sie diesen erneut.",
                     Icon(Icons.upload_file, size: 30, color: Colors.green),
                     withButton: true);
+                // bleSubscription.cancel();
               }
               if (message == 'done') {
                 print('Killing the Isolate');
@@ -894,6 +909,7 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Vielen Dank, Ihre Daten wurden erfolgreich übertragen.",
                     Icon(Icons.check_box, size: 30, color: Colors.green),
                     withButton: true);
+                // bleSubscription.cancel();
               }
               if (message == 'doneWithError') {
                 print('Killing the Isolate');
@@ -905,6 +921,17 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
                     "Ihre Bangle konnte nicht verbunden werden. Bitte stellen Sie sicher, dass das Gerät betriebsbereit ist und Bluetooth aktiviert wurde.",
                     Icon(Icons.bluetooth, size: 30, color: Colors.blue),
                     withButton: true);
+              }
+              if (message == 'changeOverlayReady') {
+                hideOverlay();
+                showOverlay(
+                    'Ihre Daten werden nun übertragen.'
+                        '\nSie können die App jetzt im Hintergrund\nweiter laufen lassen.',
+                    SpinKitFadingCircle(
+                      color: Colors.green,
+                      size: 50.0,
+                    ),
+                    withButton: false);
               }
               if (message == 'uploadToServerFailed') {
                 print('Killing the Isolate - Upload to Server failed');
@@ -928,7 +955,8 @@ class _LandingScreenState extends ResumableState<LandingScreen> {
           return true;
         },
         onChangeDateTime: (dateTime) async {
-          (await SharedPreferences.getInstance()).setString(
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString(
               "recordingWillStartAtString",
               checkIfTimeIsToday(dateTime).toString());
         }));

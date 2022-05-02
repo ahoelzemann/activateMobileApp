@@ -112,11 +112,11 @@ Future<bool> checkAndFireBCT() async {
   String halfTimeMsgMinutes = "";
   String dailyStepsReached = rules.dailyStepsReached();
   String dailyMinutesReached = rules.dailyMinutesReached();
-  TimeOfDay _startTime =
-      TimeOfDay(hour: prefs.getInt("recordingWillStartAt"), minute: 0);
-  final now = DateTime.now();
-  int nowHours = now.hour;
-  bool isRecording = false;
+  // TimeOfDay _startTime =
+  //     TimeOfDay(hour: prefs.getInt("recordingWillStartAt"), minute: 0);
+  // final now = DateTime.now();
+  // int nowHours = now.hour;
+  // bool isRecording = false;
   bool stepsBCTFired = prefs.getBool("stepsBCTFired");
   bool minutesBCTFired = prefs.getBool("minutesBCTFired");
   if (stepsBCTFired == null) {
@@ -125,10 +125,10 @@ Future<bool> checkAndFireBCT() async {
   if (minutesBCTFired == null) {
     minutesBCTFired = false;
   }
-  if (_startTime.hour <= nowHours) {
-    isRecording = true;
-  }
-  if (isRecording) {
+  // if (_startTime.hour <= nowHours) {
+  //   isRecording = true;
+  // }
+  // if (isRecording) {
     if (!stepsBCTFired && dailyStepsReached.length > 10) {
       AwesomeNotifications().createNotification(
           content: NotificationContent(
@@ -188,7 +188,8 @@ Future<bool> checkAndFireBCT() async {
       }
       prefs.setBool("halfTimeAlreadyFired", true);
     }
-  }
+
+  // }
 
   return true;
 }

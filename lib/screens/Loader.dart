@@ -14,7 +14,7 @@ class Loader {
   ];
   ValueNotifier<bool> loaderShowingNotifier = ValueNotifier(false);
   ValueNotifier<String> loaderTextNotifier = ValueNotifier('error message');
-  ValueNotifier<Container> loaderIconNotifier = ValueNotifier(Container(
+  ValueNotifier<dynamic> loaderIconNotifier = ValueNotifier(Container(
       // margin: new EdgeInsets.symmetric(horizontal: 20.0, vertical: 5.0),
       child: Padding(
           padding: const EdgeInsets.all(8.0),
@@ -49,6 +49,18 @@ class Loader {
   }
 
   void setImage(icon) {
-    loaderIconNotifier.value = Container(child: icon);
+    if (icon is List) {
+      loaderIconNotifier.value = Center(
+          child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+            Container(child: icon[0]),
+            Container(child: icon[1]),
+            Container(child: icon[2])
+          ]));
+    } else {
+      loaderIconNotifier.value = Container(child: icon);
+    }
   }
 }

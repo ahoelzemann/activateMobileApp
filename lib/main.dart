@@ -17,8 +17,6 @@ import 'package:awesome_notifications/awesome_notifications.dart';
 import 'package:trac2move/bct/BCT.dart' as BCT;
 import 'package:trac2move/persistent/Participant.dart';
 import 'package:trac2move/util/GlobalFunctions.dart';
-import 'package:worker_manager/worker_manager.dart';
-
 
 Future<void> _checkPermissions() async {
   if (Platform.isAndroid) {
@@ -91,74 +89,52 @@ void main() async {
     });
     if (Platform.isAndroid) {
       _checkPermissions();
-        // Map<Permission, PermissionStatus> statuses = await [
-        //   Permission.location,
-        //   Permission.bluetooth,
-        //   Permission.bluetoothScan,
-        //   Permission.bluetoothConnect,
-        //   Permission.storage,
-        // ].request();
-      // print("location initialized before if");
-      // if (!await Geolocator.isLocationServiceEnabled()) {
-      //   print("location initialized after if");
-      //   // openSettingsMenu('ACTION_LOCATION_SOURCE_SETTINGS');
-      //   // openSettingsMenu("location");
-      //   AppSettings.openLocationSettings();
-      //
-      //   print("location service requested");
-      // }
-
-      // await Geolocator.requestPermission();
-      // await Permission.storage.request();
-      // print("storage service requested");
-      // await Permission.bluetooth.request();
-      // print("bluetooth service requested");
-      // await Permission.locationWhenInUse.request();
-      // print("location when in use requested");
     } else if (Platform.isIOS) {
       await Permission.storage.request();
       if (await Permission.bluetooth.isDenied) {
         await BTExperimental.getPermission();
       }
     }
-    await Executor().warmUp();
+    //   studienID, ageToSave, date,
+    // bangleID, worn_at, bctGroup, gender, agreedOnTerms
+    //   Participant participant = new Participant(
+    //       studienID: "offline",
+    //       age: 199,
+    //       bangleID: "Bangle.js eed7",
+    //       birthday: "01.01.1901",
+    //       worn_at: "left",
+    //       bctGroup: true,
+    //       gender: "m",
+    //       agreedOnTerms: "true");
+    //   //Todo: Fix the index of agreenOnTerms
+    //   mySharedPreferences msp = new mySharedPreferences();
+    //   bool result = await msp.mySharedPreferencesFirstStart(participant);
+    //   await Executor().warmUp();
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool firstRun = prefs.getBool('firstRun');
-    prefs.setBool('useSecureStorage', false);
-    prefs.setBool("uploadInProgress", false);
-    prefs.setBool("backgroundFetchStarted", false);
-    prefs.setBool("btOccupied", false);
+    await prefs.setBool('useSecureStorage', false);
+    await prefs.setBool("uploadInProgress", false);
+    await prefs.setBool("backgroundFetchStarted", false);
+    await prefs.setBool("btOccupied", false);
 
     if (firstRun == null) {
-      prefs.setString("lastTimeDailyGoalsShown", DateTime.now().toString());
-      setGlobalConnectionTimer(0);
       setLastUploadedFileNumber(-1);
-      // prefs.setBool("fromIsolate", false);
       prefs.setBool("halfTimeAlreadyFired", false);
-      // prefs.setBool("agreedOnTerms", false);
-      firstRun = true;
+      firstRun = false;
       await prefs.setInt("recordingWillStartAt", 7);
       prefs.setInt("current_steps", 0);
       prefs.setInt("current_active_minutes", 0);
       prefs.setBool("firstRun", firstRun);
-
-      // print("saving server credentials...");
-      // await prefs.setString('serverAddress', "131.173.80.175");
-      // await prefs.setString('port', "22");
-      // await prefs.setString('login', "trac2move_upload");
-      // await prefs.setString('password', "5aU=txXKoU!");
-
     }
     print("saving server credentials...");
     await prefs.setString('serverAddress', "131.173.80.175");
     await prefs.setString('port', "22");
     await prefs.setString('login', "trac2move_upload");
     await prefs.setString('password', "5aU=txXKoU!");
-    bool firstTime = true;
 
     int backgroundFetchStatus = await BackgroundFetch.configure(
         BackgroundFetchConfig(
-            minimumFetchInterval: 60,
+            minimumFetchInterval: 2,
             stopOnTerminate: true,
             enableHeadless: true,
             requiresBatteryNotLow: false,
@@ -166,33 +142,22 @@ void main() async {
             requiresStorageNotLow: false,
             requiresDeviceIdle: false,
             requiredNetworkType: NetworkType.NONE), (String taskId) async {
-      // <-- Event handler
-      // This is the fetch-event callback.
       var isUploading = prefs.getBool("uploadInProgress");
       if (!isUploading) {
         try {
           await BTExperimental.getStepsAndMinutes();
         } catch (e) {
           await prefs.setBool("uploadInProgress", false);
-        }
-      }
-      if (Platform.isAndroid) {
-        if (!firstTime) {
-          if (await isbctGroup()) {
-            BCT.checkAndFireBCT();
-          }
-          print(DateTime.now().toString() +
-              " | [BackgroundFetch] Event received $taskId");
           BackgroundFetch.finish(taskId);
-        } else {
-          firstTime = false;
         }
-      } else {
         if (await isbctGroup()) {
           BCT.checkAndFireBCT();
         }
         print(DateTime.now().toString() +
             " | [BackgroundFetch] Event received $taskId");
+        BackgroundFetch.finish(taskId);
+      }
+      else {
         BackgroundFetch.finish(taskId);
       }
     }, (String taskId) async {
